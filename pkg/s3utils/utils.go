@@ -1,11 +1,8 @@
 package s3utils
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -15,12 +12,6 @@ import (
 var reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
 
 // EncodePath encode the strings from UTF-8 byte representations to HTML hex escape sequences
-//
-// This is necessary since regular url.Parse() and url.Encode() functions do not support UTF-8
-// non english characters cannot be parsed due to the nature in which url.Encode() is written
-//
-// This function on the other hand is a direct replacement for url.Encode() technique to support
-// pretty much every UTF-8 character.
 func EncodePath(pathName string) string {
 	if reservedObjectNames.MatchString(pathName) {
 		return pathName
@@ -52,50 +43,46 @@ func EncodePath(pathName string) string {
 	return encodedPathname.String()
 }
 
-func CheckBucketName(bucketName string) error {
+// IsValidBucketName judge if the bucketname is invalid
+// The rule is based on https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+func IsValidBucketName(bucketName string) error {
 	nameLen := len(bucketName)
 	if nameLen < 3 || nameLen > 63 {
 		return fmt.Errorf("bucket name %s len is between [3-63],now is %d", bucketName, nameLen)
 	}
 
+	ipAddress := regexp.MustCompile(`^(\d+\.){3}\d+$`)
+
+	if ipAddress.MatchString(bucketName) {
+		return fmt.Errorf("The bucket name %s cannot be formatted as an IP address", bucketName)
+	}
+
+	if strings.Contains(bucketName, "..") || strings.Contains(bucketName, ".-") || strings.Contains(bucketName, "-.") {
+		return fmt.Errorf("Bucket name %s  contains invalid characters", bucketName)
+	}
 	for _, v := range bucketName {
-		if !(('a' <= v && v <= 'z') || ('0' <= v && v <= '9') || v == '-') {
-			return fmt.Errorf("bucket name %s can only include lowercase letters, numbers, and -", bucketName)
+		if !(('a' <= v && v <= 'z') || ('0' <= v && v <= '9') || v == '-' || v == '.') {
+			return fmt.Errorf("bucket name %s can only include lowercase letters, numbers, - and .", bucketName)
 		}
 	}
-	if bucketName[0] == '-' || bucketName[nameLen-1] == '-' {
+	if bucketName[0] == '-' || bucketName[nameLen-1] == '-' || bucketName[0] == '.' || bucketName[nameLen-1] == '.' {
 		return fmt.Errorf("bucket name %s must start and end with a lowercase letter or number", bucketName)
 	}
 	return nil
 }
 
-func CheckObjectName(objectName string) error {
+// IsValidObjectName judge if the objectname is invalid
+
+func IsValidObjectName(objectName string) error {
 	if len(objectName) == 0 {
 		return fmt.Errorf("object name is empty")
 	}
-	return nil
-}
-
-// GetContenLegth return the length of content
-func GetContentLength(reader io.Reader) (int64, error) {
-	var contentLength int64
-	var err error
-	switch v := reader.(type) {
-	case *bytes.Buffer:
-		contentLength = int64(v.Len())
-	case *bytes.Reader:
-		contentLength = int64(v.Len())
-	case *strings.Reader:
-		contentLength = int64(v.Len())
-	case *os.File:
-		fInfo, fError := v.Stat()
-		if fError != nil {
-			err = fmt.Errorf("can't get reader content length,%s", fError.Error())
-		} else {
-			contentLength = fInfo.Size()
-		}
-	default:
-		err = fmt.Errorf("can't get reader content length,unkown reader type")
+	if len(objectName) > 1024 {
+		return fmt.Errorf("object length can not be longer than 1024")
 	}
-	return contentLength, err
+
+	if !utf8.ValidString(objectName) {
+		return fmt.Errorf("object name invalid, with non UTF-8 strings")
+	}
+	return nil
 }
