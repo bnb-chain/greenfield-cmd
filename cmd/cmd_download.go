@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	inscription "github.com/bnb-chain/inscription-sdk"
+	inscription "github.com/bnb-chain/greenfield-sdk-go"
 )
 
 // cmdGetObj return the command to finish downloading object payload
@@ -22,7 +22,7 @@ Download a specific object from storage provider
 
 Examples:
 # download a file
-$ bfs get s3://bucketname/file.txt file.txt `,
+$ gnfd get s3://bucketname/file.txt file.txt `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "filepath",

@@ -5,13 +5,13 @@ import (
 	"log"
 	"strings"
 
-	inscription "github.com/bnb-chain/inscription-sdk"
+	inscription "github.com/bnb-chain/greenfield-sdk-go"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/urfave/cli/v2"
 )
 
-// BfsClient construct
-type BfsClient struct {
+// GnfdClient construct
+type GnfdClient struct {
 	args  []string
 	clint inscription.Client
 }

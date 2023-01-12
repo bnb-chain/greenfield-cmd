@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/bnb-chain/bfs/x/storage/types"
-	"github.com/bnb-chain/inscription-sdk/pkg/s3utils"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -72,8 +72,8 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 		return TxnInfo{}, err
 	}
 
-	if meta.ObjectSize <= 0 {
-		return TxnInfo{}, objectSizeInvaild("objectSize should not be")
+	if meta.ObjectSize < 0 {
+		return TxnInfo{}, objectSizeInvaild("objectSize should not be less than zero")
 	}
 
 	if meta.ContentType == "" {
@@ -83,21 +83,18 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 	if meta.Sha256Hash == "" {
 		return TxnInfo{}, fieldEmptyResp("sha256 hash empty")
 	}
-
-	urlVal := make(url.Values)
-	urlVal[PutObjectUrlTxn] = []string{""}
-
+	
 	reqMeta := requestMeta{
-		bucketName:       bucketName,
-		objectName:       objectName,
-		urlValues:        urlVal,
-		bfsContentLength: meta.ObjectSize,
-		contentSHA256:    meta.Sha256Hash,
-		contentType:      meta.ContentType,
+		bucketName:        bucketName,
+		objectName:        objectName,
+		gnfdContentLength: meta.ObjectSize,
+		contentSHA256:     meta.Sha256Hash,
+		contentType:       meta.ContentType,
 	}
 
-	// todo(leo) make sure the putObjectMsg work
-	msgBytes, err := c.genPutObjectMsg(bucketName, objectName, meta.IsPublic)
+	// todo(leo) make sure the createObjectMsg work
+	emptyBytes := make([][]byte, 1)
+	msgBytes, err := c.genPutObjectMsg(bucketName, objectName, meta.ContentType, meta.IsPublic, meta.ObjectSize, emptyBytes)
 	if err != nil {
 		return TxnInfo{}, err
 	}
@@ -146,13 +143,17 @@ func (c *Client) PutObjectWithTxn(ctx context.Context, txnHash, objectName, buck
 		typeValue = opts.ContentType
 	}
 
+	urlVal := make(url.Values)
+	urlVal[PutObjectUrlTxn] = []string{""}
+
 	reqMeta := requestMeta{
-		bucketName:       bucketName,
-		objectName:       objectName,
-		contentLength:    ObjectSize,
-		contentType:      typeValue,
-		bfsContentLength: ObjectSize,
-		contentSHA256:    sha256hash,
+		bucketName:        bucketName,
+		objectName:        objectName,
+		urlValues:         urlVal,
+		contentLength:     ObjectSize,
+		contentType:       typeValue,
+		gnfdContentLength: ObjectSize,
+		contentSHA256:     sha256hash,
 	}
 
 	sendOpt := sendOptions{
@@ -177,13 +178,17 @@ func (c *Client) PutObjectWithTxn(ctx context.Context, txnHash, objectName, buck
 }
 
 // genPutObjectMsg construct the createObjectMsg  and sign the msg
-func (c *Client) genPutObjectMsg(bucketName, objectName string, isPublic bool) ([]byte, error) {
+func (c *Client) genPutObjectMsg(bucketName, objectName, contentType string, isPublic bool, ObjectSize int64, hashInfo [][]byte) ([]byte, error) {
 	createObjectMsg := types.NewMsgCreateObject(
-		c.GetAccount().String(),
-		"",
+		c.GetAccount(),
 		bucketName,
 		objectName,
-		!isPublic,
+		uint64(ObjectSize),
+		isPublic,
+		hashInfo,
+		contentType,
+		[]byte(""),
+		[]sdk.AccAddress{nil},
 	)
 
 	interfaceRegistry := codectypes.NewInterfaceRegistry()

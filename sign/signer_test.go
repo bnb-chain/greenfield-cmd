@@ -26,7 +26,7 @@ func TestSigner(t *testing.T) {
 	fmt.Println("private key:", privKey.String())
 	fmt.Println("public key:", pubkey.String())
 
-	testSigner, err := NewSigner(sdkAddr, "/Users/user/.bfs/", privKey, pubkey)
+	testSigner, err := NewSigner(sdkAddr, "/Users/user/.gnfd/", privKey, pubkey)
 	require.NoError(t, err)
 
 	_, _, feePayerAddr := testdata.KeyEthSecp256k1TestPubAddr()

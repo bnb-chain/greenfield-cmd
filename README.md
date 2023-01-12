@@ -4,7 +4,7 @@
 
 ```
 // build:
-cd cmd; go build -o bfs main.go cmd_mb.go client_gnfd.go   cmd_upload.go  cmd_download.go 
+cd cmd; go build -o gnfd main.go cmd_mb.go client_gnfd.go   cmd_upload.go  cmd_download.go 
  
 // make bucket:
 (1) gnfd pre-mb s3://bucketname

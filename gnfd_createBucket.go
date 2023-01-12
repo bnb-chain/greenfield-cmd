@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bnb-chain/bfs/x/storage/types"
-	"github.com/bnb-chain/inscription-sdk/pkg/s3utils"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"

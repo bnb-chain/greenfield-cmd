@@ -29,7 +29,7 @@ func main() {
 	}
 
 	app := &cli.App{
-		Name:  "bfs",
+		Name:  "gnfd",
 		Usage: "client for inscription blockchain object storage",
 		Flags: flags,
 		Commands: []*cli.Command{

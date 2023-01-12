@@ -64,7 +64,7 @@ func construtErrResponse(r *http.Response, bucketName, objectName string) error 
 	}
 
 	if errorResp.RequestID == "" {
-		errorResp.RequestID = r.Header.Get("X-Bfs-Request-Id")
+		errorResp.RequestID = r.Header.Get("X-Gnfd-Request-Id")
 	}
 
 	var data []byte

@@ -20,7 +20,7 @@ func cmdPreMakeBucket() *cli.Command {
 
 Examples:
 # the first phase of putObject
-$ bfs  pre-mb s3://bucketname`,
+$ gnfd  pre-mb s3://bucketname`,
 	}
 }
 
@@ -35,7 +35,7 @@ Create a new bucket and set a createBucketMsg to storage provider, the bucket na
 
 Examples:
 # Create a new bucket
-$ bfs mb s3://bucketname`,
+$ gnfd mb s3://bucketname`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "public",

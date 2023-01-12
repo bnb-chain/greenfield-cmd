@@ -16,12 +16,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bnb-chain/inscription-sdk/sign"
+	"github.com/bnb-chain/greenfield-sdk-go/sign"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/bnb-chain/inscription-sdk/pkg/s3utils"
-	"github.com/bnb-chain/inscription-sdk/pkg/signer"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 )
 
 // Client is a client manages communication with the inscription API.
@@ -73,7 +73,7 @@ func NewClient(endpoint string, opts *Options, addr sdk.AccAddress,
 	}
 	log.Println("new client with url:", url.String())
 
-	eip712signer, err := sign.NewSigner(addr, ".bfs", privKey, pubKey)
+	eip712signer, err := sign.NewSigner(addr, ".gnfd", privKey, pubKey)
 
 	httpClient := &http.Client{}
 	c := &Client{
@@ -109,11 +109,11 @@ type requestMeta struct {
 	Range         string
 	ApproveAction string
 
-	contentType      string
-	contentLength    int64
-	bfsContentLength int64
-	contentMD5Base64 string // base64 encoded md5sum
-	contentSHA256    string // hex encoded sha256sum
+	contentType       string
+	contentLength     int64
+	gnfdContentLength int64
+	contentMD5Base64  string // base64 encoded md5sum
+	contentSHA256     string // hex encoded sha256sum
 }
 
 // sendOptions -  options to use to send the http message
@@ -217,9 +217,9 @@ func (c *Client) newRequest(ctx context.Context,
 		req.Header[HTTPHeaderContentMD5] = []string{meta.contentMD5Base64}
 	}
 
-	// set first stage upload x-bfs-content-length header
-	if meta.bfsContentLength > 0 {
-		req.Header.Set(HTTPHeadeBfsContentLength, strconv.FormatInt(meta.bfsContentLength, 10))
+	// set first stage upload x-gnfd-content-length header
+	if meta.gnfdContentLength > 0 {
+		req.Header.Set(HTTPHeadeGnfdContentLength, strconv.FormatInt(meta.gnfdContentLength, 10))
 	}
 
 	// set sha256 header
@@ -235,11 +235,11 @@ func (c *Client) newRequest(ctx context.Context,
 
 	// set Host from url or client
 	if meta.bucketName != "" {
-		req.Host = meta.bucketName + ".bfs.nodereal.com"
+		req.Host = meta.bucketName + ".gnfd.nodereal.com"
 	}
 
 	if isAdminAPi {
-		req.Host = "bfs.nodereal.com"
+		req.Host = "gnfd.nodereal.com"
 		if meta.bucketName != "" {
 			if meta.objectName == "" {
 				req.Header.Set(HTTPHeaderResource, meta.bucketName)

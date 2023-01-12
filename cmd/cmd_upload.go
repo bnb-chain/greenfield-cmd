@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	inscription "github.com/bnb-chain/inscription-sdk"
+	inscription "github.com/bnb-chain/greenfield-sdk-go"
 	"github.com/urfave/cli/v2"
 )
 
@@ -22,7 +22,7 @@ send a createObjMsg to storage provider
 
 Examples:
 # the first phase of putObject: send putObjectMsg to SP, will not upload payload
-$ bfs put-txn file.txt s3://bucket-name/object-name`,
+$ gnfd put-txn file.txt s3://bucket-name/object-name`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:     "public",
@@ -67,7 +67,7 @@ func cmdPreCreateObj() *cli.Command {
 
 Examples:
 # the first phase of putObject
-$ bfs  pre-upload s3://bucketname/object`,
+$ gnfd  pre-upload s3://bucketname/object`,
 	}
 }
 
@@ -83,7 +83,7 @@ Upload the payload and send with txn to storage provider
 
 Examples:
 # the second phase of putObject: upload file to storage provider
-$ bfs put --txnhash xx  file.txt s3://bucket-name/file.txt`,
+$ gnfd put --txnhash xx  file.txt s3://bucket-name/file.txt`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "txnhash",

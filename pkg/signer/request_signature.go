@@ -9,14 +9,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bnb-chain/inscription-sdk/pkg/s3utils"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
-	HTTPHeaderContentSHA256 = "X-Bfs-Content-Sha256"
+	HTTPHeaderContentSHA256 = "X-Gnfd-Content-Sha256"
 	HTTPHeaderAuthorization = "Authorization"
 	signAlgorithm           = "ECDSA-secp256k1"
 )
@@ -97,7 +97,7 @@ func getCanonicalRequest(req http.Request) string {
 
 // GetStringToSign generate the string from canonicalRequest to sign
 func GetStringToSign(req http.Request) string {
-	time := req.Header.Get("X-Bfs-Date")
+	time := req.Header.Get("X-Gnfd-Date")
 	canonicalRequest := getCanonicalRequest(req)
 	stringToSign := time + hex.EncodeToString(calcSHA256([]byte(canonicalRequest)))
 

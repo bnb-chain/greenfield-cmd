@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bnb-chain/inscription-sdk/pkg/s3utils"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 )
 
 // ObjectInfo contain the meta of downloaded objects
@@ -126,7 +126,7 @@ func getObjInfo(bucketName string, objectName string, h http.Header) (ObjectInfo
 				Message:    fmt.Sprintf("Content-Length parse error %v", err),
 				BucketName: bucketName,
 				ObjectName: objectName,
-				RequestID:  h.Get("x-bfs-request-id"),
+				RequestID:  h.Get("x-gnfd-request-id"),
 			}
 		}
 	}
