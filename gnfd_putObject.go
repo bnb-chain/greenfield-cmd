@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"context"
@@ -83,7 +83,7 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 	if meta.Sha256Hash == "" {
 		return TxnInfo{}, fieldEmptyResp("sha256 hash empty")
 	}
-	
+
 	reqMeta := requestMeta{
 		bucketName:        bucketName,
 		objectName:        objectName,

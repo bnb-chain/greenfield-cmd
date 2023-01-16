@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"bytes"
@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	ec "github.com/bnb-chain/greenfield-storage-provider/pkg/redundancy"
 )
 
 var emptyURL = url.URL{}
@@ -35,8 +38,6 @@ const (
 	HTTPHeaderUserAgent        = "User-Agent"
 	HTTPHeaderContentSHA256    = "X-Gnfd-Content-Sha256"
 
-	// Hex encoded string of nil sha256sum bytes.
-	emptySHA256Hex = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 	// EmptyStringSHA256 is the hex encoded sha256 value of an empty string
 	EmptyStringSHA256 = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
@@ -45,6 +46,8 @@ const (
 
 	CreateObjectAction = "CreateObject"
 	CreateBucketAction = "CreateBucket"
+	SegmentSize        = 16 * 1024 * 1024
+	EncodeShards       = 6
 )
 
 func CheckIP(ip string) bool {
@@ -144,12 +147,34 @@ func calcSHA256Hex(buf []byte) (hexStr string) {
 	return
 }
 
-func CalcSHA256Hash(body io.Reader) (b64 string) {
+func calcSHA256(buf []byte) []byte {
+	h := sha256.New()
+	h.Write(buf)
+	sum := h.Sum(nil)
+	return sum[:]
+}
+
+func CalcSHA256Hash(body io.Reader) (string, error) {
 	if body == nil {
-		return emptySHA256Hex
+		return EmptyStringSHA256, nil
 	}
-	buf, _ := io.ReadAll(body)
-	return calcSHA256Hex(buf)
+	buf := make([]byte, 1024)
+	h := sha256.New()
+	if _, err := io.CopyBuffer(h, body, buf); err != nil {
+		return "", err
+	}
+	hash := h.Sum(nil)
+	return hex.EncodeToString(hash), nil
+}
+
+func CalcSHA256HashByte(body io.Reader) ([]byte, error) {
+	buf := make([]byte, 200)
+	h := sha256.New()
+	if _, err := io.CopyBuffer(h, body, buf); err != nil {
+		return []byte(""), err
+	}
+	hash := h.Sum(nil)
+	return hash, nil
 }
 
 func decodeURIComponent(s string) (string, error) {
@@ -221,4 +246,68 @@ func GetContentLength(reader io.Reader) (int64, error) {
 		err = fmt.Errorf("can't get reader content length,unkown reader type")
 	}
 	return contentLength, err
+}
+
+// SplitAndComputerHash split the reader into segments and compute the hash roots of pieces
+func SplitAndComputerHash(reader io.Reader) ([]string, error) {
+	var segCheckSumList [][]byte
+	var result []string
+	encodeData := make([][][]byte, EncodeShards)
+	seg := make([]byte, SegmentSize)
+
+	for {
+		n, err := reader.Read(seg)
+		if err != nil {
+			if err != io.EOF {
+				fmt.Println("read error:", err)
+			}
+			break
+		}
+
+		// compute segment hash
+		segmentReader := bytes.NewReader(seg[:n])
+		if segmentReader != nil {
+			checksum, err := CalcSHA256HashByte(segmentReader)
+			segCheckSumList = append(segCheckSumList, checksum)
+			if err != nil {
+				log.Println("compute checksum err:", err)
+				return nil, err
+			}
+		}
+
+		// get erasure encode bytes
+		encodeShards, err := ec.EncodeRawSegment(seg[:n])
+
+		if err != nil {
+			log.Println("erasure encode err:", err)
+			return nil, err
+		}
+
+		for index, shard := range encodeShards {
+			encodeData[index] = append(encodeData[index], shard)
+		}
+
+	}
+
+	// combine the hash root of pieces of the PrimarySP
+	segBytesTotal := bytes.Join(segCheckSumList, []byte(""))
+	segmentRootHash := calcSHA256Hex(segBytesTotal)
+	result = append(result, segmentRootHash)
+
+	// compute the hash root of pieces of the SecondarySP
+	for spId, content := range encodeData {
+		var checkSumList [][]byte
+		for _, pieces := range content {
+			piecesHash := calcSHA256(pieces)
+			checkSumList = append(checkSumList, piecesHash)
+		}
+
+		piecesBytesTotal := bytes.Join(checkSumList, []byte(""))
+		piecetRootHash := calcSHA256Hex(piecesBytesTotal)
+		log.Printf("figure out the hash %s, spId is :%d", piecetRootHash, spId+1)
+
+		result = append(result, piecetRootHash)
+	}
+
+	return result, nil
 }

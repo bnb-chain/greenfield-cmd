@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -12,22 +12,52 @@ import (
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
-	HTTPHeaderContentSHA256 = "X-Gnfd-Content-Sha256"
-	HTTPHeaderAuthorization = "Authorization"
-	signAlgorithm           = "ECDSA-secp256k1"
+	HTTPHeaderAuthorization   = "Authorization"
+	signAlgorithm             = "ECDSA-secp256k1"
+	HTTPHeaderTransactionDate = "X-Gnfd-Txn-Date"
 )
 
-// getHashedPayload get the hexadecimal value of the SHA256 hash of
-// the request payload.
-func getHashedPayload(req http.Request) string {
-	return req.Header.Get(HTTPHeaderContentSHA256)
+// getCanonicalHeaders generate a list of request headers with their values
+func getCanonicalHeaders(req http.Request) string {
+	var content bytes.Buffer
+	var containHostHeader bool
+	for header, value := range req.Header {
+		if header == "Authorization" || header == HTTPHeaderTransactionDate {
+			continue
+		}
+		content.WriteString(strings.ToLower(header))
+		content.WriteByte(':')
+
+		if header != "host" {
+			for i, v := range value {
+				if i > 0 {
+					content.WriteByte(',')
+				}
+				trimVal := strings.Join(strings.Fields(v), " ")
+				content.WriteString(trimVal)
+			}
+			content.WriteByte('\n')
+		} else {
+			containHostHeader = true
+			content.WriteString(GetHostInfo(req))
+			content.WriteByte('\n')
+		}
+	}
+
+	if !containHostHeader {
+		content.WriteString(GetHostInfo(req))
+		content.WriteByte('\n')
+	}
+
+	log.Printf("generate CanonicalHeaders  %s \n", content.String())
+	return content.String()
 }
 
-// getCanonicalHeaders generate a list of request headers with their values
+/*
 func getCanonicalHeaders(req http.Request) string {
 	headerMap := make(map[string][]string)
 	var headerList []string
@@ -38,10 +68,6 @@ func getCanonicalHeaders(req http.Request) string {
 			headerList = append(headerList, headerTolower)
 			headerMap[headerTolower] = v
 		}
-	}
-	_, ok := headerMap["host"]
-	if !ok {
-		headerList = append(headerList, "host")
 	}
 
 	var content bytes.Buffer
@@ -65,6 +91,7 @@ func getCanonicalHeaders(req http.Request) string {
 	// log.Printf("generate CanonicalHeaders \n %s \n", content.String())
 	return content.String()
 }
+*/
 
 // getSignedHeaders return the alphabetically sorted, semicolon-separated list of lowercase request header names.
 func getSignedHeaders(req http.Request) string {
@@ -79,7 +106,7 @@ func getSignedHeaders(req http.Request) string {
 	return strings.Join(signHeaders, ";")
 }
 
-// getCanonicalRequest generate the canonicalRequest base on aws s3 sign.
+// getCanonicalRequest generate the canonicalRequest base on aws s3 sign without payload hash.
 // https://docs.aws.amazon.com/general/latest/gr/create-signed-request.html#create-canonical-request
 func getCanonicalRequest(req http.Request) string {
 	req.URL.RawQuery = strings.ReplaceAll(req.URL.Query().Encode(), "+", "%20")
@@ -89,7 +116,6 @@ func getCanonicalRequest(req http.Request) string {
 		req.URL.RawQuery,
 		getCanonicalHeaders(req),
 		getSignedHeaders(req),
-		getHashedPayload(req),
 	}, "\n")
 
 	return canonicalRequest
@@ -97,7 +123,7 @@ func getCanonicalRequest(req http.Request) string {
 
 // GetStringToSign generate the string from canonicalRequest to sign
 func GetStringToSign(req http.Request) string {
-	time := req.Header.Get("X-Gnfd-Date")
+	time := req.Header.Get(HTTPHeaderTransactionDate)
 	canonicalRequest := getCanonicalRequest(req)
 	stringToSign := time + hex.EncodeToString(calcSHA256([]byte(canonicalRequest)))
 
@@ -107,26 +133,21 @@ func GetStringToSign(req http.Request) string {
 // SignRequest sign the request before send to server
 // http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html.
 func SignRequest(req http.Request, addr sdk.AccAddress, privKey cryptotypes.PrivKey) (*http.Request, error) {
-	// get the  stringTosign
 	stringToSign := GetStringToSign(req)
-	// get signature
+	// sign the request header info, generate the signature
 	signer := NewMsgSigner(privKey)
-	signature, _, err := signer.Sign(addr.String(), []byte(stringToSign))
+	signature, _, err := signer.Sign(addr.String(), crypto.Keccak256([]byte(stringToSign)))
 	if err != nil {
 		return &req, err
 	}
 
-	// get all signed headers.
-	signedHeaders := getSignedHeaders(req)
 	authStr := []string{
-		signAlgorithm + " SignedHeaders=" + signedHeaders,
-		"StringToSign=" + stringToSign,
-		"Signature=" + common.Bytes2Hex(signature),
+		signAlgorithm + "StringToSign=" + stringToSign,
+		"Signature=" + hex.EncodeToString(signature),
 	}
 
 	// set auth header
 	req.Header.Set(HTTPHeaderAuthorization, strings.Join(authStr, ", "))
-	fmt.Println("authoriaztion content is: ", strings.Join(authStr, ", "))
 
 	return &req, nil
 }

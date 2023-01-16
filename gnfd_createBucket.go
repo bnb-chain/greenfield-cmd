@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"context"
@@ -54,10 +54,10 @@ func (c *Client) genCreateBucketMsg(bucketName string, isPublic bool, primarySP 
 	createBucketMsg := types.NewMsgCreateBucket(
 		c.GetAccount(),
 		bucketName,
-		!isPublic,
+		isPublic,
 		primarySP,
 		primarySP,
-		primarySP,
+		[]byte("test signature"),
 	)
 
 	interfaceRegistry := codectypes.NewInterfaceRegistry()

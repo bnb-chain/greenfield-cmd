@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"context"
@@ -117,7 +117,7 @@ func getObjInfo(bucketName string, objectName string, h http.Header) (ObjectInfo
 
 	// Parse content length is exists
 	var size int64 = -1
-	contentLength := h.Get("Content-Length")
+	contentLength := h.Get(HTTPHeaderContentLength)
 	if contentLength != "" {
 		_, err := strconv.ParseInt(contentLength, 10, 64)
 		if err != nil {

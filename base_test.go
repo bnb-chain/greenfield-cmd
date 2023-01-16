@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"context"
@@ -93,7 +93,7 @@ func TestNewClient(t *testing.T) {
 
 	bucketName := "testBucket"
 	objectName := "testObject"
-	want := "http://testBucket." + server_temp.URL[7:] + "/testObject"
+	want := "http://" + server_temp.URL[7:] + "/testObject"
 	got, _ := c.generateURL(bucketName, objectName, "", nil, false)
 	if got.String() != want {
 		t.Errorf("URL is %v, want %v", got, want)

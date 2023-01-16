@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"context"

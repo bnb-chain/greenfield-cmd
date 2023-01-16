@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"bytes"
@@ -404,6 +404,7 @@ func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string)
 		}
 	}
 
+	// set the action type
 	urlVal := make(url.Values)
 	if objectName != "" {
 		urlVal["action"] = []string{CreateObjectAction}
@@ -436,4 +437,17 @@ func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string)
 	}
 
 	return signature, ApproveInfo{}, nil
+}
+
+// GetPieceHashRoots return primary pieces Hash and secondary piece Hash
+// The first return value is the primary SP piece hash root, the second is the secondary SP piece hash roots list
+func (c *Client) GetPieceHashRoots(ctx context.Context, reader io.Reader) (string, []string, error) {
+	pieceHashRoots, err := SplitAndComputerHash(reader)
+
+	if err != nil {
+		return "", nil, err
+	}
+
+	return pieceHashRoots[0], pieceHashRoots[1:], nil
+
 }

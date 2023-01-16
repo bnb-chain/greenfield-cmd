@@ -1,4 +1,4 @@
-package inscription
+package greenfield
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ func TestPutObject(t *testing.T) {
 
 	reader := bytes.NewReader([]byte("test content of object"))
 	length, err := GetContentLength(reader)
-	sha256hash := CalcSHA256Hash(reader)
+	sha256hash, _ := CalcSHA256Hash(reader)
 	fmt.Println("length be:", length)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		startHandle(t, r)

@@ -126,11 +126,14 @@ func sendPutTxn(ctx *cli.Context) error {
 
 	f, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
 	if err != nil {
-		log.Fatalln(err.Error())
+		return err
 	}
 	defer f.Close()
 
-	sha256hash := inscription.CalcSHA256Hash(f)
+	sha256hash, err := inscription.CalcSHA256Hash(f)
+	if err != nil {
+		return err
+	}
 
 	size := int64(ctx.Int("object-size"))
 	if size <= 0 {
@@ -202,6 +205,7 @@ func uploadObject(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
 	res, err := s3Client.PutObjectWithTxn(c, txnhash, objectName, bucketName, contentSha256, fileReader,
 		objectSize, inscription.PutObjectOptions{})
 

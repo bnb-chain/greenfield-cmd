@@ -59,14 +59,14 @@ func initCtx(homeDir string) (client.Context, error) {
 		WithHomeDir(homeDir).
 		WithViper("").WithAccountRetriever(authtypes.AccountRetriever{})
 
-	initClientCtx, err := config.ReadFromClientConfig(initClientCtx)
+	clientCtx, err := config.ReadFromClientConfig(initClientCtx)
 	if err != nil {
 		log.Printf("read config to init client fail:%s\n", err.Error())
 		return client.Context{}, err
 	}
-	log.Println("client ctx chain id :" + initClientCtx.ChainID)
+	log.Println("client ctx chain id :" + clientCtx.ChainID)
 
-	return initClientCtx, nil
+	return clientCtx, nil
 }
 
 // NewSigner create a signer of inscription txns
