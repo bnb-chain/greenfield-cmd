@@ -2,6 +2,7 @@ package greenfield
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -84,7 +85,7 @@ func (c *Client) FGetObject(ctx context.Context, bucketName, objectName string, 
 	if err == nil {
 		// If the destination exists and is a directory.
 		if st.IsDir() {
-			return toInvalidArgumentResp("fileName is a directory.")
+			return errors.New("fileName is a directory.")
 		}
 	}
 

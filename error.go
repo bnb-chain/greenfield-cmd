@@ -16,18 +16,18 @@ import (
    <Code>AccessDenied</Code>
    <Message>Access Denied</Message>
    <RequestId>xxx</RequestId>
-   <HostId>xx</HostId>
 </Error>
 */
 
+// ErrResponse define the information of the error response
 type ErrResponse struct {
-	XMLName    xml.Name       `xml:"Error"`
+	XMLName    xml.Name       `xml:"Error" json:"-"`
 	Response   *http.Response `xml:"-"`
 	Code       string
-	StatusCode int `xml:"-"`
+	StatusCode int `xml:"-" json:"-"`
 	Message    string
 	Resource   string
-	RequestID  string
+	RequestID  string `xml:"RequestId"`
 	Server     string
 	BucketName string
 	ObjectName string
@@ -42,13 +42,13 @@ func (r ErrResponse) Error() string {
 		method = r.Response.Request.Method
 	}
 
-	return fmt.Sprintf("%v %v: %d %v(Message: %v)",
+	return fmt.Sprintf("%v %v: %d %v  (Message: %v)",
 		method, decodeURL,
 		r.StatusCode, r.Code, r.Message)
 }
 
-// IsErrorResp check the response is an error response
-func construtErrResponse(r *http.Response, bucketName, objectName string) error {
+// constructErrResponse  check the response is an error response
+func constructErrResponse(r *http.Response, bucketName, objectName string) error {
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}
@@ -57,7 +57,7 @@ func construtErrResponse(r *http.Response, bucketName, objectName string) error 
 		msg := "Response is empty. "
 		return toInvalidArgumentResp(msg)
 	}
-	// todo(leo) change this
+
 	errorResp := ErrResponse{
 		StatusCode: r.StatusCode,
 		Server:     r.Header.Get("Server"),
@@ -66,7 +66,7 @@ func construtErrResponse(r *http.Response, bucketName, objectName string) error 
 	if errorResp.RequestID == "" {
 		errorResp.RequestID = r.Header.Get("X-Gnfd-Request-Id")
 	}
-
+	// read error body of response
 	var data []byte
 	var readErr error
 	if r.Body != nil {
@@ -82,6 +82,7 @@ func construtErrResponse(r *http.Response, bucketName, objectName string) error 
 	}
 
 	var decodeErr error
+	// decode the xml error body if exists
 	if readErr == nil && data != nil {
 		decodeErr = xml.Unmarshal(data, &errorResp)
 		if decodeErr != nil {
@@ -135,44 +136,12 @@ func construtErrResponse(r *http.Response, bucketName, objectName string) error 
 	return errorResp
 }
 
-func CheckNotFoundError(e error) bool {
-	if e == nil {
-		return false
-	}
-	err, ok := e.(*ErrResponse)
-	if !ok {
-		return false
-	}
-	if err.Response != nil && err.Response.StatusCode == 404 {
-		return true
-	}
-	return false
-}
-
-// toInvalidArgumentResp - Invalid argument response.
+// toInvalidArgumentResp return invalid  argument response.
 func toInvalidArgumentResp(message string) error {
 	return ErrResponse{
 		StatusCode: http.StatusBadRequest,
 		Code:       "InvalidArgument",
 		Message:    message,
-		RequestID:  "insription",
-	}
-}
-
-func objectSizeInvaild(message string) error {
-	return ErrResponse{
-		StatusCode: http.StatusBadRequest,
-		Code:       "InvalidArgument",
-		Message:    message,
-		RequestID:  "insription",
-	}
-}
-
-func fieldEmptyResp(message string) error {
-	return ErrResponse{
-		StatusCode: http.StatusBadRequest,
-		Code:       "InvalidArgument",
-		Message:    message,
-		RequestID:  "insription",
+		RequestID:  "greenfield",
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -53,45 +52,8 @@ func getCanonicalHeaders(req http.Request) string {
 		content.WriteByte('\n')
 	}
 
-	log.Printf("generate CanonicalHeaders  %s \n", content.String())
 	return content.String()
 }
-
-/*
-func getCanonicalHeaders(req http.Request) string {
-	headerMap := make(map[string][]string)
-	var headerList []string
-	for k, v := range req.Header {
-		headerKey := http.CanonicalHeaderKey(k)
-		if headerKey != "Authorization" && headerKey != "User-Agent" {
-			headerTolower := strings.ToLower(k)
-			headerList = append(headerList, headerTolower)
-			headerMap[headerTolower] = v
-		}
-	}
-
-	var content bytes.Buffer
-	for _, header := range headerList {
-		content.WriteString(header)
-		content.WriteByte(':')
-		if header != "host" {
-			for i, v := range headerMap[header] {
-				if i > 0 {
-					content.WriteByte(',')
-				}
-				trimVal := strings.Join(strings.Fields(v), " ")
-				content.WriteString(trimVal)
-			}
-			content.WriteByte('\n')
-		} else {
-			content.WriteString(GetHostInfo(req))
-			content.WriteByte('\n')
-		}
-	}
-	// log.Printf("generate CanonicalHeaders \n %s \n", content.String())
-	return content.String()
-}
-*/
 
 // getSignedHeaders return the alphabetically sorted, semicolon-separated list of lowercase request header names.
 func getSignedHeaders(req http.Request) string {

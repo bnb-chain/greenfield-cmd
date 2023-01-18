@@ -63,7 +63,7 @@ const (
 	contentDefault = "application/octet-stream"
 )
 
-// NewClient  returns a new inscription client
+// NewClient returns a new greenfield client
 func NewClient(endpoint string, opts *Options, addr sdk.AccAddress,
 	privKey cryptotypes.PrivKey, pubKey cryptotypes.PubKey) (*Client, error) {
 	url, err := getEndpointURL(endpoint, opts.secure)
@@ -233,6 +233,7 @@ func (c *Client) newRequest(ctx context.Context,
 		req.Header.Set(HTTPHeaderRange, meta.Range)
 	}
 
+	// TODO(leo) parse host when sp domain supported
 	// set Host from url or client
 	if meta.bucketName != "" {
 		req.Host = meta.bucketName + ".gnfd.nodereal.com"
@@ -248,14 +249,6 @@ func (c *Client) newRequest(ctx context.Context,
 			}
 		}
 	}
-	// TODO(leo) parse host when sp domain supported
-	/*
-		if req.URL.Host != "" {
-			req.Host = req.URL.Host
-		} else if c.host != "" {
-			req.Host = c.host
-		}
-	z*/
 
 	// set date header
 	stNow := time.Now().UTC()
@@ -311,7 +304,7 @@ func (c *Client) doAPI(ctx context.Context, req *http.Request, meta requestMeta,
 	}()
 
 	// construct err responses and messages
-	err = construtErrResponse(resp, meta.bucketName, meta.objectName)
+	err = constructErrResponse(resp, meta.bucketName, meta.objectName)
 	if err != nil {
 		return resp, err
 	}
@@ -441,8 +434,8 @@ func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string)
 
 // GetPieceHashRoots return primary pieces Hash and secondary piece Hash
 // The first return value is the primary SP piece hash root, the second is the secondary SP piece hash roots list
-func (c *Client) GetPieceHashRoots(ctx context.Context, reader io.Reader) (string, []string, error) {
-	pieceHashRoots, err := SplitAndComputerHash(reader)
+func (c *Client) GetPieceHashRoots(ctx context.Context, reader io.Reader, segSize int64) (string, []string, error) {
+	pieceHashRoots, err := SplitAndComputerHash(reader, segSize)
 
 	if err != nil {
 		return "", nil, err

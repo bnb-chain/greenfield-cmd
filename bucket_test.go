@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestCreateBucket test creating a new bucket
 func TestCreateBucket(t *testing.T) {
 	setup()
 	defer shutdown()

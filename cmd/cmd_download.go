@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	inscription "github.com/bnb-chain/greenfield-sdk-go"
+	greenfield "github.com/bnb-chain/greenfield-sdk-go"
 )
 
 // cmdGetObj return the command to finish downloading object payload
@@ -22,7 +22,7 @@ Download a specific object from storage provider
 
 Examples:
 # download a file
-$ gnfd get s3://bucketname/file.txt file.txt `,
+$ gnfd get gnfd://bucketname/file.txt file.txt `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "filepath",
@@ -33,6 +33,7 @@ $ gnfd get s3://bucketname/file.txt file.txt `,
 	}
 }
 
+// getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
 		return fmt.Errorf("the args number should be two")
@@ -54,9 +55,10 @@ func getObject(ctx *cli.Context) error {
 	filePath := ctx.Args().Get(1)
 	log.Printf("download object %s into file:%s \n", objectName, filePath)
 
-	err = s3Client.FGetObject(c, bucketName, objectName, filePath, inscription.GetObjectOptions{})
+	err = s3Client.FGetObject(c, bucketName, objectName, filePath, greenfield.GetObjectOptions{})
 	if err != nil {
 		return err
 	}
+	log.Println("downaload object finish")
 	return nil
 }

@@ -59,7 +59,3 @@ func TestSigner(t *testing.T) {
 	require.NoError(t, err)
 
 }
-
-func TestCreateBucketSign(t *testing.T) {
-	// todo
-}

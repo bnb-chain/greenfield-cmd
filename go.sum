@@ -86,6 +86,8 @@ github.com/bgentry/speakeasy v0.1.0 h1:ByYyxL9InA1OWqxJqqp2A5pYHUrCiAL6K3J+LKSsQ
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bnb-chain/bfs v0.0.0-20230112111852-5afcb50fb53c h1:TlWl0fNc6i/EmSpU6+YQHKW9fTg+OkrAXH9nJIT7nFI=
 github.com/bnb-chain/bfs v0.0.0-20230112111852-5afcb50fb53c/go.mod h1:L3eQ9StcORBGujbTGgmNnJViJ6DOuS1LgaxJkmayR1A=
+github.com/bnb-chain/bfs v0.0.0-20230113032209-5ec07ad262ae h1:Tp/7jcexei3mHpMw+S1yZKtxm4p42g1YaUnJDGQbd+k=
+github.com/bnb-chain/bfs v0.0.0-20230113032209-5ec07ad262ae/go.mod h1:+9dWxVI70reG6TKDAO0hyUy1Izn+JZEEeW3REs/GeQg=
 github.com/bnb-chain/greenfield-storage-provider v0.0.0-20230116015759-7e1a1ed31db1 h1:e5asJ0ahMfLJcalu1PvSXi1DxABQGlNI6Tz6hmx/Fo8=
 github.com/bnb-chain/greenfield-storage-provider v0.0.0-20230116015759-7e1a1ed31db1/go.mod h1:RCmKvvjwlQtcadrE/BbqtTTFwTM0qYBDf6yhV+BJ9L8=
 github.com/bnb-chain/inscription-cosmos-sdk v0.0.2-0.20221214063634-de3874eb7dca h1:3qJdZ8Z1d6uj2ZojV5GB42mjyfRnmHu+LD16QtyY+/M=

@@ -23,19 +23,28 @@ func TestPutObject(t *testing.T) {
 	reader := bytes.NewReader([]byte("test content of object"))
 	length, err := GetContentLength(reader)
 	sha256hash, _ := CalcSHA256Hash(reader)
-	fmt.Println("length be:", length)
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		startHandle(t, r)
 		testMethod(t, r, "PUT")
 		testHeader(t, r, "Content-Type", contentDefault)
 		testHeader(t, r, "Content-Length", strconv.FormatInt(length, 10))
 		testBody(t, r, "test content of object")
+		w.WriteHeader(404)
 	})
 
 	txnHash := "test hash"
 	newReader := bytes.NewReader([]byte("test content of object"))
-	_, err = client.PutObjectWithTxn(context.Background(), txnHash, bucketName,
-		ObjectName, sha256hash, newReader, int64(length), PutObjectOptions{})
+
+	meta := ObjectMeta{
+		ObjectSize:  int64(length),
+		ContentType: "application/octet-stream",
+		Sha256Hash:  sha256hash,
+		TxnHash:     txnHash,
+	}
+
+	_, err = client.PutObjectWithTxn(context.Background(), bucketName,
+		ObjectName, newReader, meta)
 	require.NoError(t, err)
 }
 

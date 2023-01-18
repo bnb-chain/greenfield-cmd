@@ -8,12 +8,11 @@ import (
 	"unicode/utf8"
 )
 
-// if object matches reserved string, no need to encode them
-var reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
-
 // EncodePath encode the strings from UTF-8 byte representations to HTML hex escape sequences
 func EncodePath(pathName string) string {
-	if reservedObjectNames.MatchString(pathName) {
+	reservedNames := regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
+	// no need to encode
+	if reservedNames.MatchString(pathName) {
 		return pathName
 	}
 	var encodedPathname strings.Builder
@@ -23,7 +22,7 @@ func EncodePath(pathName string) string {
 			continue
 		}
 		switch s {
-		case '-', '_', '.', '~', '/': // §2.3 Unreserved characters (mark)
+		case '-', '_', '.', '~', '/':
 			encodedPathname.WriteRune(s)
 			continue
 		default:
@@ -72,7 +71,6 @@ func IsValidBucketName(bucketName string) error {
 }
 
 // IsValidObjectName judge if the objectname is invalid
-
 func IsValidObjectName(objectName string) error {
 	if len(objectName) == 0 {
 		return fmt.Errorf("object name is empty")

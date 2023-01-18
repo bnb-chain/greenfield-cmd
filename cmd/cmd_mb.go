@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/urfave/cli/v2"
 )
 
-// cmdPutObj return the command to finish second stage of putObject
+// cmdPreMakeBucket get approval of creating bucket from the storage provider
 func cmdPreMakeBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "pre-mb",
@@ -20,10 +21,11 @@ func cmdPreMakeBucket() *cli.Command {
 
 Examples:
 # the first phase of putObject
-$ gnfd  pre-mb s3://bucketname`,
+$ gnfd  pre-mb gnfd://bucketname`,
 	}
 }
 
+// cmdMakeBucket create a new Bucket
 func cmdMakeBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "mb",
@@ -35,7 +37,7 @@ Create a new bucket and set a createBucketMsg to storage provider, the bucket na
 
 Examples:
 # Create a new bucket
-$ gnfd mb s3://bucketname`,
+$ gnfd mb gnfd://bucketname`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "public",
@@ -46,6 +48,7 @@ $ gnfd mb s3://bucketname`,
 	}
 }
 
+// createBucket send the create bucket api to storage provider
 func createBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketName(ctx)
 	if err != nil {
@@ -70,6 +73,7 @@ func createBucket(ctx *cli.Context) error {
 	return nil
 }
 
+// preCreateBucket send the request to sp to get approval of creating bucket
 func preCreateBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketName(ctx)
 	if err != nil {
@@ -96,14 +100,14 @@ func preCreateBucket(ctx *cli.Context) error {
 
 func getBucketName(ctx *cli.Context) (string, error) {
 	if ctx.NArg() < 1 {
-		return "", fmt.Errorf("the args should be more than 1")
+		return "", errors.New("the args should be more than 1")
 	}
 
 	urlInfo := ctx.Args().Get(0)
 	bucketName := ParseBucket(urlInfo)
 
 	if bucketName == "" {
-		return "", fmt.Errorf("fail to parse bucketname")
+		return "", errors.New("fail to parse bucketname")
 	}
 	return bucketName, nil
 }

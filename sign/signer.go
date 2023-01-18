@@ -69,7 +69,7 @@ func initCtx(homeDir string) (client.Context, error) {
 	return clientCtx, nil
 }
 
-// NewSigner create a signer of inscription txns
+// NewSigner create signer of greenfield txns which is compatible with eip712
 func NewSigner(address sdk.AccAddress, homeDir string, key cryptotypes.PrivKey, pubKey cryptotypes.PubKey) (*EIP712Signer, error) {
 	clientCtx, err := initCtx(homeDir)
 	if err != nil {
@@ -100,6 +100,7 @@ func (e *EIP712Signer) GetSignerData() authsigning.SignerData {
 	return e.signData
 }
 
+// genSignData generate the signData of signer
 func (s *EIP712Signer) genSignData(pubKey cryptotypes.PubKey, accNum uint64, accSeq uint64) authsigning.SignerData {
 	signerdata := authsigning.SignerData{
 		Address:       s.addr.String(),
@@ -112,7 +113,7 @@ func (s *EIP712Signer) genSignData(pubKey cryptotypes.PubKey, accNum uint64, acc
 	return signerdata
 }
 
-// SignTxn return the signature of txn
+// SignTxn return the signature of txn with signMode SIGN_MODE_EIP_712
 func (s *EIP712Signer) SignTxn(txBuilder client.TxBuilder) (signing.SignatureV2, error) {
 	accNum, accSeq, err :=
 		s.clientCtx.AccountRetriever.
@@ -160,6 +161,7 @@ func (s *EIP712Signer) SignTxn(txBuilder client.TxBuilder) (signing.SignatureV2,
 	return sig, nil
 }
 
+// GetTxnSignBytes return the signed txn bytes
 func (s *EIP712Signer) GetTxnSignBytes(txBuilder client.TxBuilder) ([]byte, error) {
 	_, err := s.SignTxn(txBuilder)
 	if err != nil {
@@ -173,11 +175,5 @@ func (s *EIP712Signer) GetTxnSignBytes(txBuilder client.TxBuilder) ([]byte, erro
 		return []byte(""), err
 	}
 
-	/*
-		data, err := rlp.EncodeToBytes(txBytes)
-		if err != nil {
-			return []byte(""), err
-		}
-	*/
 	return txBytes, nil
 }

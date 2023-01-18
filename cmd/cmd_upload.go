@@ -6,11 +6,11 @@ import (
 	"log"
 	"os"
 
-	inscription "github.com/bnb-chain/greenfield-sdk-go"
+	greenfield "github.com/bnb-chain/greenfield-sdk-go"
 	"github.com/urfave/cli/v2"
 )
 
-// cmdSendPutTxn return the command to finish first stage of putObject
+// cmdSendPutTxn finish first stage of putObject command
 func cmdSendPutTxn() *cli.Command {
 	return &cli.Command{
 		Name:      "put-txn",
@@ -22,7 +22,7 @@ send a createObjMsg to storage provider
 
 Examples:
 # the first phase of putObject: send putObjectMsg to SP, will not upload payload
-$ gnfd put-txn file.txt s3://bucket-name/object-name`,
+$ gnfd put-txn file.txt gnfd://bucket-name/object-name`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:     "public",
@@ -55,7 +55,7 @@ $ gnfd put-txn file.txt s3://bucket-name/object-name`,
 	}
 }
 
-// cmdPutObj return the command to finish second stage of putObject
+// cmdPreCreateObj send the request get approval of uploading
 func cmdPreCreateObj() *cli.Command {
 	return &cli.Command{
 		Name:      "pre-upload",
@@ -67,11 +67,11 @@ func cmdPreCreateObj() *cli.Command {
 
 Examples:
 # the first phase of putObject
-$ gnfd  pre-upload s3://bucketname/object`,
+$ gnfd  pre-upload gnfd://bucketname/object`,
 	}
 }
 
-// cmdPutObj return the command to finish second stage of putObject
+// cmdPutObj return the command to finish uploading payload of the object
 func cmdPutObj() *cli.Command {
 	return &cli.Command{
 		Name:      "put",
@@ -83,7 +83,7 @@ Upload the payload and send with txn to storage provider
 
 Examples:
 # the second phase of putObject: upload file to storage provider
-$ gnfd put --txnhash xx  file.txt s3://bucket-name/file.txt`,
+$ gnfd put --txnhash xx  file.txt gnfd://bucket-name/file.txt`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "txnhash",
@@ -100,6 +100,8 @@ $ gnfd put --txnhash xx  file.txt s3://bucket-name/file.txt`,
 	}
 }
 
+// sendPutTxn send to request of create object chain message,
+// it finishes the first stage of putObject
 func sendPutTxn(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
 		return fmt.Errorf("the args should contain s3-url and filePath")
@@ -130,17 +132,17 @@ func sendPutTxn(ctx *cli.Context) error {
 	}
 	defer f.Close()
 
-	sha256hash, err := inscription.CalcSHA256Hash(f)
+	sha256hash, err := greenfield.CalcSHA256Hash(f)
 	if err != nil {
 		return err
 	}
 
 	size := int64(ctx.Int("object-size"))
 	if size <= 0 {
-		size, _ = inscription.GetContentLength(f)
+		size, _ = greenfield.GetContentLength(f)
 	}
 
-	putObjectMeta := inscription.PutObjectMeta{
+	putObjectMeta := greenfield.PutObjectMeta{
 		PaymentAccount: s3Client.GetAccount(),
 		PrimarySp:      primarySP,
 		IsPublic:       isPublic,
@@ -162,6 +164,7 @@ func sendPutTxn(ctx *cli.Context) error {
 	return nil
 }
 
+// uploadObject upload the payload of file, finish the third stage of putObject
 func uploadObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
 		return fmt.Errorf("the args number should be two")
@@ -182,7 +185,6 @@ func uploadObject(ctx *cli.Context) error {
 	txnhash := ctx.String("txnhash")
 	// read the local file payload to be uploaded
 	filePath := ctx.Args().Get(0)
-	log.Printf("uploading file:%s, objectName:%s \n", filePath, objectName)
 
 	exists, objectSize, err := pathExists(filePath)
 	if !exists {
@@ -206,8 +208,14 @@ func uploadObject(ctx *cli.Context) error {
 		return err
 	}
 
-	res, err := s3Client.PutObjectWithTxn(c, txnhash, objectName, bucketName, contentSha256, fileReader,
-		objectSize, inscription.PutObjectOptions{})
+	meta := greenfield.ObjectMeta{
+		ObjectSize:  objectSize,
+		ContentType: "application/octet-stream",
+		Sha256Hash:  contentSha256,
+		TxnHash:     txnhash,
+	}
+
+	res, err := s3Client.PutObjectWithTxn(c, bucketName, objectName, fileReader, meta)
 
 	if err != nil {
 		fmt.Println("upload payload fail:", err.Error())
@@ -218,6 +226,7 @@ func uploadObject(ctx *cli.Context) error {
 	return nil
 }
 
+// preUploadObject get approval of uploading from sp
 func preUploadObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return fmt.Errorf("the args number should be two")
@@ -269,7 +278,7 @@ func computeFileCheckSum(path string) (string, error) {
 	}
 	defer f.Close()
 
-	return inscription.CalcSHA256Hash(f), nil
+	return greenfield.CalcSHA256Hash(f)
 }
 
 func getObjAndBucketNames(urlInfo string) (string, string, error) {

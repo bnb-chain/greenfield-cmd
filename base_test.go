@@ -3,7 +3,7 @@ package greenfield
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -26,8 +26,7 @@ var (
 )
 
 // setup sets up a test HTTP server along with  Client that is
-// configured to talk to that test server. Tests should register handlers on
-// mux which provide mock responses for the API method being tested.
+// configured to talk to that test server.
 func setup() {
 	// test server
 	mux = http.NewServeMux()
@@ -51,12 +50,14 @@ func startHandle(t *testing.T, r *http.Request) {
 	t.Logf("start handle, Request method: %v, ", r.Method)
 }
 
+// testMethod judge if the method meeting expected
 func testMethod(t *testing.T, r *http.Request, want string) {
 	if got := r.Method; got != want {
 		t.Errorf("Request method: %v, want %v", got, want)
 	}
 }
 
+// testHeader judge if the header meeting expected
 func testHeader(t *testing.T, r *http.Request, header string, want string) {
 	if got := r.Header.Get(header); got != want {
 		t.Errorf("Header.Get(%q) returned %q, want %q", header, got, want)
@@ -67,8 +68,13 @@ func getUrl(r *http.Request) string {
 	return r.URL.String()
 }
 
+// testHeader judge if the body meeting expected
 func testBody(t *testing.T, r *http.Request, want string) {
-	b, err := ioutil.ReadAll(r.Body)
+	if r.Body == nil {
+		t.Errorf("body empty")
+		return
+	}
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		t.Errorf("Error reading request body: %v", err)
 	}
@@ -77,12 +83,12 @@ func testBody(t *testing.T, r *http.Request, want string) {
 	}
 }
 
+// TestNewClient test new client and url function
 func TestNewClient(t *testing.T) {
 	mux_temp := http.NewServeMux()
 	server_temp := httptest.NewServer(mux_temp)
 	privKey, pubKey, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
-	fmt.Println("server url:", server_temp.URL)
 	c, err := NewClient(server_temp.URL[7:], &Options{}, addr, privKey, pubKey)
 	if err != nil {
 		t.Errorf("new client fail %s", err.Error())
@@ -101,6 +107,7 @@ func TestNewClient(t *testing.T) {
 
 }
 
+// TestGetApproval test get approval request to preCreateBucket or preCreateObject
 func TestGetApproval(t *testing.T) {
 	setup()
 	defer shutdown()

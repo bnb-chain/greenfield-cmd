@@ -2,10 +2,9 @@ package greenfield
 
 import (
 	"bytes"
-	"crypto/md5"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	ec "github.com/bnb-chain/greenfield-storage-provider/pkg/redundancy"
 )
@@ -101,52 +101,35 @@ func getEndpointURL(endpoint string, secure bool) (*url.URL, error) {
 // Verify if input endpoint URL is valid.
 func isValidEndpointURL(endpointURL url.URL) error {
 	if endpointURL == emptyURL {
-		return toInvalidArgumentResp("Endpoint url is empty.")
+		return errors.New("Endpoint url is empty.")
 	}
 
 	if endpointURL.Path != "/" && endpointURL.Path != "" {
-		return toInvalidArgumentResp("Endpoint paths invalid")
+		return errors.New("Endpoint paths invalid")
 	}
 
 	host := endpointURL.Hostname()
 	if !CheckIP(host) {
 		msg := endpointURL.Host + " does not meet ip address standards."
-		return toInvalidArgumentResp(msg)
+		return errors.New(msg)
 	}
 
 	if !CheckDomainName(host) {
 		msg := endpointURL.Host + " does not meet domain name standards."
-		return toInvalidArgumentResp(msg)
+		return errors.New(msg)
 	}
 
 	return nil
 }
 
-func calcMD5OfBody(body io.Reader) (b64 string) {
-	if body == nil {
-		return ""
-	}
-	buf, _ := io.ReadAll(body)
-	m := md5.New()
-	m.Write(buf)
-	return base64.StdEncoding.EncodeToString(m.Sum(nil))
-}
-
-func calMD5Digest(msg []byte) []byte {
-	// TODO: chunk compute
-	m := md5.New()
-	m.Write(msg)
-	return m.Sum(nil)
-}
-
+// calcSHA256Hex compute checksum of sha256 hash and encode it to hex
 func calcSHA256Hex(buf []byte) (hexStr string) {
-	h := sha256.New()
-	h.Write(buf)
-	sum := h.Sum(nil)
-	hexStr = hex.EncodeToString(sum[:])
+	sum := calcSHA256(buf)
+	hexStr = hex.EncodeToString(sum)
 	return
 }
 
+// calcSHA256 compute checksum of sha256 from byte array
 func calcSHA256(buf []byte) []byte {
 	h := sha256.New()
 	h.Write(buf)
@@ -154,21 +137,21 @@ func calcSHA256(buf []byte) []byte {
 	return sum[:]
 }
 
-func CalcSHA256Hash(body io.Reader) (string, error) {
-	if body == nil {
+// CalcSHA256Hash compute checksum of sha256 from io.reader and encode it to hex
+func CalcSHA256Hash(reader io.Reader) (string, error) {
+	if reader == nil {
 		return EmptyStringSHA256, nil
 	}
-	buf := make([]byte, 1024)
-	h := sha256.New()
-	if _, err := io.CopyBuffer(h, body, buf); err != nil {
+	hash, err := CalcSHA256HashByte(reader)
+	if err != nil {
 		return "", err
 	}
-	hash := h.Sum(nil)
 	return hex.EncodeToString(hash), nil
 }
 
+// CalcSHA256HashByte compute checksum of sha256 from io.reader
 func CalcSHA256HashByte(body io.Reader) ([]byte, error) {
-	buf := make([]byte, 200)
+	buf := make([]byte, 1024)
 	h := sha256.New()
 	if _, err := io.CopyBuffer(h, body, buf); err != nil {
 		return []byte(""), err
@@ -212,18 +195,6 @@ func closeResponse(resp *http.Response) {
 	}
 }
 
-// getHostInfo returns host header from the request
-func GetHostInfo(req http.Request) string {
-	host := req.Header.Get(HTTPHeaderHost)
-	if host != "" && req.Host != host {
-		return host
-	}
-	if req.Host != "" {
-		return req.Host
-	}
-	return req.URL.Host
-}
-
 // GetContentLength return the size of reader
 func GetContentLength(reader io.Reader) (int64, error) {
 	var contentLength int64
@@ -249,12 +220,13 @@ func GetContentLength(reader io.Reader) (int64, error) {
 }
 
 // SplitAndComputerHash split the reader into segments and compute the hash roots of pieces
-func SplitAndComputerHash(reader io.Reader) ([]string, error) {
+func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error) {
 	var segCheckSumList [][]byte
 	var result []string
 	encodeData := make([][][]byte, EncodeShards)
-	seg := make([]byte, SegmentSize)
+	seg := make([]byte, segmentSize)
 
+	// read the data by segment size
 	for {
 		n, err := reader.Read(seg)
 		if err != nil {
@@ -295,18 +267,28 @@ func SplitAndComputerHash(reader io.Reader) ([]string, error) {
 	result = append(result, segmentRootHash)
 
 	// compute the hash root of pieces of the SecondarySP
+	var wg = &sync.WaitGroup{}
+	spLen := len(encodeData)
+	wg.Add(spLen)
+	hashList := make([]string, spLen)
 	for spId, content := range encodeData {
-		var checkSumList [][]byte
-		for _, pieces := range content {
-			piecesHash := calcSHA256(pieces)
-			checkSumList = append(checkSumList, piecesHash)
-		}
+		go func(data [][]byte, id int) {
+			defer wg.Done()
+			var checkSumList [][]byte
+			for _, pieces := range data {
+				piecesHash := calcSHA256(pieces)
+				checkSumList = append(checkSumList, piecesHash)
+			}
 
-		piecesBytesTotal := bytes.Join(checkSumList, []byte(""))
-		piecetRootHash := calcSHA256Hex(piecesBytesTotal)
-		log.Printf("figure out the hash %s, spId is :%d", piecetRootHash, spId+1)
+			piecesBytesTotal := bytes.Join(checkSumList, []byte(""))
+			piecetRootHash := calcSHA256Hex(piecesBytesTotal)
+			hashList[id] = piecetRootHash
+		}(content, spId)
+	}
+	wg.Wait()
 
-		result = append(result, piecetRootHash)
+	for i := 0; i < spLen; i++ {
+		result = append(result, hashList[i])
 	}
 
 	return result, nil

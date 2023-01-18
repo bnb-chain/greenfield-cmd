@@ -10,7 +10,7 @@ import (
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 )
 
-// Signer defines a type that for signing msg in the way that is same with MsgEthereumTx
+// MsgSigner defines a type that for signing msg in the way that is same with MsgEthereumTx
 type MsgSigner struct {
 	privKey cryptotypes.PrivKey
 }

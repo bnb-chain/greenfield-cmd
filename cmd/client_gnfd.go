@@ -5,18 +5,13 @@ import (
 	"log"
 	"strings"
 
-	inscription "github.com/bnb-chain/greenfield-sdk-go"
+	greenfield "github.com/bnb-chain/greenfield-sdk-go"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/urfave/cli/v2"
 )
 
-// GnfdClient construct
-type GnfdClient struct {
-	args  []string
-	clint inscription.Client
-}
-
-func NewClient(ctx *cli.Context) (*inscription.Client, error) {
+// NewClient returns a new greenfield client
+func NewClient(ctx *cli.Context) (*greenfield.Client, error) {
 	// generate for temp test, it should fetch private key from keystore
 	privKey, pubKey, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
@@ -27,7 +22,7 @@ func NewClient(ctx *cli.Context) (*inscription.Client, error) {
 
 	fmt.Println("parse config endpoint:", endpoint, "xxx", endpoint[7:])
 
-	s3client, err := inscription.NewClient(endpoint[7:], &inscription.Options{}, addr, privKey, pubKey)
+	s3client, err := greenfield.NewClient(endpoint[7:], &greenfield.Options{}, addr, privKey, pubKey)
 	if err != nil {
 		log.Println("create client fail")
 	}
@@ -35,19 +30,19 @@ func NewClient(ctx *cli.Context) (*inscription.Client, error) {
 	return s3client, err
 }
 
+// ParseBucketAndObject parse the bucket-name and object-name from url
 func ParseBucketAndObject(urlPath string) (bucketName, objectName string) {
-	fmt.Println("url path:", urlPath)
-	if strings.Contains(urlPath, "s3://") {
-		urlPath = urlPath[len("s3://"):]
+	if strings.Contains(urlPath, "gnfd://") {
+		urlPath = urlPath[len("gnfd://"):]
 	}
 	splits := strings.SplitN(urlPath, "/", 2)
-	fmt.Println("splits:", splits)
 	return splits[0], splits[1]
 }
 
+// ParseBucket parse the bucket-name from url
 func ParseBucket(urlPath string) (bucketName string) {
-	if strings.Contains(urlPath, "s3://") {
-		urlPath = urlPath[len("s3://"):]
+	if strings.Contains(urlPath, "gnfd://") {
+		urlPath = urlPath[len("gnfd://"):]
 	}
 	splits := strings.SplitN(urlPath, "/", 1)
 

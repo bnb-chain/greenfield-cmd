@@ -2,6 +2,7 @@ package greenfield
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -19,11 +20,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const PutObjectUrlTxn = "uploadtransaction"
+const PutObjectUrlTxn = "putObjectV2"
 
 // PutObjectOptions represents options specified by user for PutObject call
 type PutObjectOptions struct {
-	ContentType string
 	SecondarySp []string
 	PartSize    uint64
 	replicaNum  int
@@ -37,6 +37,14 @@ type PutObjectMeta struct {
 	ObjectSize     int64
 	ContentType    string
 	Sha256Hash     string
+}
+
+// ObjectMeta represents meta which is needed when upload payload
+type ObjectMeta struct {
+	ObjectSize  int64
+	ContentType string
+	Sha256Hash  string
+	TxnHash     string
 }
 
 // UploadResult contains information about the object which has been upload
@@ -73,15 +81,15 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 	}
 
 	if meta.ObjectSize < 0 {
-		return TxnInfo{}, objectSizeInvaild("objectSize should not be less than zero")
+		return TxnInfo{}, errors.New("objectSize should not be less than zero")
 	}
 
 	if meta.ContentType == "" {
-		return TxnInfo{}, fieldEmptyResp("content type empty")
+		return TxnInfo{}, errors.New("content type empty")
 	}
 
 	if meta.Sha256Hash == "" {
-		return TxnInfo{}, fieldEmptyResp("sha256 hash empty")
+		return TxnInfo{}, errors.New("sha256 hash empty")
 	}
 
 	reqMeta := requestMeta{
@@ -92,7 +100,6 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 		contentType:       meta.ContentType,
 	}
 
-	// todo(leo) make sure the createObjectMsg work
 	emptyBytes := make([][]byte, 1)
 	msgBytes, err := c.genPutObjectMsg(bucketName, objectName, meta.ContentType, meta.IsPublic, meta.ObjectSize, emptyBytes)
 	if err != nil {
@@ -114,12 +121,12 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 	// get the transaction hash which is generated after SP has co-signed the txn
 	txnHash := resp.Header.Get(HTTPHeaderTransactionHash)
 	if txnHash == "" {
-		return TxnInfo{}, fmt.Errorf("fail to fetch txn hash info")
+		return TxnInfo{}, errors.New("fail to fetch txn hash info")
 	}
 
 	txnDate := resp.Header.Get(HTTPHeaderTransactionDate)
 	if txnDate == "" {
-		return TxnInfo{}, fmt.Errorf("fail to fetch txn date")
+		return TxnInfo{}, errors.New("fail to fetch txn date")
 	}
 
 	createDate, _ := time.Parse("2006-01-02T15:04:05.000Z", txnDate)
@@ -129,8 +136,8 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 }
 
 // PutObjectWithTxn supports the second stage of uploading the object to bucket.
-func (c *Client) PutObjectWithTxn(ctx context.Context, txnHash, objectName, bucketName, sha256hash string,
-	reader io.Reader, ObjectSize int64, opts PutObjectOptions) (res UploadResult, err error) {
+func (c *Client) PutObjectWithTxn(ctx context.Context, bucketName, objectName string,
+	reader io.Reader, meta ObjectMeta) (res UploadResult, err error) {
 	if err := s3utils.IsValidBucketName(bucketName); err != nil {
 		return UploadResult{}, err
 	}
@@ -138,9 +145,16 @@ func (c *Client) PutObjectWithTxn(ctx context.Context, txnHash, objectName, buck
 		return UploadResult{}, err
 	}
 
-	var typeValue string
-	if opts.ContentType != "" {
-		typeValue = opts.ContentType
+	if meta.ObjectSize < 0 {
+		return UploadResult{}, errors.New("objectSize should not be less than zero")
+	}
+
+	if meta.ContentType == "" {
+		return UploadResult{}, errors.New("content type empty")
+	}
+
+	if meta.Sha256Hash == "" {
+		return UploadResult{}, errors.New("sha256 hash empty")
 	}
 
 	urlVal := make(url.Values)
@@ -150,16 +164,16 @@ func (c *Client) PutObjectWithTxn(ctx context.Context, txnHash, objectName, buck
 		bucketName:        bucketName,
 		objectName:        objectName,
 		urlValues:         urlVal,
-		contentLength:     ObjectSize,
-		contentType:       typeValue,
-		gnfdContentLength: ObjectSize,
-		contentSHA256:     sha256hash,
+		contentLength:     meta.ObjectSize,
+		contentType:       meta.ContentType,
+		gnfdContentLength: meta.ObjectSize,
+		contentSHA256:     meta.Sha256Hash,
 	}
 
 	sendOpt := sendOptions{
 		method:  http.MethodPut,
 		body:    reader,
-		txnHash: txnHash,
+		txnHash: meta.TxnHash,
 	}
 
 	resp, err := c.sendReq(ctx, reqMeta, &sendOpt)
