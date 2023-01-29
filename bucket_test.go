@@ -15,6 +15,8 @@ func TestCreateBucket(t *testing.T) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		startHandle(t, r)
 		testMethod(t, r, "PUT")
+		testHeader(t, r, HTTPHeaderContentSHA256, EmptyStringSHA256)
+		w.WriteHeader(200)
 	})
 
 	err := client.CreateBucket(context.Background(), bucketName, false)

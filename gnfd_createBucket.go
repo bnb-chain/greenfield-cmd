@@ -9,11 +9,9 @@ import (
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // CreateBucket create a new bucket with the createBucketTxn sent to chain
@@ -26,20 +24,12 @@ func (c *Client) CreateBucket(ctx context.Context, bucketName string, isPublic b
 		bucketName:    bucketName,
 		contentSHA256: EmptyStringSHA256,
 	}
-	// generate sp address for temp
-	_, _, spAddr := testdata.KeyEthSecp256k1TestPubAddr()
-	msgBytes, err := c.genCreateBucketMsg(bucketName, isPublic, spAddr)
-	if err != nil {
-		log.Print("generate signed create bucket transaction msg fail", err)
-		return err
-	}
 
 	sendOpt := sendOptions{
 		method: http.MethodPut,
-		txnMsg: common.Bytes2Hex(msgBytes),
 	}
 
-	_, err = c.sendReq(ctx, reqMeta, &sendOpt)
+	_, err := c.sendReq(ctx, reqMeta, &sendOpt)
 	if err != nil {
 		log.Printf("create bucket fail: %s \n", err.Error())
 		return err

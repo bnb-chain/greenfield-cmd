@@ -122,7 +122,6 @@ type sendOptions struct {
 	body             interface{} // request body
 	result           interface{} // unmarshal message of the resp.Body
 	disableCloseBody bool        // indicate whether to disable automatic calls to resp.Body.Close()
-	txnMsg           string      // the transaction message to be sent to chain
 	txnHash          string      // the transaction hash info
 	isAdminApi       bool        // indicate if it is an admin api request
 }
@@ -149,7 +148,7 @@ func (c *Client) GetAgent() string {
 
 // newRequest construct the http request, set url, body and headers
 func (c *Client) newRequest(ctx context.Context,
-	method string, meta requestMeta, body interface{}, txnMsg string, txnHash string, isAdminAPi bool) (req *http.Request, err error) {
+	method string, meta requestMeta, body interface{}, txnHash string, isAdminAPi bool) (req *http.Request, err error) {
 	// construct the target url
 	desURL, err := c.generateURL(meta.bucketName, meta.objectName, meta.urlRelPath, meta.urlValues, isAdminAPi)
 	if err != nil {
@@ -196,10 +195,6 @@ func (c *Client) newRequest(ctx context.Context,
 	// set content length
 	req.ContentLength = meta.contentLength
 
-	// set txn msg header
-	if txnMsg != "" {
-		req.Header.Set(HTTPHeaderTransactionMsg, txnMsg)
-	}
 	// set txn hash header
 	if txnHash != "" {
 		req.Header.Set(HTTPHeaderTransactionHash, txnHash)
@@ -314,7 +309,7 @@ func (c *Client) doAPI(ctx context.Context, req *http.Request, meta requestMeta,
 
 // sendReq new restful request, send the message and handle the response
 func (c *Client) sendReq(ctx context.Context, metadata requestMeta, opt *sendOptions) (res *http.Response, err error) {
-	req, err := c.newRequest(ctx, opt.method, metadata, opt.body, opt.txnMsg, opt.txnHash, opt.isAdminApi)
+	req, err := c.newRequest(ctx, opt.method, metadata, opt.body, opt.txnHash, opt.isAdminApi)
 	if err != nil {
 		log.Printf("new request error: %s , stop send request\n", err.Error())
 		return nil, err
@@ -434,7 +429,7 @@ func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string)
 
 // GetPieceHashRoots return primary pieces Hash and secondary piece Hash
 // The first return value is the primary SP piece hash root, the second is the secondary SP piece hash roots list
-func (c *Client) GetPieceHashRoots(ctx context.Context, reader io.Reader, segSize int64) (string, []string, error) {
+func (c *Client) GetPieceHashRoots(reader io.Reader, segSize int64) (string, []string, error) {
 	pieceHashRoots, err := SplitAndComputerHash(reader, segSize)
 
 	if err != nil {
@@ -442,5 +437,4 @@ func (c *Client) GetPieceHashRoots(ctx context.Context, reader io.Reader, segSiz
 	}
 
 	return pieceHashRoots[0], pieceHashRoots[1:], nil
-
 }

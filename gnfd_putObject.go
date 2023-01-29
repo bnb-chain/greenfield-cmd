@@ -17,7 +17,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const PutObjectUrlTxn = "putObjectV2"
@@ -100,16 +99,9 @@ func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName st
 		contentType:       meta.ContentType,
 	}
 
-	emptyBytes := make([][]byte, 1)
-	msgBytes, err := c.genPutObjectMsg(bucketName, objectName, meta.ContentType, meta.IsPublic, meta.ObjectSize, emptyBytes)
-	if err != nil {
-		return TxnInfo{}, err
-	}
-
 	sendOpt := sendOptions{
 		method:           http.MethodPut,
 		disableCloseBody: true,
-		txnMsg:           common.Bytes2Hex(msgBytes),
 	}
 
 	resp, err := c.sendReq(ctx, reqMeta, &sendOpt)

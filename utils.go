@@ -231,7 +231,7 @@ func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error)
 		n, err := reader.Read(seg)
 		if err != nil {
 			if err != io.EOF {
-				fmt.Println("read error:", err)
+				log.Println("content read error:", err)
 			}
 			break
 		}

@@ -30,7 +30,6 @@ func TestPutObject(t *testing.T) {
 		testHeader(t, r, "Content-Type", contentDefault)
 		testHeader(t, r, "Content-Length", strconv.FormatInt(length, 10))
 		testBody(t, r, "test content of object")
-		w.WriteHeader(404)
 	})
 
 	txnHash := "test hash"

@@ -20,8 +20,9 @@ func NewClient(ctx *cli.Context) (*greenfield.Client, error) {
 		return nil, fmt.Errorf("parse endpoint from config file fail")
 	}
 
-	fmt.Println("parse config endpoint:", endpoint, "xxx", endpoint[7:])
-
+	if len(endpoint) <= 7 {
+		return nil, fmt.Errorf("endpoint length error")
+	}
 	s3client, err := greenfield.NewClient(endpoint[7:], &greenfield.Options{}, addr, privKey, pubKey)
 	if err != nil {
 		log.Println("create client fail")
