@@ -1,24 +1,30 @@
 # greenfield-sdk-go
 
-## cmd usage
+Greenfield Go SDK, support api and cmd to make request to GreenField-StorageProvider and GreenField-BlockChain
+
+## Install 
+
+go get -u github.com/bnb-chain/greenfield-sdk-go
+
+## Cmd usage
 
 ```
 // build:
-cd cmd; go build -o bfs main.go cmd_mb.go client_gnfd.go   cmd_upload.go  cmd_download.go 
+cd cmd; go build -o gnfd main.go cmd_mb.go client_gnfd.go   cmd_upload.go  cmd_download.go 
  
 // make bucket:
-(1) gnfd pre-mb s3://bucketname
+(1) gnfd pre-mb gnfd://bucketname
 (2) send txn to chain use comsos client
-(3) gnfd mb s3://bucketname  
+(3) gnfd mb gnfd://bucketname  
     
 // putObject:
  
-(1) gnfd pre-upload s3://bucketname/objectname
+(1) gnfd pre-upload gnfd://bucketname/objectname
 (2) send txn to chain use comsos client
-(3) gnfd put --txnhash xxx  test.txt  s3://bucketname/objectname
+(3) gnfd put --txnhash xxx  test.txt  gnfd://bucketname/objectname
 
 
 // download:
-gnfd  get s3://bucketname/objectname  test.txt  
+gnfd  get gnfd://bucketname/objectname  test.txt  
 
 ```
