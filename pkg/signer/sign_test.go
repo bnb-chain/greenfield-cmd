@@ -66,8 +66,8 @@ func TestMsgSign(t *testing.T) {
 	}
 
 	// get stringTosign
-	signStrIndex := strings.Index(authHeader, "StringToSign=")
-	index := len("StringToSign=") + signStrIndex
+	signStrIndex := strings.Index(authHeader, " SignedRequest=")
+	index := len(" SignedRequest=") + signStrIndex
 
 	// get Siganture
 	signatureIndex := strings.Index(authHeader, "Signature=")

@@ -39,7 +39,8 @@ const (
 	HTTPHeaderContentSHA256    = "X-Gnfd-Content-Sha256"
 
 	// EmptyStringSHA256 is the hex encoded sha256 value of an empty string
-	EmptyStringSHA256 = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+	EmptyStringSHA256       = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+	iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 
 	AdminURLPrefix  = "/greenfield/admin"
 	AdminURLVersion = "/v1"
@@ -122,15 +123,15 @@ func isValidEndpointURL(endpointURL url.URL) error {
 	return nil
 }
 
-// calcSHA256Hex compute checksum of sha256 hash and encode it to hex
-func calcSHA256Hex(buf []byte) (hexStr string) {
-	sum := calcSHA256(buf)
+// CalcSHA256Hex compute checksum of sha256 hash and encode it to hex
+func CalcSHA256Hex(buf []byte) (hexStr string) {
+	sum := CalcSHA256(buf)
 	hexStr = hex.EncodeToString(sum)
 	return
 }
 
-// calcSHA256 compute checksum of sha256 from byte array
-func calcSHA256(buf []byte) []byte {
+// CalcSHA256 compute checksum of sha256 from byte array
+func CalcSHA256(buf []byte) []byte {
 	h := sha256.New()
 	h.Write(buf)
 	sum := h.Sum(nil)
@@ -221,7 +222,7 @@ func GetContentLength(reader io.Reader) (int64, error) {
 
 // SplitAndComputerHash split the reader into segments and compute the hash roots of pieces
 func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error) {
-	var segCheckSumList [][]byte
+	var segChecksumList [][]byte
 	var result []string
 	encodeData := make([][][]byte, EncodeShards)
 	seg := make([]byte, segmentSize)
@@ -232,6 +233,7 @@ func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error)
 		if err != nil {
 			if err != io.EOF {
 				log.Println("content read error:", err)
+				return nil, err
 			}
 			break
 		}
@@ -240,11 +242,11 @@ func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error)
 		segmentReader := bytes.NewReader(seg[:n])
 		if segmentReader != nil {
 			checksum, err := CalcSHA256HashByte(segmentReader)
-			segCheckSumList = append(segCheckSumList, checksum)
 			if err != nil {
 				log.Println("compute checksum err:", err)
 				return nil, err
 			}
+			segChecksumList = append(segChecksumList, checksum)
 		}
 
 		// get erasure encode bytes
@@ -262,8 +264,8 @@ func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error)
 	}
 
 	// combine the hash root of pieces of the PrimarySP
-	segBytesTotal := bytes.Join(segCheckSumList, []byte(""))
-	segmentRootHash := calcSHA256Hex(segBytesTotal)
+	segBytesTotal := bytes.Join(segChecksumList, []byte(""))
+	segmentRootHash := CalcSHA256Hex(segBytesTotal)
 	result = append(result, segmentRootHash)
 
 	// compute the hash root of pieces of the SecondarySP
@@ -271,19 +273,18 @@ func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error)
 	spLen := len(encodeData)
 	wg.Add(spLen)
 	hashList := make([]string, spLen)
-	for spId, content := range encodeData {
+	for spID, content := range encodeData {
 		go func(data [][]byte, id int) {
 			defer wg.Done()
-			var checkSumList [][]byte
+			var checksumList [][]byte
 			for _, pieces := range data {
-				piecesHash := calcSHA256(pieces)
-				checkSumList = append(checkSumList, piecesHash)
+				piecesHash := CalcSHA256(pieces)
+				checksumList = append(checksumList, piecesHash)
 			}
 
-			piecesBytesTotal := bytes.Join(checkSumList, []byte(""))
-			piecetRootHash := calcSHA256Hex(piecesBytesTotal)
-			hashList[id] = piecetRootHash
-		}(content, spId)
+			piecesBytesTotal := bytes.Join(checksumList, []byte(""))
+			hashList[id] = CalcSHA256Hex(piecesBytesTotal)
+		}(content, spID)
 	}
 	wg.Wait()
 

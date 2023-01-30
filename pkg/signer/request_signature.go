@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	HTTPHeaderAuthorization   = "Authorization"
-	signAlgorithm             = "ECDSA-secp256k1"
-	HTTPHeaderTransactionDate = "X-Gnfd-Txn-Date"
+	HTTPHeaderAuthorization = "Authorization"
+	signAlgorithm           = "ECDSA-secp256k1"
+	HTTPHeaderDate          = "X-Gnfd-Date"
 )
 
 // getCanonicalHeaders generate a list of request headers with their values
@@ -25,7 +25,7 @@ func getCanonicalHeaders(req http.Request) string {
 	var content bytes.Buffer
 	var containHostHeader bool
 	for header, value := range req.Header {
-		if header == "Authorization" || header == HTTPHeaderTransactionDate {
+		if header == HTTPHeaderAuthorization {
 			continue
 		}
 		content.WriteString(strings.ToLower(header))
@@ -60,7 +60,7 @@ func getSignedHeaders(req http.Request) string {
 	var signHeaders []string
 	for k := range req.Header {
 		headerKey := http.CanonicalHeaderKey(k)
-		if headerKey != "Authorization" && headerKey != "User-Agent" {
+		if headerKey != HTTPHeaderAuthorization && headerKey != "User-Agent" {
 			signHeaders = append(signHeaders, strings.ToLower(k))
 		}
 	}
@@ -85,9 +85,8 @@ func getCanonicalRequest(req http.Request) string {
 
 // GetStringToSign generate the string from canonicalRequest to sign
 func GetStringToSign(req http.Request) string {
-	time := req.Header.Get(HTTPHeaderTransactionDate)
-	canonicalRequest := getCanonicalRequest(req)
-	stringToSign := time + hex.EncodeToString(calcSHA256([]byte(canonicalRequest)))
+	stringToSign := signAlgorithm + "\n" + req.Header.Get(HTTPHeaderDate) + "\n"
+	stringToSign += hex.EncodeToString(calcSHA256([]byte(getCanonicalRequest(req))))
 
 	return stringToSign
 }
@@ -104,7 +103,7 @@ func SignRequest(req http.Request, addr sdk.AccAddress, privKey cryptotypes.Priv
 	}
 
 	authStr := []string{
-		signAlgorithm + "StringToSign=" + stringToSign,
+		signAlgorithm + " SignedRequest=" + stringToSign,
 		"Signature=" + hex.EncodeToString(signature),
 	}
 
@@ -121,10 +120,10 @@ func calcSHA256(msg []byte) (sum []byte) {
 	return
 }
 
-// getHostInfo returns host header from the request
+// GetHostInfo returns host header from the request
 func GetHostInfo(req http.Request) string {
 	host := req.Header.Get("host")
-	if host != "" && req.Host != host {
+	if host != "" {
 		return host
 	}
 	if req.Host != "" {

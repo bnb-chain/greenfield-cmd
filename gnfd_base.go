@@ -24,6 +24,8 @@ import (
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 )
 
+const GnfdHostName = "gnfd.nodereal.com"
+
 // Client is a client manages communication with the inscription API.
 type Client struct {
 	endpoint  *url.URL // Parsed endpoint url provided by the user.
@@ -173,7 +175,7 @@ func (c *Client) newRequest(ctx context.Context,
 			}
 			contentType = contentTypeXML
 			reader = bytes.NewReader(content)
-			sha256Hex = calcSHA256Hex(content)
+			sha256Hex = CalcSHA256Hex(content)
 		}
 	}
 
@@ -231,11 +233,19 @@ func (c *Client) newRequest(ctx context.Context,
 	// TODO(leo) parse host when sp domain supported
 	// set Host from url or client
 	if meta.bucketName != "" {
-		req.Host = meta.bucketName + ".gnfd.nodereal.com"
+		if c.host != "" {
+			req.Host = meta.bucketName + "." + c.host
+		} else {
+			req.Host = meta.bucketName + "." + GnfdHostName
+		}
 	}
 
 	if isAdminAPi {
-		req.Host = "gnfd.nodereal.com"
+		if c.host != "" {
+			req.Host = c.host
+		} else {
+			req.Host = GnfdHostName
+		}
 		if meta.bucketName != "" {
 			if meta.objectName == "" {
 				req.Header.Set(HTTPHeaderResource, meta.bucketName)
@@ -247,7 +257,7 @@ func (c *Client) newRequest(ctx context.Context,
 
 	// set date header
 	stNow := time.Now().UTC()
-	req.Header.Set(HTTPHeaderDate, stNow.Format(http.TimeFormat))
+	req.Header.Set(HTTPHeaderDate, stNow.Format(iso8601DateFormatSecond))
 
 	// set user-agent
 	req.Header.Set(HTTPHeaderUserAgent, c.userAgent)
