@@ -25,7 +25,7 @@ func getCanonicalHeaders(req http.Request) string {
 	var content bytes.Buffer
 	var containHostHeader bool
 	for header, value := range req.Header {
-		if header == HTTPHeaderAuthorization {
+		if header == HTTPHeaderAuthorization || header == "User-Agent" {
 			continue
 		}
 		content.WriteString(strings.ToLower(header))
