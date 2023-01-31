@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/bnb-chain/bfs/x/storage/types"
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
+	"github.com/bnb-chain/greenfield/x/storage/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
