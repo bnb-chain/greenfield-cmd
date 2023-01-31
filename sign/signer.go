@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/bnb-chain/bfs/app/params"
+	"github.com/bnb-chain/greenfield/app/params"
 	client "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/codec"
