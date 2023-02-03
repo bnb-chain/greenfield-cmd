@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -111,11 +110,10 @@ type requestMeta struct {
 	Range         string
 	ApproveAction string
 
-	contentType       string
-	contentLength     int64
-	gnfdContentLength int64
-	contentMD5Base64  string // base64 encoded md5sum
-	contentSHA256     string // hex encoded sha256sum
+	contentType      string
+	contentLength    int64
+	contentMD5Base64 string // base64 encoded md5sum
+	contentSHA256    string // hex encoded sha256sum
 }
 
 // sendOptions -  options to use to send the http message
@@ -212,11 +210,6 @@ func (c *Client) newRequest(ctx context.Context,
 	// set md5 header
 	if meta.contentMD5Base64 != "" {
 		req.Header[HTTPHeaderContentMD5] = []string{meta.contentMD5Base64}
-	}
-
-	// set first stage upload x-gnfd-content-length header
-	if meta.gnfdContentLength > 0 {
-		req.Header.Set(HTTPHeadeGnfdContentLength, strconv.FormatInt(meta.gnfdContentLength, 10))
 	}
 
 	// set sha256 header

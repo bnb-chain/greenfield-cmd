@@ -22,21 +22,18 @@ import (
 var emptyURL = url.URL{}
 
 const (
-	HTTPHeaderContentLength    = "Content-Length"
-	HTTPHeaderContentMD5       = "Content-MD5"
-	HTTPHeaderContentType      = "Content-Type"
-	HTTPHeadeGnfdContentLength = "X-Gnfd-Content-Length"
-	HTTPHeaderTransactionMsg   = "X-Gnfd-Txn-Msg"
-	HTTPHeaderTransactionHash  = "X-Gnfd-Txn-Hash"
-	HTTPHeaderTransactionDate  = "X-Gnfd-Txn-Date"
-	HTTPHeaderResource         = "X-Gnfd-Resource"
-	HTTPHeaderPreSignature     = "X-Gnfd-Pre-Signature"
-	HTTPHeaderDate             = "X-Gnfd-Date"
-	HTTPHeaderEtag             = "ETag"
-	HTTPHeaderHost             = "Host"
-	HTTPHeaderRange            = "Range"
-	HTTPHeaderUserAgent        = "User-Agent"
-	HTTPHeaderContentSHA256    = "X-Gnfd-Content-Sha256"
+	HTTPHeaderContentLength   = "Content-Length"
+	HTTPHeaderContentMD5      = "Content-MD5"
+	HTTPHeaderContentType     = "Content-Type"
+	HTTPHeaderTransactionHash = "X-Gnfd-Txn-Hash"
+	HTTPHeaderTransactionDate = "X-Gnfd-Txn-Date"
+	HTTPHeaderResource        = "X-Gnfd-Resource"
+	HTTPHeaderPreSignature    = "X-Gnfd-Pre-Signature"
+	HTTPHeaderDate            = "X-Gnfd-Date"
+	HTTPHeaderEtag            = "ETag"
+	HTTPHeaderRange           = "Range"
+	HTTPHeaderUserAgent       = "User-Agent"
+	HTTPHeaderContentSHA256   = "X-Gnfd-Content-Sha256"
 
 	// EmptyStringSHA256 is the hex encoded sha256 value of an empty string
 	EmptyStringSHA256       = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
@@ -220,47 +217,50 @@ func GetContentLength(reader io.Reader) (int64, error) {
 	return contentLength, err
 }
 
-// SplitAndComputerHash split the reader into segments and compute the hash roots of pieces
-func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error) {
+// SplitAndComputerHash split the reader into segment, ec encode the data, compute the hash roots of pieces,
+// and return the hash result array list and data size
+func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, int64, error) {
 	var segChecksumList [][]byte
 	var result []string
 	encodeData := make([][][]byte, EncodeShards)
 	seg := make([]byte, segmentSize)
 
+	contentLen := int64(0)
 	// read the data by segment size
 	for {
 		n, err := reader.Read(seg)
 		if err != nil {
 			if err != io.EOF {
 				log.Println("content read error:", err)
-				return nil, err
+				return nil, 0, err
 			}
 			break
 		}
-
-		// compute segment hash
-		segmentReader := bytes.NewReader(seg[:n])
-		if segmentReader != nil {
-			checksum, err := CalcSHA256HashByte(segmentReader)
-			if err != nil {
-				log.Println("compute checksum err:", err)
-				return nil, err
+		if n > 0 {
+			contentLen += int64(n)
+			// compute segment hash
+			segmentReader := bytes.NewReader(seg[:n])
+			if segmentReader != nil {
+				checksum, err := CalcSHA256HashByte(segmentReader)
+				if err != nil {
+					log.Println("compute checksum err:", err)
+					return nil, 0, err
+				}
+				segChecksumList = append(segChecksumList, checksum)
 			}
-			segChecksumList = append(segChecksumList, checksum)
+
+			// get erasure encode bytes
+			encodeShards, err := ec.EncodeRawSegment(seg[:n])
+
+			if err != nil {
+				log.Println("erasure encode err:", err)
+				return nil, 0, err
+			}
+
+			for index, shard := range encodeShards {
+				encodeData[index] = append(encodeData[index], shard)
+			}
 		}
-
-		// get erasure encode bytes
-		encodeShards, err := ec.EncodeRawSegment(seg[:n])
-
-		if err != nil {
-			log.Println("erasure encode err:", err)
-			return nil, err
-		}
-
-		for index, shard := range encodeShards {
-			encodeData[index] = append(encodeData[index], shard)
-		}
-
 	}
 
 	// combine the hash root of pieces of the PrimarySP
@@ -292,5 +292,5 @@ func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, error)
 		result = append(result, hashList[i])
 	}
 
-	return result, nil
+	return result, contentLen, nil
 }

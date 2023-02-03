@@ -203,19 +203,13 @@ func uploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	contentSha256, err := computeFileCheckSum(filePath)
-	if err != nil {
-		return err
-	}
-
 	meta := greenfield.ObjectMeta{
 		ObjectSize:  objectSize,
 		ContentType: "application/octet-stream",
-		Sha256Hash:  contentSha256,
 		TxnHash:     txnhash,
 	}
 
-	res, err := s3Client.PutObjectWithTxn(c, bucketName, objectName, fileReader, meta)
+	res, err := s3Client.PutObject(c, bucketName, objectName, fileReader, meta)
 
 	if err != nil {
 		fmt.Println("upload payload fail:", err.Error())
@@ -269,16 +263,6 @@ func pathExists(path string) (bool, int64, error) {
 	}
 
 	return false, 0, err
-}
-
-func computeFileCheckSum(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	return greenfield.CalcSHA256Hash(f)
 }
 
 func getObjAndBucketNames(urlInfo string) (string, string, error) {
