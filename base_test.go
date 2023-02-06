@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/stretchr/testify/require"
 )
@@ -32,11 +33,11 @@ func setup() {
 	mux = http.NewServeMux()
 	server = httptest.NewServer(mux)
 
-	privKey, pubKey, addr := testdata.KeyEthSecp256k1TestPubAddr()
+	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
 	var err error
 	fmt.Println("server url:", server.URL)
-	client, err = NewClient(server.URL[len("http://"):], &Options{}, addr, privKey, pubKey)
+	client, err = NewClient(server.URL[len("http://"):], &Options{}, addr, privKey)
 	if err != nil {
 		log.Fatal("create client  fail")
 	}
@@ -87,9 +88,9 @@ func testBody(t *testing.T, r *http.Request, want string) {
 func TestNewClient(t *testing.T) {
 	mux_temp := http.NewServeMux()
 	server_temp := httptest.NewServer(mux_temp)
-	privKey, pubKey, addr := testdata.KeyEthSecp256k1TestPubAddr()
+	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
-	c, err := NewClient(server_temp.URL[7:], &Options{}, addr, privKey, pubKey)
+	c, err := NewClient(server_temp.URL[7:], &Options{}, addr, privKey)
 	if err != nil {
 		t.Errorf("new client fail %s", err.Error())
 	}
@@ -129,8 +130,12 @@ func TestGetApproval(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
+	authInfo := signer.AuthInfo{
+		SignType:        authV1,
+		MetaMaskSignStr: "",
+	}
 	// test preCreateBucket
-	gotSign, _, err := client.GetApproval(context.Background(), bucketName, "")
+	gotSign, err := client.GetApproval(context.Background(), bucketName, "", authInfo)
 	require.NoError(t, err)
 
 	if gotSign != signature {
@@ -138,7 +143,7 @@ func TestGetApproval(t *testing.T) {
 	}
 
 	//test preCreateObject
-	gotSign, _, err = client.GetApproval(context.Background(), bucketName, ObjectName)
+	gotSign, err = client.GetApproval(context.Background(), bucketName, ObjectName, authInfo)
 
 	require.NoError(t, err)
 

@@ -7,36 +7,22 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
-	"github.com/bnb-chain/greenfield/x/storage/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 )
 
-// PutObjectOptions represents options specified by user for PutObject call
-type PutObjectOptions struct {
-	SecondarySp []string
-	PartSize    uint64
-	replicaNum  int
-}
-
-// PutObjectOptions represents meta which is used to construct PutObjectMsg
+// PutObjectMeta  represents meta which is used to construct PutObjectMsg
 type PutObjectMeta struct {
 	PaymentAccount sdk.AccAddress
 	PrimarySp      string
 	IsPublic       bool
 	ObjectSize     int64
 	ContentType    string
-	Sha256Hash     string
 }
 
-// ObjectOption represents meta which may needed when upload payload
-type ObjectOption struct {
+// PutObjectOptions represents meta which may needed when upload payload
+type PutObjectOptions struct {
 	ObjectSize  int64
 	ContentType string
 }
@@ -48,90 +34,35 @@ type UploadResult struct {
 	ETag       string // Hex encoded unique entity tag of the object.
 }
 
-// TxnInfo indicates the detail of sent txn info
-type TxnInfo struct {
-	txnHash       []byte
-	createTxnDate time.Time
-}
-
-func (t *TxnInfo) String() string {
-	return fmt.Sprintf("send txn hash: %s, create time %s", t.txnHash, t.createTxnDate.String())
-}
-
 func (t *UploadResult) String() string {
 	return fmt.Sprintf("upload finish, bucket name  %s, objectname %s, etag %s", t.BucketName, t.ObjectName, t.ETag)
 }
 
-// SendPutObjectTxn supports the first stage of uploading the object to bucket
-// The payload of object will not be uploaded at the first stage
-// The content-type, object size and sha256hash should be set in the meta
-func (c *Client) SendPutObjectTxn(ctx context.Context, bucketName, objectName string,
-	meta PutObjectMeta) (TxnInfo, error) {
-	if err := s3utils.IsValidBucketName(bucketName); err != nil {
-		return TxnInfo{}, err
-	}
-	if err := s3utils.IsValidObjectName(objectName); err != nil {
-		return TxnInfo{}, err
-	}
-
-	if meta.ObjectSize < 0 {
-		return TxnInfo{}, errors.New("objectSize should not be less than zero")
-	}
-
-	if meta.ContentType == "" {
-		return TxnInfo{}, errors.New("content type empty")
-	}
-
-	if meta.Sha256Hash == "" {
-		return TxnInfo{}, errors.New("sha256 hash empty")
-	}
-
-	reqMeta := requestMeta{
-		bucketName:        bucketName,
-		objectName:        objectName,
-		gnfdContentLength: meta.ObjectSize,
-		contentSHA256:     meta.Sha256Hash,
-		contentType:       meta.ContentType,
-	}
-
-	sendOpt := sendOptions{
-		method:           http.MethodPut,
-		disableCloseBody: true,
-	}
-
-	resp, err := c.sendReq(ctx, reqMeta, &sendOpt)
+// PrePutObject get approval of creating object and send txn to greenfield chain
+func (c *Client) PrePutObject(ctx context.Context, bucketName, objectName string,
+	meta PutObjectMeta, reader io.Reader, authInfo signer.AuthInfo) (string, error) {
+	// get approval of creating bucket from sp
+	signature, err := c.GetApproval(ctx, bucketName, objectName, authInfo)
 	if err != nil {
-		log.Printf("send putObjectMsg fail: %s \n", err.Error())
-		return TxnInfo{}, err
+		return "", err
+	}
+	log.Println("get approve from sp finish,signature is: ", signature)
+
+	// get hash and objectSize from reader
+	_, _, err = SplitAndComputerHash(reader, SegmentSize, EncodeShards)
+	if err != nil {
+		return "", err
 	}
 
-	// get the transaction hash which is generated after SP has co-signed the txn
-	txnHash := resp.Header.Get(HTTPHeaderTransactionHash)
-	if txnHash == "" {
-		return TxnInfo{}, errors.New("fail to fetch txn hash info")
-	}
+	// TODO(leo) call chain sdk to send a createObject txn to greenfield
+	// return txnHash
 
-	txnDate := resp.Header.Get(HTTPHeaderTransactionDate)
-	if txnDate == "" {
-		return TxnInfo{}, errors.New("fail to fetch txn date")
-	}
-
-	createDate, _ := time.Parse("2006-01-02T15:04:05.000Z", txnDate)
-
-	return TxnInfo{txnHash: []byte(txnHash),
-		createTxnDate: createDate}, nil
+	return "", err
 }
 
 // PutObject supports the second stage of uploading the object to bucket.
 func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
-	reader io.Reader, txnHash string, option ObjectOption) (res UploadResult, err error) {
-	if err := s3utils.IsValidBucketName(bucketName); err != nil {
-		return UploadResult{}, err
-	}
-	if err := s3utils.IsValidObjectName(objectName); err != nil {
-		return UploadResult{}, err
-	}
-
+	reader io.Reader, txnHash string, option PutObjectOptions, authInfo signer.AuthInfo) (res UploadResult, err error) {
 	if txnHash == "" {
 		return UploadResult{}, errors.New("txn hash empty")
 	}
@@ -156,7 +87,7 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
 		txnHash: txnHash,
 	}
 
-	resp, err := c.sendReq(ctx, reqMeta, &sendOpt)
+	resp, err := c.sendReq(ctx, reqMeta, &sendOpt, authInfo)
 	if err != nil {
 		log.Printf("the second stage of uploading the object failed: %s \n", err.Error())
 		return UploadResult{}, err
@@ -169,37 +100,4 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
 		ObjectName: objectName,
 		ETag:       etagValue,
 	}, nil
-}
-
-// genPutObjectMsg construct the createObjectMsg  and sign the msg
-func (c *Client) genPutObjectMsg(bucketName, objectName, contentType string, isPublic bool, ObjectSize int64, hashInfo [][]byte) ([]byte, error) {
-	createObjectMsg := types.NewMsgCreateObject(
-		c.GetAccount(),
-		bucketName,
-		objectName,
-		uint64(ObjectSize),
-		isPublic,
-		hashInfo,
-		contentType,
-		[]byte(""),
-		[]sdk.AccAddress{nil},
-	)
-
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
-	interfaceRegistry.RegisterImplementations((*sdk.Msg)(nil), &types.MsgCreateObject{})
-	marshaler := codec.NewProtoCodec(interfaceRegistry)
-
-	txConfig := authtx.NewTxConfig(marshaler,
-		[]signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_EIP_712})
-	txBuilder := txConfig.NewTxBuilder()
-	txBuilder.SetMsgs(createObjectMsg)
-
-	// sign the createObjectMsg
-	msgBytes, err := c.signer.GetTxnSignBytes(txBuilder)
-	if err != nil {
-		log.Print("sign put object transaction msg fail", err)
-		return []byte(""), err
-	}
-
-	return msgBytes, err
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,14 +35,8 @@ func TestPutObject(t *testing.T) {
 	txnHash := "test hash"
 	newReader := bytes.NewReader([]byte("test content of object"))
 
-	meta := ObjectMeta{
-		ObjectSize:  int64(length),
-		ContentType: "application/octet-stream",
-		TxnHash:     txnHash,
-	}
-
 	_, err = client.PutObject(context.Background(), bucketName,
-		ObjectName, newReader, meta)
+		ObjectName, newReader, txnHash, PutObjectOptions{}, signer.NewAuthInfo(false, ""))
 	require.NoError(t, err)
 }
 
@@ -64,7 +59,7 @@ func TestGetObject(t *testing.T) {
 		w.Write([]byte(bodyContent))
 	})
 
-	body, info, err := client.GetObject(context.Background(), bucketName, ObjectName, GetObjectOptions{})
+	body, info, err := client.GetObject(context.Background(), bucketName, ObjectName, GetObjectOptions{}, signer.NewAuthInfo(false, ""))
 	require.NoError(t, err)
 
 	buf := new(strings.Builder)

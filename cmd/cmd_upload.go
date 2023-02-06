@@ -7,6 +7,7 @@ import (
 	"os"
 
 	greenfield "github.com/bnb-chain/greenfield-sdk-go"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 	"github.com/urfave/cli/v2"
 )
 
@@ -40,16 +41,6 @@ $ gnfd put-txn file.txt gnfd://bucket-name/object-name`,
 				Value:    "application/xml",
 				Usage:    "indicate object content-type",
 				Required: true,
-			},
-			&cli.StringFlag{
-				Name:  "content-hash",
-				Value: "",
-				Usage: "indicate object sha256 hex hash",
-			},
-			&cli.IntFlag{
-				Name:  "object-size",
-				Value: 10,
-				Usage: "the object payload size",
 			},
 		},
 	}
@@ -102,6 +93,7 @@ $ gnfd put --txnhash xx  file.txt gnfd://bucket-name/file.txt`,
 
 // sendPutTxn send to request of create object chain message,
 // it finishes the first stage of putObject
+// TODO(leo) conbine it with PreObject
 func sendPutTxn(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
 		return fmt.Errorf("the args should contain s3-url and filePath")
@@ -132,11 +124,6 @@ func sendPutTxn(ctx *cli.Context) error {
 	}
 	defer f.Close()
 
-	sha256hash, err := greenfield.CalcSHA256Hash(f)
-	if err != nil {
-		return err
-	}
-
 	size := int64(ctx.Int("object-size"))
 	if size <= 0 {
 		size, _ = greenfield.GetContentLength(f)
@@ -147,20 +134,21 @@ func sendPutTxn(ctx *cli.Context) error {
 		PrimarySp:      primarySP,
 		IsPublic:       isPublic,
 		ObjectSize:     size,
-		Sha256Hash:     sha256hash,
 		ContentType:    contentType,
 	}
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	txnInfo, err := s3Client.SendPutObjectTxn(c, bucketName, objectName, putObjectMeta)
+	txnHash, err := s3Client.PrePutObject(c, bucketName, objectName, putObjectMeta, f,
+		signer.NewAuthInfo(false, ""))
+
 	if err != nil {
 		fmt.Println("send putObject txn fail", err)
 		return err
 	}
 
-	fmt.Println("send putObject txn msg succ, got txn hash:", txnInfo.String())
+	fmt.Println("send putObject txn msg succ, got txn hash:", txnHash)
 	return nil
 }
 
@@ -203,13 +191,12 @@ func uploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	meta := greenfield.ObjectMeta{
+	meta := greenfield.PutObjectOptions{
 		ObjectSize:  objectSize,
 		ContentType: "application/octet-stream",
-		TxnHash:     txnhash,
 	}
 
-	res, err := s3Client.PutObject(c, bucketName, objectName, fileReader, meta)
+	res, err := s3Client.PutObject(c, bucketName, objectName, fileReader, txnhash, meta, signer.NewAuthInfo(false, ""))
 
 	if err != nil {
 		fmt.Println("upload payload fail:", err.Error())
@@ -240,7 +227,7 @@ func preUploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	signature, _, err := s3Client.GetApproval(c, bucketName, objectName)
+	signature, err := s3Client.GetApproval(c, bucketName, objectName, signer.NewAuthInfo(false, ""))
 	if err != nil {
 		return err
 	}

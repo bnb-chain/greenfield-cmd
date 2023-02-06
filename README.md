@@ -15,7 +15,6 @@ cd cmd; go build -o gnfd main.go cmd_mb.go client_gnfd.go   cmd_upload.go  cmd_d
 // make bucket:
 (1) gnfd pre-mb gnfd://bucketname
 (2) send txn to chain use comsos client
-(3) gnfd mb gnfd://bucketname  
     
 // putObject:
  

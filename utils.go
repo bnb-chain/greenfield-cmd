@@ -26,7 +26,6 @@ const (
 	HTTPHeaderContentMD5      = "Content-MD5"
 	HTTPHeaderContentType     = "Content-Type"
 	HTTPHeaderTransactionHash = "X-Gnfd-Txn-Hash"
-	HTTPHeaderTransactionDate = "X-Gnfd-Txn-Date"
 	HTTPHeaderResource        = "X-Gnfd-Resource"
 	HTTPHeaderPreSignature    = "X-Gnfd-Pre-Signature"
 	HTTPHeaderDate            = "X-Gnfd-Date"
@@ -135,20 +134,11 @@ func CalcSHA256(buf []byte) []byte {
 	return sum[:]
 }
 
-// CalcSHA256Hash compute checksum of sha256 from io.reader and encode it to hex
-func CalcSHA256Hash(reader io.Reader) (string, error) {
-	if reader == nil {
-		return EmptyStringSHA256, nil
-	}
-	hash, err := CalcSHA256HashByte(reader)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hash), nil
-}
-
 // CalcSHA256HashByte compute checksum of sha256 from io.reader
 func CalcSHA256HashByte(body io.Reader) ([]byte, error) {
+	if body == nil {
+		return []byte(""), errors.New("body empty")
+	}
 	buf := make([]byte, 1024)
 	h := sha256.New()
 	if _, err := io.CopyBuffer(h, body, buf); err != nil {
@@ -219,10 +209,10 @@ func GetContentLength(reader io.Reader) (int64, error) {
 
 // SplitAndComputerHash split the reader into segment, ec encode the data, compute the hash roots of pieces,
 // and return the hash result array list and data size
-func SplitAndComputerHash(reader io.Reader, segmentSize int64) ([]string, int64, error) {
+func SplitAndComputerHash(reader io.Reader, segmentSize int64, ecShards int) ([]string, int64, error) {
 	var segChecksumList [][]byte
 	var result []string
-	encodeData := make([][][]byte, EncodeShards)
+	encodeData := make([][][]byte, ecShards)
 	seg := make([]byte, segmentSize)
 
 	contentLen := int64(0)

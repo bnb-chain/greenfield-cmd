@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	cosmossdk.io/math v1.0.0-beta.3
-	github.com/bnb-chain/greenfield v0.0.0-20230131094834-93055527047f
-	github.com/bnb-chain/greenfield-storage-provider v0.0.0-20230116015759-7e1a1ed31db1
+	github.com/bnb-chain/greenfield v0.0.4
+	github.com/bnb-chain/greenfield-storage-provider v0.0.0-20230117020920-fdf0f0129cda
 	github.com/cosmos/cosmos-sdk v0.46.4
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/evmos/ethermint v0.6.1-0.20220919141022-34226aa7b1fa

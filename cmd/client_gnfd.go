@@ -13,7 +13,7 @@ import (
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (*greenfield.Client, error) {
 	// generate for temp test, it should fetch private key from keystore
-	privKey, pubKey, addr := testdata.KeyEthSecp256k1TestPubAddr()
+	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
 	endpoint := ctx.String("endpoint")
 	if endpoint == "" {
@@ -23,7 +23,7 @@ func NewClient(ctx *cli.Context) (*greenfield.Client, error) {
 	if len(endpoint) <= 7 {
 		return nil, fmt.Errorf("endpoint length error")
 	}
-	s3client, err := greenfield.NewClient(endpoint[7:], &greenfield.Options{}, addr, privKey, pubKey)
+	s3client, err := greenfield.NewClient(endpoint[7:], &greenfield.Options{}, addr, privKey)
 	if err != nil {
 		log.Println("create client fail")
 	}

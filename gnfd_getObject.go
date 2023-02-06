@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 )
 
 // ObjectInfo contain the meta of downloaded objects
@@ -30,7 +31,7 @@ type GetObjectOptions struct {
 }
 
 // GetObject download s3 object payload and return the related object info
-func (c *Client) GetObject(ctx context.Context, bucketName, objectName string, opts GetObjectOptions) (io.ReadCloser, ObjectInfo, error) {
+func (c *Client) GetObject(ctx context.Context, bucketName, objectName string, opts GetObjectOptions, authInfo signer.AuthInfo) (io.ReadCloser, ObjectInfo, error) {
 	if err := s3utils.IsValidBucketName(bucketName); err != nil {
 		return nil, ObjectInfo{}, err
 	}
@@ -61,7 +62,7 @@ func (c *Client) GetObject(ctx context.Context, bucketName, objectName string, o
 		disableCloseBody: true,
 	}
 
-	resp, err := c.sendReq(ctx, reqMeta, &sendOpt)
+	resp, err := c.sendReq(ctx, reqMeta, &sendOpt, authInfo)
 	if err != nil {
 		log.Printf("get Object %s fail: %s \n", objectName, err.Error())
 		return nil, ObjectInfo{}, err
@@ -79,7 +80,7 @@ func (c *Client) GetObject(ctx context.Context, bucketName, objectName string, o
 }
 
 // FGetObject download s3 object payload adn write the object content into local file specified by filePath
-func (c *Client) FGetObject(ctx context.Context, bucketName, objectName string, filePath string, opts GetObjectOptions) error {
+func (c *Client) FGetObject(ctx context.Context, bucketName, objectName string, filePath string, opts GetObjectOptions, authinfo signer.AuthInfo) error {
 	// Verify if destination already exists.
 	st, err := os.Stat(filePath)
 	if err == nil {
@@ -95,7 +96,7 @@ func (c *Client) FGetObject(ctx context.Context, bucketName, objectName string, 
 		return err
 	}
 
-	body, _, err := c.GetObject(ctx, bucketName, objectName, opts)
+	body, _, err := c.GetObject(ctx, bucketName, objectName, opts, authinfo)
 	if err != nil {
 		log.Printf("download object:%s fail %s \n", objectName, err.Error())
 		return err

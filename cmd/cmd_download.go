@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 	"github.com/urfave/cli/v2"
 
 	greenfield "github.com/bnb-chain/greenfield-sdk-go"
@@ -55,7 +56,7 @@ func getObject(ctx *cli.Context) error {
 	filePath := ctx.Args().Get(1)
 	log.Printf("download object %s into file:%s \n", objectName, filePath)
 
-	err = s3Client.FGetObject(c, bucketName, objectName, filePath, greenfield.GetObjectOptions{})
+	err = s3Client.FGetObject(c, bucketName, objectName, filePath, greenfield.GetObjectOptions{}, signer.NewAuthInfo(false, ""))
 	if err != nil {
 		return err
 	}
