@@ -232,7 +232,7 @@ func (c *Client) newRequest(ctx context.Context,
 
 	// sign the total http request info when auth type v1
 	if authInfo.SignType == signer.AuthV1 && c.privKey != nil {
-		req, err = signer.SignRequest(req, c.privKey, authInfo)
+		err = signer.SignRequest(req, c.privKey, authInfo)
 		if err != nil {
 			return req, err
 		}

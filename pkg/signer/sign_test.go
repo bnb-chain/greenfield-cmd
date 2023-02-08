@@ -60,7 +60,7 @@ func TestMsgSignV1(t *testing.T) {
 		MetaMaskSignStr: "",
 	}
 
-	req, err = SignRequest(req, privKey, authInfo)
+	err = SignRequest(req, privKey, authInfo)
 	require.NoError(t, err)
 
 	// server actions
