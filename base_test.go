@@ -130,12 +130,8 @@ func TestGetApproval(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
-	authInfo := signer.AuthInfo{
-		SignType:        authV1,
-		MetaMaskSignStr: "",
-	}
 	// test preCreateBucket
-	gotSign, err := client.GetApproval(context.Background(), bucketName, "", authInfo)
+	gotSign, err := client.GetApproval(context.Background(), bucketName, "", signer.NewAuthInfo(false, ""))
 	require.NoError(t, err)
 
 	if gotSign != signature {
@@ -143,7 +139,7 @@ func TestGetApproval(t *testing.T) {
 	}
 
 	//test preCreateObject
-	gotSign, err = client.GetApproval(context.Background(), bucketName, ObjectName, authInfo)
+	gotSign, err = client.GetApproval(context.Background(), bucketName, ObjectName, signer.NewAuthInfo(false, ""))
 
 	require.NoError(t, err)
 

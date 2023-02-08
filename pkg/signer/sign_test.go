@@ -56,11 +56,11 @@ func TestMsgSignV1(t *testing.T) {
 	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
 	authInfo := AuthInfo{
-		SignType:        authV1,
+		SignType:        AuthV1,
 		MetaMaskSignStr: "",
 	}
 
-	req, err = SignRequest(*req, addr, privKey, authInfo)
+	req, err = SignRequest(req, addr, privKey, authInfo)
 	require.NoError(t, err)
 
 	// server actions
@@ -70,7 +70,7 @@ func TestMsgSignV1(t *testing.T) {
 		t.Errorf("authorization header should not be empty")
 	}
 
-	if !strings.Contains(authHeader, authV1) {
+	if !strings.Contains(authHeader, AuthV1) {
 		t.Errorf("auth type error")
 	}
 
@@ -87,7 +87,7 @@ func TestMsgSignV1(t *testing.T) {
 	require.NoError(t, err)
 
 	// (2) server get sender addr
-	signMsg := GetMsgToSign(*req)
+	signMsg := GetMsgToSign(req)
 	if hex.EncodeToString(signMsg) != signStr {
 		t.Errorf("string to sign not same")
 	}

@@ -23,8 +23,6 @@ import (
 
 const (
 	GnfdHostName = "gnfd.nodereal.com"
-	authV1       = "authTypeV1"
-	authV2       = "authTypeV2"
 )
 
 // Client is a client manages communication with the inscription API.
@@ -252,7 +250,7 @@ func (c *Client) newRequest(ctx context.Context,
 
 	// sign the total http request info
 	if bytes.Compare(c.sender, []byte("")) != 0 && c.privKey != nil {
-		req, err = signer.SignRequest(*req, c.sender, c.privKey, authInfo)
+		req, err = signer.SignRequest(req, c.sender, c.privKey, authInfo)
 		if err != nil {
 			return req, err
 		}
@@ -369,14 +367,6 @@ func (c *Client) generateURL(bucketName string, objectName string, relativePath 
 	}
 
 	return url.Parse(urlStr)
-}
-
-// ApproveInfo define the info of the storage provider approval reply
-type ApproveInfo struct {
-	Resource       string
-	Action         string
-	SpAddr         sdk.AccAddress
-	ExpirationTime time.Time
 }
 
 // GetApproval return the signature info for the approval of preCreating resources
