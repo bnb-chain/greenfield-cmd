@@ -114,8 +114,11 @@ func (c *Client) FGetObject(ctx context.Context, bucketName, objectName string, 
 
 // getObjInfo generate objectInfo base on the response http header content
 func getObjInfo(bucketName string, objectName string, h http.Header) (ObjectInfo, error) {
+	var etagVal string
 	etag := h.Get("Etag")
-	etagVal := strings.TrimSuffix(strings.TrimPrefix(etag, "\""), "\"")
+	if etag != "" {
+		etagVal = strings.TrimSuffix(strings.TrimPrefix(etag, "\""), "\"")
+	}
 
 	// Parse content length is exists
 	var size int64 = -1

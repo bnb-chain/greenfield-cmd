@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -45,6 +46,12 @@ const (
 	CreateBucketAction = "CreateBucket"
 	SegmentSize        = 16 * 1024 * 1024
 	EncodeShards       = 6
+
+	libName        = "inscription-go-sdk"
+	Version        = "v0.0.1"
+	UserAgent      = "Inscription (" + runtime.GOOS + "; " + runtime.GOARCH + ") " + libName + "/" + Version
+	contentTypeXML = "application/xml"
+	contentDefault = "application/octet-stream"
 )
 
 func CheckIP(ip string) bool {

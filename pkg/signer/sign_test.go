@@ -22,7 +22,7 @@ func TestSigner(t *testing.T) {
 	stringToSign := crypto.Keccak256(rawdata)
 
 	signer := NewMsgSigner(privKey)
-	signature, _, err := signer.Sign(addr.String(), stringToSign)
+	signature, _, err := signer.Sign(stringToSign)
 	require.NoError(t, err)
 	fmt.Println("origin addr:", addr.String())
 
@@ -60,7 +60,7 @@ func TestMsgSignV1(t *testing.T) {
 		MetaMaskSignStr: "",
 	}
 
-	req, err = SignRequest(req, addr, privKey, authInfo)
+	req, err = SignRequest(req, privKey, authInfo)
 	require.NoError(t, err)
 
 	// server actions

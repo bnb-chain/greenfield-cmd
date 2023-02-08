@@ -33,14 +33,16 @@ func setup() {
 	mux = http.NewServeMux()
 	server = httptest.NewServer(mux)
 
-	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
+	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
 
 	var err error
 	fmt.Println("server url:", server.URL)
-	client, err = NewClient(server.URL[len("http://"):], &Options{}, addr, privKey)
+	client, err = NewClient(server.URL[len("http://"):], &Options{})
 	if err != nil {
 		log.Fatal("create client  fail")
 	}
+
+	client.SetPriKey(privKey)
 }
 
 func shutdown() {
@@ -88,12 +90,15 @@ func testBody(t *testing.T, r *http.Request, want string) {
 func TestNewClient(t *testing.T) {
 	mux_temp := http.NewServeMux()
 	server_temp := httptest.NewServer(mux_temp)
-	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
+	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
 
-	c, err := NewClient(server_temp.URL[7:], &Options{}, addr, privKey)
+	c, err := NewClient(server_temp.URL[7:], &Options{})
 	if err != nil {
 		t.Errorf("new client fail %s", err.Error())
 	}
+	fmt.Println("url:", server_temp.URL[7:])
+	c.SetPriKey(privKey)
+
 	if got, want := c.GetAgent(), UserAgent; got != want {
 		t.Errorf("NewClient UserAgent is %v, want %v", got, want)
 	}
@@ -102,6 +107,7 @@ func TestNewClient(t *testing.T) {
 	objectName := "testObject"
 	want := "http://" + server_temp.URL[7:] + "/testObject"
 	got, _ := c.generateURL(bucketName, objectName, "", nil, false)
+	fmt.Println("url2:", got)
 	if got.String() != want {
 		t.Errorf("URL is %v, want %v", got, want)
 	}

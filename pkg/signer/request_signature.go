@@ -11,7 +11,6 @@ import (
 
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -87,7 +86,7 @@ func getSortedHeaders(req *http.Request) []string {
 	var signHeaders []string
 	for k := range req.Header {
 		headerKey := http.CanonicalHeaderKey(k)
-		if headerKey != HTTPHeaderAuthorization && headerKey != "User-Agent" {
+		if headerKey != HTTPHeaderAuthorization && headerKey != "User-Agent" && headerKey != "Accept-Encoding" {
 			signHeaders = append(signHeaders, strings.ToLower(k))
 		}
 	}
@@ -122,7 +121,7 @@ func GetMsgToSign(req *http.Request) []byte {
 }
 
 // SignRequest sign the request and set authorization before send to server
-func SignRequest(req *http.Request, addr sdk.AccAddress, privKey cryptotypes.PrivKey, info AuthInfo) (*http.Request, error) {
+func SignRequest(req *http.Request, privKey cryptotypes.PrivKey, info AuthInfo) (*http.Request, error) {
 	var signature []byte
 	var err error
 	var authStr []string
@@ -133,7 +132,7 @@ func SignRequest(req *http.Request, addr sdk.AccAddress, privKey cryptotypes.Pri
 		signMsg := GetMsgToSign(req)
 		// sign the request header info, generate the signature
 		signer := NewMsgSigner(privKey)
-		signature, _, err = signer.Sign(addr.String(), signMsg)
+		signature, _, err = signer.Sign(signMsg)
 		if err != nil {
 			return req, err
 		}

@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strings"
 	"time"
 
@@ -19,10 +18,6 @@ import (
 
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
-)
-
-const (
-	GnfdHostName = "gnfd.nodereal.com"
 )
 
 // Client is a client manages communication with the inscription API.
@@ -55,18 +50,8 @@ type RetryOptions struct {
 	StatusCode []int
 }
 
-// Global constants.
-const (
-	libName        = "inscription-go-sdk"
-	Version        = "v0.0.1"
-	UserAgent      = "Inscription (" + runtime.GOOS + "; " + runtime.GOARCH + ") " + libName + "/" + Version
-	contentTypeXML = "application/xml"
-	contentDefault = "application/octet-stream"
-)
-
 // NewClient returns a new greenfield client
-func NewClient(endpoint string, opts *Options, addr sdk.AccAddress,
-	privKey cryptotypes.PrivKey) (*Client, error) {
+func NewClient(endpoint string, opts *Options) (*Client, error) {
 	url, err := getEndpointURL(endpoint, opts.secure)
 	if err != nil {
 		log.Println("get url error:", err.Error())
@@ -84,8 +69,6 @@ func NewClient(endpoint string, opts *Options, addr sdk.AccAddress,
 				Interval: time.Duration(0),
 			},
 		},
-		sender:  addr,
-		privKey: privKey,
 	}
 
 	return c, nil
@@ -125,6 +108,12 @@ type sendOptions struct {
 // SetHost set host name of request
 func (c *Client) SetHost(hostName string) {
 	c.host = hostName
+}
+
+// SetPriKey set private key of client
+// it is needed to be set when dapp sign the request using private key
+func (c *Client) SetPriKey(key cryptotypes.PrivKey) {
+	c.privKey = key
 }
 
 // GetHost get host name of request
@@ -199,6 +188,8 @@ func (c *Client) newRequest(ctx context.Context,
 		req.Header.Set(HTTPHeaderContentType, meta.contentType)
 	} else if contentType != "" {
 		req.Header.Set(HTTPHeaderContentType, contentType)
+	} else {
+		req.Header.Set(HTTPHeaderContentType, contentDefault)
 	}
 
 	// set md5 header
@@ -217,27 +208,18 @@ func (c *Client) newRequest(ctx context.Context,
 		req.Header.Set(HTTPHeaderRange, meta.Range)
 	}
 
-	// TODO(leo) parse host from url when sp domain supported
-	if meta.bucketName != "" {
-		if c.host != "" {
-			req.Host = meta.bucketName + "." + c.host
-		} else {
-			req.Host = meta.bucketName + "." + GnfdHostName
-		}
+	// set request host
+	if c.host != "" {
+		req.Host = c.host
+	} else if req.URL.Host != "" {
+		req.Host = req.URL.Host
 	}
 
 	if isAdminAPi {
-		if c.host != "" {
-			req.Host = c.host
+		if meta.objectName == "" {
+			req.Header.Set(HTTPHeaderResource, meta.bucketName)
 		} else {
-			req.Host = GnfdHostName
-		}
-		if meta.bucketName != "" {
-			if meta.objectName == "" {
-				req.Header.Set(HTTPHeaderResource, meta.bucketName)
-			} else {
-				req.Header.Set(HTTPHeaderResource, meta.bucketName+"/"+meta.objectName)
-			}
+			req.Header.Set(HTTPHeaderResource, meta.bucketName+"/"+meta.objectName)
 		}
 	}
 
@@ -248,9 +230,9 @@ func (c *Client) newRequest(ctx context.Context,
 	// set user-agent
 	req.Header.Set(HTTPHeaderUserAgent, c.userAgent)
 
-	// sign the total http request info
-	if bytes.Compare(c.sender, []byte("")) != 0 && c.privKey != nil {
-		req, err = signer.SignRequest(req, c.sender, c.privKey, authInfo)
+	// sign the total http request info when auth type v1
+	if authInfo.SignType == signer.AuthV1 && c.privKey != nil {
+		req, err = signer.SignRequest(req, c.privKey, authInfo)
 		if err != nil {
 			return req, err
 		}
@@ -346,9 +328,11 @@ func (c *Client) generateURL(bucketName string, objectName string, relativePath 
 		urlStr = scheme + "://" + host + prefix + "/"
 	} else {
 		// generate s3 virtual hosted style url
-		// TODO(leo) need to add bucketName after domain supported
-		// urlStr := scheme + "://" + bucketName + "." + host + "/"
-		urlStr = scheme + "://" + host + "/"
+		if CheckDomainName(host) {
+			urlStr = scheme + "://" + bucketName + "." + host + "/"
+		} else {
+			urlStr = scheme + "://" + host + "/"
+		}
 		if objectName != "" {
 			urlStr += s3utils.EncodePath(objectName)
 		}

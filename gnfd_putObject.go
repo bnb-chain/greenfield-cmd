@@ -89,7 +89,7 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
 
 	resp, err := c.sendReq(ctx, reqMeta, &sendOpt, authInfo)
 	if err != nil {
-		log.Printf("the second stage of uploading the object failed: %s \n", err.Error())
+		log.Printf("upload payload the object failed: %s \n", err.Error())
 		return UploadResult{}, err
 	}
 
