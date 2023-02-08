@@ -35,8 +35,12 @@ func TestPutObject(t *testing.T) {
 	txnHash := "test hash"
 	newReader := bytes.NewReader([]byte("test content of object"))
 
+	meta := ObjectMeta{
+		ObjectSize:  length,
+		ContentType: contentDefault,
+	}
 	_, err = client.PutObject(context.Background(), bucketName,
-		ObjectName, newReader, txnHash, PutObjectOptions{}, signer.NewAuthInfo(false, ""))
+		ObjectName, newReader, txnHash, meta, signer.NewAuthInfo(false, ""))
 	require.NoError(t, err)
 }
 

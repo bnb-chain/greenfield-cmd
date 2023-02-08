@@ -21,8 +21,8 @@ type PutObjectMeta struct {
 	ContentType    string
 }
 
-// PutObjectOptions represents meta which may needed when upload payload
-type PutObjectOptions struct {
+// ObjectMeta represents meta which may needed when upload payload
+type ObjectMeta struct {
 	ObjectSize  int64
 	ContentType string
 }
@@ -62,23 +62,25 @@ func (c *Client) PrePutObject(ctx context.Context, bucketName, objectName string
 
 // PutObject supports the second stage of uploading the object to bucket.
 func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
-	reader io.Reader, txnHash string, option PutObjectOptions, authInfo signer.AuthInfo) (res UploadResult, err error) {
+	reader io.Reader, txnHash string, meta ObjectMeta, authInfo signer.AuthInfo) (res UploadResult, err error) {
 	if txnHash == "" {
 		return UploadResult{}, errors.New("txn hash empty")
+	}
+
+	if meta.ObjectSize <= 0 {
+		return UploadResult{}, errors.New("object size not set")
+	}
+
+	if meta.ContentType == "" {
+		return UploadResult{}, errors.New("content type not set")
 	}
 
 	reqMeta := requestMeta{
 		bucketName:    bucketName,
 		objectName:    objectName,
 		contentSHA256: EmptyStringSHA256,
-	}
-
-	if option.ContentType != "" {
-		reqMeta.contentType = option.ContentType
-	}
-
-	if option.ObjectSize >= 0 {
-		reqMeta.contentLength = option.ObjectSize
+		contentLength: meta.ObjectSize,
+		contentType:   meta.ContentType,
 	}
 
 	sendOpt := sendOptions{

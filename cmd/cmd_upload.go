@@ -191,7 +191,7 @@ func uploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	meta := greenfield.PutObjectOptions{
+	meta := greenfield.ObjectMeta{
 		ObjectSize:  objectSize,
 		ContentType: "application/octet-stream",
 	}
