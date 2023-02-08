@@ -36,7 +36,7 @@ func setup() {
 	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
 
 	var err error
-	fmt.Println("server url:", server.URL)
+
 	client, err = NewClient(server.URL[len("http://"):], &Options{})
 	if err != nil {
 		log.Fatal("create client  fail")

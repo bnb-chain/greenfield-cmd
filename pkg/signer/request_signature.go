@@ -86,7 +86,8 @@ func getSortedHeaders(req *http.Request) []string {
 	var signHeaders []string
 	for k := range req.Header {
 		headerKey := http.CanonicalHeaderKey(k)
-		if headerKey != HTTPHeaderAuthorization && headerKey != "User-Agent" && headerKey != "Accept-Encoding" {
+		if headerKey != HTTPHeaderAuthorization && headerKey != "User-Agent" &&
+			headerKey != "Accept-Encoding" && headerKey != "Content-Length" {
 			signHeaders = append(signHeaders, strings.ToLower(k))
 		}
 	}
@@ -101,7 +102,7 @@ func getSignedHeaders(req *http.Request) string {
 
 // getCanonicalRequest generate the canonicalRequest base on aws s3 sign without payload hash.
 // https://docs.aws.amazon.com/general/latest/gr/create-signed-request.html#create-canonical-request
-func getCanonicalRequest(req *http.Request) string {
+func GetCanonicalRequest(req *http.Request) string {
 	req.URL.RawQuery = strings.ReplaceAll(req.URL.Query().Encode(), "+", "%20")
 	canonicalRequest := strings.Join([]string{
 		req.Method,
@@ -116,7 +117,7 @@ func getCanonicalRequest(req *http.Request) string {
 
 // GetMsgToSign generate the msg bytes from canonicalRequest to sign
 func GetMsgToSign(req *http.Request) []byte {
-	signBytes := calcSHA256([]byte(getCanonicalRequest(req)))
+	signBytes := calcSHA256([]byte(GetCanonicalRequest(req)))
 	return crypto.Keccak256(signBytes)
 }
 

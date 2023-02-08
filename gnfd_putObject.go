@@ -62,8 +62,8 @@ func (c *Client) PrePutObject(ctx context.Context, bucketName, objectName string
 }
 
 // PutObject supports the second stage of uploading the object to bucket.
-func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
-	reader io.Reader, txnHash string, meta ObjectMeta, authInfo signer.AuthInfo) (res UploadResult, err error) {
+func (c *Client) PutObject(ctx context.Context, bucketName, objectName, txnHash string,
+	reader io.Reader, meta ObjectMeta, authInfo signer.AuthInfo) (res UploadResult, err error) {
 	if txnHash == "" {
 		return UploadResult{}, errors.New("txn hash empty")
 	}
@@ -106,17 +106,17 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
 }
 
 // FPutObject support upload object from local file
-func (c *Client) FPutObject(ctx context.Context, bucketName, objectName string,
-	filePath, txnHash string, contentType string, authInfo signer.AuthInfo) (res UploadResult, err error) {
-	fileReader, err := os.Open(filePath)
+func (c *Client) FPutObject(ctx context.Context, bucketName, objectName,
+	filePath, txnHash, contentType string, authInfo signer.AuthInfo) (res UploadResult, err error) {
+	fReader, err := os.Open(filePath)
 	// If any error fail quickly here.
 	if err != nil {
 		return UploadResult{}, err
 	}
-	defer fileReader.Close()
+	defer fReader.Close()
 
 	// Save the file stat.
-	stat, err := fileReader.Stat()
+	stat, err := fReader.Stat()
 	if err != nil {
 		return UploadResult{}, err
 	}
@@ -124,11 +124,12 @@ func (c *Client) FPutObject(ctx context.Context, bucketName, objectName string,
 	meta := ObjectMeta{
 		ObjectSize: stat.Size(),
 	}
+	
 	if contentType == "" {
 		meta.ContentType = "application/octet-stream"
 	} else {
 		meta.ContentType = contentType
 	}
 
-	return c.PutObject(ctx, bucketName, objectName, fileReader, txnHash, meta, authInfo)
+	return c.PutObject(ctx, bucketName, objectName, txnHash, fReader, meta, authInfo)
 }

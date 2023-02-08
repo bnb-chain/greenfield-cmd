@@ -196,7 +196,7 @@ func uploadObject(ctx *cli.Context) error {
 		ContentType: "application/octet-stream",
 	}
 
-	res, err := s3Client.PutObject(c, bucketName, objectName, fileReader, txnhash, meta, signer.NewAuthInfo(false, ""))
+	res, err := s3Client.PutObject(c, bucketName, objectName, txnhash, fileReader, meta, signer.NewAuthInfo(false, ""))
 
 	if err != nil {
 		fmt.Println("upload payload fail:", err.Error())

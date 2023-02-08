@@ -209,10 +209,12 @@ func (c *Client) newRequest(ctx context.Context,
 	}
 
 	// set request host
-	if c.host != "" {
-		req.Host = c.host
-	} else if req.URL.Host != "" {
-		req.Host = req.URL.Host
+	if !isAdminAPi {
+		if c.host != "" {
+			req.Host = c.host
+		} else if req.URL.Host != "" {
+			req.Host = req.URL.Host
+		}
 	}
 
 	if isAdminAPi {
@@ -305,9 +307,9 @@ func (c *Client) sendReq(ctx context.Context, metadata requestMeta, opt *sendOpt
 func (c *Client) generateURL(bucketName string, objectName string, relativePath string,
 	queryValues url.Values, isAdminApi bool) (*url.URL, error) {
 	host := c.endpoint.Host
-	// Save scheme.
 	scheme := c.endpoint.Scheme
 
+	// Strip port 80 and 443
 	if h, p, err := net.SplitHostPort(host); err == nil {
 		if scheme == "http" && p == "80" || scheme == "https" && p == "443" {
 			host = h
@@ -333,6 +335,7 @@ func (c *Client) generateURL(bucketName string, objectName string, relativePath 
 		} else {
 			urlStr = scheme + "://" + host + "/"
 		}
+		
 		if objectName != "" {
 			urlStr += s3utils.EncodePath(objectName)
 		}

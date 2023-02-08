@@ -41,7 +41,7 @@ func TestPutObject(t *testing.T) {
 		ContentType: contentDefault,
 	}
 	_, err = client.PutObject(context.Background(), bucketName,
-		ObjectName, newReader, txnHash, meta, signer.NewAuthInfo(false, ""))
+		ObjectName, txnHash, newReader, meta, signer.NewAuthInfo(false, ""))
 	require.NoError(t, err)
 }
 
