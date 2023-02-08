@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,6 +42,34 @@ func TestPutObject(t *testing.T) {
 	}
 	_, err = client.PutObject(context.Background(), bucketName,
 		ObjectName, newReader, txnHash, meta, signer.NewAuthInfo(false, ""))
+	require.NoError(t, err)
+}
+
+func TestFPutObject(t *testing.T) {
+	setup()
+	defer shutdown()
+
+	bucketName := "testbucket"
+	ObjectName := "testobject"
+	filePath := "./error.go"
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		startHandle(t, r)
+		testMethod(t, r, "PUT")
+		testHeader(t, r, "Content-Type", contentDefault)
+
+		fileReader, err := os.Open(filePath)
+		require.NoError(t, err)
+		defer fileReader.Close()
+
+		length, err := GetContentLength(fileReader)
+		require.NoError(t, err)
+		testHeader(t, r, "Content-Length", strconv.FormatInt(length, 10))
+	})
+
+	txnHash := "test hash"
+
+	_, err := client.FPutObject(context.Background(), bucketName,
+		ObjectName, filePath, txnHash, contentDefault, signer.NewAuthInfo(false, ""))
 	require.NoError(t, err)
 }
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -102,4 +103,32 @@ func (c *Client) PutObject(ctx context.Context, bucketName, objectName string,
 		ObjectName: objectName,
 		ETag:       etagValue,
 	}, nil
+}
+
+// FPutObject support upload object from local file
+func (c *Client) FPutObject(ctx context.Context, bucketName, objectName string,
+	filePath, txnHash string, contentType string, authInfo signer.AuthInfo) (res UploadResult, err error) {
+	fileReader, err := os.Open(filePath)
+	// If any error fail quickly here.
+	if err != nil {
+		return UploadResult{}, err
+	}
+	defer fileReader.Close()
+
+	// Save the file stat.
+	stat, err := fileReader.Stat()
+	if err != nil {
+		return UploadResult{}, err
+	}
+
+	meta := ObjectMeta{
+		ObjectSize: stat.Size(),
+	}
+	if contentType == "" {
+		meta.ContentType = "application/octet-stream"
+	} else {
+		meta.ContentType = contentType
+	}
+
+	return c.PutObject(ctx, bucketName, objectName, fileReader, txnHash, meta, authInfo)
 }
