@@ -22,7 +22,7 @@ func NewMsgSigner(sk cryptotypes.PrivKey) *MsgSigner {
 }
 
 // Sign signs the message using the underlying private key
-func (m MsgSigner) Sign(_ string, msg []byte) ([]byte, cryptotypes.PubKey, error) {
+func (m MsgSigner) Sign(msg []byte) ([]byte, cryptotypes.PubKey, error) {
 	if m.privKey.Type() != ethsecp256k1.KeyType {
 		return nil, nil, fmt.Errorf(
 			"invalid private key type, expected %s, got %s", ethsecp256k1.KeyType, m.privKey.Type(),

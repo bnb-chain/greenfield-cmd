@@ -22,7 +22,7 @@ func TestSigner(t *testing.T) {
 	stringToSign := crypto.Keccak256(rawdata)
 
 	signer := NewMsgSigner(privKey)
-	signature, _, err := signer.Sign(addr.String(), stringToSign)
+	signature, _, err := signer.Sign(stringToSign)
 	require.NoError(t, err)
 	fmt.Println("origin addr:", addr.String())
 
@@ -42,7 +42,7 @@ func TestSigner(t *testing.T) {
 	}
 }
 
-func TestMsgSign(t *testing.T) {
+func TestMsgSignV1(t *testing.T) {
 	// client actions: new request and sign the request
 	urlmap := url.Values{}
 	urlmap.Add("greenfield", "chain")
@@ -55,7 +55,12 @@ func TestMsgSign(t *testing.T) {
 
 	privKey, _, addr := testdata.KeyEthSecp256k1TestPubAddr()
 
-	req, err = SignRequest(*req, addr, privKey)
+	authInfo := AuthInfo{
+		SignType:        AuthV1,
+		MetaMaskSignStr: "",
+	}
+
+	err = SignRequest(req, privKey, authInfo)
 	require.NoError(t, err)
 
 	// server actions
@@ -65,9 +70,13 @@ func TestMsgSign(t *testing.T) {
 		t.Errorf("authorization header should not be empty")
 	}
 
+	if !strings.Contains(authHeader, AuthV1) {
+		t.Errorf("auth type error")
+	}
+
 	// get stringTosign
-	signStrIndex := strings.Index(authHeader, " SignedRequest=")
-	index := len(" SignedRequest=") + signStrIndex
+	signStrIndex := strings.Index(authHeader, " SignedMsg=")
+	index := len(" SignedMsg=") + signStrIndex
 
 	// get Siganture
 	signatureIndex := strings.Index(authHeader, "Signature=")
@@ -78,13 +87,12 @@ func TestMsgSign(t *testing.T) {
 	require.NoError(t, err)
 
 	// (2) server get sender addr
-	stringToSign := GetStringToSign(*req)
-	if stringToSign != signStr {
+	signMsg := GetMsgToSign(req)
+	if hex.EncodeToString(signMsg) != signStr {
 		t.Errorf("string to sign not same")
 	}
 
-	signContent := crypto.Keccak256([]byte(stringToSign))
-	recoverAddr, pk, err := RecoverAddr(signContent, sigBytes)
+	recoverAddr, pk, err := RecoverAddr(signMsg, sigBytes)
 
 	require.NoError(t, err)
 
@@ -93,9 +101,8 @@ func TestMsgSign(t *testing.T) {
 	}
 
 	// (3) server verify the signature
-	verifySucc := secp256k1.VerifySignature(pk.Bytes(), signContent, sigBytes[:len(sigBytes)-1])
+	verifySucc := secp256k1.VerifySignature(pk.Bytes(), signMsg, sigBytes[:len(sigBytes)-1])
 	if !verifySucc {
 		t.Errorf("verify fail")
 	}
-
 }

@@ -26,6 +26,12 @@ func main() {
 				Usage: "sp provider endpoint info",
 			},
 		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Name:  "host",
+				Usage: "primary host",
+			},
+		),
 	}
 
 	app := &cli.App{

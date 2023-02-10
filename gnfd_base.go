@@ -5,26 +5,20 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/bnb-chain/greenfield-sdk-go/sign"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/s3utils"
 	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
 )
-
-const GnfdHostName = "gnfd.nodereal.com"
 
 // Client is a client manages communication with the inscription API.
 type Client struct {
@@ -33,13 +27,13 @@ type Client struct {
 	userAgent string
 	host      string
 
-	conf    *Config
-	sender  sdk.AccAddress // sender address
-	privKey cryptotypes.PrivKey
-	signer  *sign.EIP712Signer
+	conf    *CliConfig
+	sender  sdk.AccAddress      // sender greenfield chain address
+	privKey cryptotypes.PrivKey // sender private key
 }
 
-type Config struct {
+// CliConfig is the config info of client
+type CliConfig struct {
 	Secure           bool // use https or not
 	Transport        http.RoundTripper
 	RetryOpt         RetryOptions
@@ -56,41 +50,25 @@ type RetryOptions struct {
 	StatusCode []int
 }
 
-// Global constants.
-const (
-	libName        = "inscription-go-sdk"
-	Version        = "v0.0.1"
-	UserAgent      = "Inscription (" + runtime.GOOS + "; " + runtime.GOARCH + ") " + libName + "/" + Version
-	contentTypeXML = "application/xml"
-	contentDefault = "application/octet-stream"
-)
-
 // NewClient returns a new greenfield client
-func NewClient(endpoint string, opts *Options, addr sdk.AccAddress,
-	privKey cryptotypes.PrivKey, pubKey cryptotypes.PubKey) (*Client, error) {
+func NewClient(endpoint string, opts *Options) (*Client, error) {
 	url, err := getEndpointURL(endpoint, opts.secure)
 	if err != nil {
 		log.Println("get url error:", err.Error())
 		return nil, err
 	}
-	log.Println("new client with url:", url.String())
-
-	eip712signer, err := sign.NewSigner(addr, ".gnfd", privKey, pubKey)
 
 	httpClient := &http.Client{}
 	c := &Client{
 		client:    httpClient,
 		userAgent: UserAgent,
 		endpoint:  url,
-		conf: &Config{
+		conf: &CliConfig{
 			RetryOpt: RetryOptions{
 				Count:    3,
 				Interval: time.Duration(0),
 			},
 		},
-		sender:  addr,
-		privKey: privKey,
-		signer:  eip712signer,
 	}
 
 	return c, nil
@@ -104,18 +82,17 @@ func (c *Client) GetURL() *url.URL {
 
 // requestMeta - contain the metadata to construct the http request.
 type requestMeta struct {
-	bucketName    string
-	objectName    string
-	urlRelPath    string     // relative path of url
-	urlValues     url.Values // url values to be added into url
-	Range         string
-	ApproveAction string
-
-	contentType       string
-	contentLength     int64
-	gnfdContentLength int64
-	contentMD5Base64  string // base64 encoded md5sum
-	contentSHA256     string // hex encoded sha256sum
+	bucketName       string
+	objectName       string
+	urlRelPath       string     // relative path of url
+	urlValues        url.Values // url values to be added into url
+	Range            string
+	ApproveAction    string
+	SignType         string
+	contentType      string
+	contentLength    int64
+	contentMD5Base64 string // base64 encoded md5sum
+	contentSHA256    string // hex encoded sha256sum
 }
 
 // sendOptions -  options to use to send the http message
@@ -131,6 +108,12 @@ type sendOptions struct {
 // SetHost set host name of request
 func (c *Client) SetHost(hostName string) {
 	c.host = hostName
+}
+
+// SetPriKey set private key of client
+// it is needed to be set when dapp sign the request using private key
+func (c *Client) SetPriKey(key cryptotypes.PrivKey) {
+	c.privKey = key
 }
 
 // GetHost get host name of request
@@ -150,7 +133,7 @@ func (c *Client) GetAgent() string {
 
 // newRequest construct the http request, set url, body and headers
 func (c *Client) newRequest(ctx context.Context,
-	method string, meta requestMeta, body interface{}, txnHash string, isAdminAPi bool) (req *http.Request, err error) {
+	method string, meta requestMeta, body interface{}, txnHash string, isAdminAPi bool, authInfo signer.AuthInfo) (req *http.Request, err error) {
 	// construct the target url
 	desURL, err := c.generateURL(meta.bucketName, meta.objectName, meta.urlRelPath, meta.urlValues, isAdminAPi)
 	if err != nil {
@@ -186,12 +169,10 @@ func (c *Client) newRequest(ctx context.Context,
 	}
 
 	// need to turn the body into ReadCloser
-	if meta.contentLength == 0 {
+	if body == nil {
 		req.Body = nil
 	} else {
-		if body != nil {
-			req.Body = io.NopCloser(reader)
-		}
+		req.Body = io.NopCloser(reader)
 	}
 
 	// set content length
@@ -207,16 +188,13 @@ func (c *Client) newRequest(ctx context.Context,
 		req.Header.Set(HTTPHeaderContentType, meta.contentType)
 	} else if contentType != "" {
 		req.Header.Set(HTTPHeaderContentType, contentType)
+	} else {
+		req.Header.Set(HTTPHeaderContentType, contentDefault)
 	}
 
 	// set md5 header
 	if meta.contentMD5Base64 != "" {
 		req.Header[HTTPHeaderContentMD5] = []string{meta.contentMD5Base64}
-	}
-
-	// set first stage upload x-gnfd-content-length header
-	if meta.gnfdContentLength > 0 {
-		req.Header.Set(HTTPHeadeGnfdContentLength, strconv.FormatInt(meta.gnfdContentLength, 10))
 	}
 
 	// set sha256 header
@@ -230,28 +208,20 @@ func (c *Client) newRequest(ctx context.Context,
 		req.Header.Set(HTTPHeaderRange, meta.Range)
 	}
 
-	// TODO(leo) parse host when sp domain supported
-	// set Host from url or client
-	if meta.bucketName != "" {
+	// set request host
+	if !isAdminAPi {
 		if c.host != "" {
-			req.Host = meta.bucketName + "." + c.host
-		} else {
-			req.Host = meta.bucketName + "." + GnfdHostName
+			req.Host = c.host
+		} else if req.URL.Host != "" {
+			req.Host = req.URL.Host
 		}
 	}
 
 	if isAdminAPi {
-		if c.host != "" {
-			req.Host = c.host
+		if meta.objectName == "" {
+			req.Header.Set(HTTPHeaderResource, meta.bucketName)
 		} else {
-			req.Host = GnfdHostName
-		}
-		if meta.bucketName != "" {
-			if meta.objectName == "" {
-				req.Header.Set(HTTPHeaderResource, meta.bucketName)
-			} else {
-				req.Header.Set(HTTPHeaderResource, meta.bucketName+"/"+meta.objectName)
-			}
+			req.Header.Set(HTTPHeaderResource, meta.bucketName+"/"+meta.objectName)
 		}
 	}
 
@@ -262,9 +232,9 @@ func (c *Client) newRequest(ctx context.Context,
 	// set user-agent
 	req.Header.Set(HTTPHeaderUserAgent, c.userAgent)
 
-	// sign the total http request info
-	if bytes.Compare(c.sender, []byte("")) != 0 && c.privKey != nil {
-		req, err = signer.SignRequest(*req, c.sender, c.privKey)
+	// sign the total http request info when auth type v1
+	if authInfo.SignType == signer.AuthV1 && c.privKey != nil {
+		err = signer.SignRequest(req, c.privKey, authInfo)
 		if err != nil {
 			return req, err
 		}
@@ -318,8 +288,8 @@ func (c *Client) doAPI(ctx context.Context, req *http.Request, meta requestMeta,
 }
 
 // sendReq new restful request, send the message and handle the response
-func (c *Client) sendReq(ctx context.Context, metadata requestMeta, opt *sendOptions) (res *http.Response, err error) {
-	req, err := c.newRequest(ctx, opt.method, metadata, opt.body, opt.txnHash, opt.isAdminApi)
+func (c *Client) sendReq(ctx context.Context, metadata requestMeta, opt *sendOptions, authInfo signer.AuthInfo) (res *http.Response, err error) {
+	req, err := c.newRequest(ctx, opt.method, metadata, opt.body, opt.txnHash, opt.isAdminApi, authInfo)
 	if err != nil {
 		log.Printf("new request error: %s , stop send request\n", err.Error())
 		return nil, err
@@ -337,9 +307,9 @@ func (c *Client) sendReq(ctx context.Context, metadata requestMeta, opt *sendOpt
 func (c *Client) generateURL(bucketName string, objectName string, relativePath string,
 	queryValues url.Values, isAdminApi bool) (*url.URL, error) {
 	host := c.endpoint.Host
-	// Save scheme.
 	scheme := c.endpoint.Scheme
 
+	// Strip port 80 and 443
 	if h, p, err := net.SplitHostPort(host); err == nil {
 		if scheme == "http" && p == "80" || scheme == "https" && p == "443" {
 			host = h
@@ -359,9 +329,13 @@ func (c *Client) generateURL(bucketName string, objectName string, relativePath 
 		prefix := AdminURLPrefix + AdminURLVersion
 		urlStr = scheme + "://" + host + prefix + "/"
 	} else {
-		// TODO(leo) temp change, this need be change back after domain supported
-		// urlStr := scheme + "://" + bucketName + "." + host + "/"
-		urlStr = scheme + "://" + host + "/"
+		// generate s3 virtual hosted style url
+		if CheckDomainName(host) {
+			urlStr = scheme + "://" + bucketName + "." + host + "/"
+		} else {
+			urlStr = scheme + "://" + host + "/"
+		}
+		
 		if objectName != "" {
 			urlStr += s3utils.EncodePath(objectName)
 		}
@@ -382,23 +356,15 @@ func (c *Client) generateURL(bucketName string, objectName string, relativePath 
 	return url.Parse(urlStr)
 }
 
-// ApproveInfo define the info of the storage provider approval reply
-type ApproveInfo struct {
-	Resource       string
-	Action         string
-	SpAddr         sdk.AccAddress
-	ExpirationTime time.Time
-}
-
 // GetApproval return the signature info for the approval of preCreating resources
-func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string) (string, ApproveInfo, error) {
+func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string, authInfo signer.AuthInfo) (string, error) {
 	if err := s3utils.IsValidBucketName(bucketName); err != nil {
-		return "", ApproveInfo{}, err
+		return "", err
 	}
 
 	if objectName != "" {
 		if err := s3utils.IsValidObjectName(objectName); err != nil {
-			return "", ApproveInfo{}, err
+			return "", err
 		}
 	}
 
@@ -422,29 +388,29 @@ func (c *Client) GetApproval(ctx context.Context, bucketName, objectName string)
 		isAdminApi: true,
 	}
 
-	resp, err := c.sendReq(ctx, reqMeta, &sendOpt)
+	resp, err := c.sendReq(ctx, reqMeta, &sendOpt, authInfo)
 	if err != nil {
-		log.Printf("pre create object rejected: %s \n", err.Error())
-		return "", ApproveInfo{}, err
+		log.Printf("get approval rejected: %s \n", err.Error())
+		return "", err
 	}
 
-	// TODO(leo) need check if need to decode the signature and get ApproveInfo
+	// fetch primary sp signature from sp response
 	signature := resp.Header.Get(HTTPHeaderPreSignature)
 	if signature == "" {
-		return "", ApproveInfo{}, fmt.Errorf("fail to fetch pre createObject signature")
+		return "", errors.New("fail to fetch pre createObject signature")
 	}
 
-	return signature, ApproveInfo{}, nil
+	return signature, nil
 }
 
-// GetPieceHashRoots return primary pieces Hash and secondary piece Hash
-// The first return value is the primary SP piece hash root, the second is the secondary SP piece hash roots list
-func (c *Client) GetPieceHashRoots(reader io.Reader, segSize int64) (string, []string, error) {
-	pieceHashRoots, err := SplitAndComputerHash(reader, segSize)
-
+// GetPieceHashRoots return primary pieces Hash and secondary piece Hash roots list and object size
+// It is used for generate meta of object on the chain
+func (c *Client) GetPieceHashRoots(reader io.Reader, segSize int64, ecShards int) (string, []string, int64, error) {
+	pieceHashRoots, size, err := SplitAndComputerHash(reader, segSize, ecShards)
 	if err != nil {
-		return "", nil, err
+		log.Println("get hash roots fail", err.Error())
+		return "", nil, 0, err
 	}
 
-	return pieceHashRoots[0], pieceHashRoots[1:], nil
+	return pieceHashRoots[0], pieceHashRoots[1:], size, nil
 }

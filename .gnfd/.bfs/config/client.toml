@@ -1,5 +1,0 @@
-broadcast-mode = "block"
-chain-id = "inscription_9000-1"
-keyring-backend = "test"
-node = "tcp://localhost:26657"
-output = "text"
