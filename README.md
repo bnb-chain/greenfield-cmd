@@ -1,10 +1,6 @@
-# greenfield-sdk-go
+# greenfield-cmd
 
-Greenfield Go SDK, support api and cmd to make request to GreenField-StorageProvider and GreenField-BlockChain
-
-## Install 
-
-go get -u github.com/bnb-chain/greenfield-sdk-go
+Greenfield client cmd tool, support api and cmd to make request to GreenField-StorageProvider and GreenField-BlockChain
 
 ## Cmd usage
 

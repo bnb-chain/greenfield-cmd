@@ -1,17 +1,19 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
 
-	greenfield "github.com/bnb-chain/greenfield-sdk-go"
+	spClient "github.com/bnb-chain/gnfd-go-sdk/client/sp"
+	"github.com/bnb-chain/gnfd-go-sdk/keys"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/urfave/cli/v2"
 )
 
 // NewClient returns a new greenfield client
-func NewClient(ctx *cli.Context) (*greenfield.Client, error) {
+func NewClient(ctx *cli.Context) (*spClient.SPClient, error) {
 	// generate for temp test, it should fetch private key from keystore
 	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
 
@@ -24,19 +26,22 @@ func NewClient(ctx *cli.Context) (*greenfield.Client, error) {
 		return nil, fmt.Errorf("endpoint length error")
 	}
 
-	s3client, err := greenfield.NewClient(endpoint[7:], &greenfield.Options{})
+	keyManager, err := keys.NewPrivateKeyManager(hex.EncodeToString(privKey.Bytes()))
+	if err != nil {
+		log.Fatal("new key manager fail", err.Error())
+	}
+
+	client, err := spClient.NewSpClientWithKeyManager(endpoint[7:], &spClient.Option{}, keyManager)
 	if err != nil {
 		log.Println("create client fail")
 	}
 
 	host := ctx.String("host")
 	if host != "" {
-		s3client.SetHost(host)
+		client.SetHost(host)
 	}
 
-	s3client.SetPriKey(privKey)
-
-	return s3client, err
+	return client, err
 }
 
 // ParseBucketAndObject parse the bucket-name and object-name from url

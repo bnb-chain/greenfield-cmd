@@ -122,9 +122,10 @@ func getObjInfo(bucketName string, objectName string, h http.Header) (ObjectInfo
 
 	// Parse content length is exists
 	var size int64 = -1
+	var err error
 	contentLength := h.Get(HTTPHeaderContentLength)
 	if contentLength != "" {
-		_, err := strconv.ParseInt(contentLength, 10, 64)
+		size, err = strconv.ParseInt(contentLength, 10, 64)
 		if err != nil {
 			return ObjectInfo{}, ErrResponse{
 				Code:       "InternalError",
