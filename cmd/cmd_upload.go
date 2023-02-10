@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	greenfield "github.com/bnb-chain/greenfield-sdk-go"
-	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
+	spClient "github.com/bnb-chain/gnfd-go-sdk/client/sp"
+	"github.com/bnb-chain/gnfd-go-sdk/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -126,10 +126,10 @@ func sendPutTxn(ctx *cli.Context) error {
 
 	size := int64(ctx.Int("object-size"))
 	if size <= 0 {
-		size, _ = greenfield.GetContentLength(f)
+		size, _ = utils.GetContentLength(f)
 	}
 
-	putObjectMeta := greenfield.PutObjectMeta{
+	putObjectMeta := spClient.PutObjectMeta{
 		PaymentAccount: s3Client.GetAccount(),
 		PrimarySp:      primarySP,
 		IsPublic:       isPublic,
@@ -140,8 +140,8 @@ func sendPutTxn(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	txnHash, err := s3Client.PrePutObject(c, bucketName, objectName, putObjectMeta, f,
-		signer.NewAuthInfo(false, ""))
+	txnHash, err := s3Client.CreateObject(c, bucketName, objectName, putObjectMeta, f,
+		spClient.NewAuthInfo(false, ""))
 
 	if err != nil {
 		fmt.Println("send putObject txn fail", err)
@@ -191,12 +191,12 @@ func uploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	meta := greenfield.ObjectMeta{
+	meta := spClient.ObjectMeta{
 		ObjectSize:  objectSize,
 		ContentType: "application/octet-stream",
 	}
 
-	res, err := s3Client.PutObject(c, bucketName, objectName, txnhash, fileReader, meta, signer.NewAuthInfo(false, ""))
+	res, err := s3Client.PutObject(c, bucketName, objectName, txnhash, fileReader, meta, spClient.NewAuthInfo(false, ""))
 
 	if err != nil {
 		fmt.Println("upload payload fail:", err.Error())
@@ -227,7 +227,7 @@ func preUploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	signature, err := s3Client.GetApproval(c, bucketName, objectName, signer.NewAuthInfo(false, ""))
+	signature, err := s3Client.GetApproval(c, bucketName, objectName, spClient.NewAuthInfo(false, ""))
 	if err != nil {
 		return err
 	}

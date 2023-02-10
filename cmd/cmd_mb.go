@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bnb-chain/greenfield-sdk-go/pkg/signer"
+	spClient "github.com/bnb-chain/gnfd-go-sdk/client/sp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,13 +64,8 @@ func createBucket(ctx *cli.Context) error {
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
-	
-	authInfo := signer.AuthInfo{
-		SignType:        "authTypeV1",
-		MetaMaskSignStr: "",
-	}
 
-	if err = s3Client.CreateBucket(c, bucketName, authInfo); err != nil {
+	if err = s3Client.CreateBucket(c, bucketName, spClient.NewAuthInfo(false, "")); err != nil {
 		return err
 	}
 	fmt.Println("create bucket succ")
@@ -93,12 +88,7 @@ func preCreateBucket(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	authInfo := signer.AuthInfo{
-		SignType:        "authTypeV1",
-		MetaMaskSignStr: "",
-	}
-
-	signature, err := s3Client.GetApproval(c, bucketName, "", authInfo)
+	signature, err := s3Client.GetApproval(c, bucketName, "", spClient.NewAuthInfo(false, ""))
 	if err != nil {
 		return err
 	}
