@@ -40,7 +40,6 @@ func main() {
 		Flags: flags,
 		Commands: []*cli.Command{
 			cmdMakeBucket(),
-			cmdSendPutTxn(),
 			cmdPutObj(),
 			cmdGetObj(),
 			cmdPreCreateObj(),
