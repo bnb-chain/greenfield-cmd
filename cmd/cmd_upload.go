@@ -49,16 +49,16 @@ $ gnfd put-txn file.txt gnfd://bucket-name/object-name`,
 // cmdPreCreateObj send the request get approval of uploading
 func cmdPreCreateObj() *cli.Command {
 	return &cli.Command{
-		Name:      "pre-upload",
-		Action:    preUploadObject,
+		Name:      "create-obj",
+		Action:    createObject,
 		Usage:     "pre create object",
 		ArgsUsage: "OBJECT-URL",
 		Description: `
- preUpload and get approval from storage provider
+get approval from storage provider and send createObject txn to chain
 
 Examples:
 # the first phase of putObject
-$ gnfd  pre-upload gnfd://bucketname/object`,
+$ gnfd  create-obj gnfd://bucketname/objectname`,
 	}
 }
 
@@ -207,8 +207,8 @@ func uploadObject(ctx *cli.Context) error {
 	return nil
 }
 
-// preUploadObject get approval of uploading from sp
-func preUploadObject(ctx *cli.Context) error {
+// createObject get approval of uploading from sp
+func createObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return fmt.Errorf("the args number should be two")
 	}

@@ -40,11 +40,11 @@ func main() {
 		Flags: flags,
 		Commands: []*cli.Command{
 			cmdMakeBucket(),
-			cmdSendPutTxn(),
 			cmdPutObj(),
 			cmdGetObj(),
 			cmdPreCreateObj(),
 			cmdPreMakeBucket(),
+			cmdCalHash(),
 		},
 		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
 	}
