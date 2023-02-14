@@ -45,6 +45,7 @@ func main() {
 			cmdGetObj(),
 			cmdPreCreateObj(),
 			cmdPreMakeBucket(),
+			cmdCalHash(),
 		},
 		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
 	}

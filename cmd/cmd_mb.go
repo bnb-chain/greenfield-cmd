@@ -76,6 +76,7 @@ func createBucket(ctx *cli.Context) error {
 func preCreateBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketName(ctx)
 	if err != nil {
+
 		return err
 	}
 
