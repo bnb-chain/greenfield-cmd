@@ -14,7 +14,7 @@ cd cmd; go build -o gnfd-cmd main.go cmd_mb.go client_gnfd.go   cmd_upload.go  c
     
 // putObject:
  
-(1) gnfd-cmd pre-upload gnfd://bucketname/objectname
+(1) gnfd-cmd create-obj gnfd://bucketname/objectname
 (2) send-cmd txn to chain use comsos client
 (3) gnfd-cmd put --txnhash xxx  test.txt  gnfd://bucketname/objectname
 
