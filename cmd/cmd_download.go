@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	spClient "github.com/bnb-chain/gnfd-go-sdk/client/sp"
+	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/urfave/cli/v2"
 )
 
