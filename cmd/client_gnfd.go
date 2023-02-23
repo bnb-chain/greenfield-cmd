@@ -3,17 +3,23 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strings"
 
-	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
-	"github.com/bnb-chain/greenfield-go-sdk/keys"
+	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	"github.com/bnb-chain/greenfield/sdk/client"
+	"github.com/bnb-chain/greenfield/sdk/keys"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
+var NewPrivateKeyManager = keys.NewPrivateKeyManager
+var WithGrpcDialOption = client.WithGrpcDialOption
+
 // NewClient returns a new greenfield client
-func NewClient(ctx *cli.Context) (*spClient.SPClient, error) {
+func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	// generate for temp test, it should fetch private key from keystore
 	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
 
@@ -22,23 +28,31 @@ func NewClient(ctx *cli.Context) (*spClient.SPClient, error) {
 		return nil, fmt.Errorf("parse endpoint from config file fail")
 	}
 
-	if len(endpoint) <= 7 {
-		return nil, fmt.Errorf("endpoint length error")
+	grpcAddr := ctx.String("grpcAddr")
+	if grpcAddr == "" {
+		return nil, fmt.Errorf("parse grpc address from config file fail")
+	}
+
+	chainId := ctx.String("chainId")
+	if chainId == "" {
+		return nil, fmt.Errorf("parse chain id from config file fail")
 	}
 
 	keyManager, err := keys.NewPrivateKeyManager(hex.EncodeToString(privKey.Bytes()))
 	if err != nil {
-		log.Fatal("new key manager fail", err.Error())
+		log.Error().Msg("new key manager fail" + err.Error())
 	}
 
-	client, err := spClient.NewSpClientWithKeyManager(endpoint[7:], &spClient.Option{}, keyManager)
+	client, err := gnfdclient.NewGnfdClient(grpcAddr, chainId, endpoint, keyManager, false,
+		WithGrpcDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
+
 	if err != nil {
-		log.Println("create client fail")
+		fmt.Println("create client fail" + err.Error())
 	}
 
 	host := ctx.String("host")
 	if host != "" {
-		client.SetHost(host)
+		client.SPClient.SetHost(host)
 	}
 
 	return client, err

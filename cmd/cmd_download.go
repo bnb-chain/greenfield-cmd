@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os"
 
-	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -14,7 +15,7 @@ func cmdGetObj() *cli.Command {
 	return &cli.Command{
 		Name:      "get",
 		Action:    getObject,
-		Usage:     "Download object",
+		Usage:     "download object",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Download a specific object from storage provider
@@ -41,7 +42,7 @@ func getObject(ctx *cli.Context) error {
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName := ParseBucketAndObject(urlInfo)
 
-	s3Client, err := NewClient(ctx)
+	gnfdClient, err := NewClient(ctx)
 	if err != nil {
 		log.Println("create client fail", err.Error())
 		return err
@@ -54,10 +55,23 @@ func getObject(ctx *cli.Context) error {
 	filePath := ctx.Args().Get(1)
 	log.Printf("download object %s into file:%s \n", objectName, filePath)
 
-	err = s3Client.FGetObject(c, bucketName, objectName, filePath, spClient.GetObjectOptions{}, spClient.NewAuthInfo(false, ""))
+	// If file exist, open it in append mode
+	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil {
 		return err
 	}
+
+	body, _, err := gnfdClient.DownloadObject(c, bucketName, objectName)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(fd, body)
+	fd.Close()
+	if err != nil {
+		return err
+	}
+
 	log.Println("downaload object finish")
 	return nil
 }
