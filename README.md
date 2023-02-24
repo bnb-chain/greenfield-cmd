@@ -6,7 +6,7 @@ Greenfield client cmd tool, support api and cmd to make request to GreenField-St
 
 ```
 cd cmd; go build -o gnfd-cmd main.go cmd_mb.go client_gnfd.go  cmd_upload.go  cmd_download.go
-cmd_hash.go  cmd_delete.go cmd_head.go
+cmd_hash.go  cmd_delete.go cmd_head.go cmd_challenge.go
 
 ```
 ## Cmd usage
@@ -25,6 +25,7 @@ chainId = "greenfield_9000-1741"%
 ### support commands
 
 ```
+COMMANDS:
    mb           create a new bucket
    put          upload object payload
    get          download object
@@ -34,7 +35,8 @@ chainId = "greenfield_9000-1741"%
    del-bucket   delete a existing bucket
    head-obj     headObject and get objectInfo
    head-bucket  headBucket and get bucketInfo
-   help, h      Shows a list of commands or help for one command
+   challenge    make a challenge to sp
+
 ```
 
 ### Create Bucket
@@ -87,4 +89,10 @@ gnfd --config=config.toml  head-obj gnfd://bucket-name/object-name
 
 ```
 ./gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 test.txt  
+```
+
+### Challege
+
+```
+./gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1
 ```

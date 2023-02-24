@@ -60,6 +60,7 @@ func main() {
 			cmdDelBucket(),
 			cmdHeadObj(),
 			cmdHeadBucket(),
+			cmdChallenge(),
 		},
 		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
 	}
