@@ -60,6 +60,7 @@ func getObject(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer fd.Close()
 
 	body, _, err := gnfdClient.DownloadObject(c, bucketName, objectName)
 	if err != nil {
@@ -67,7 +68,6 @@ func getObject(ctx *cli.Context) error {
 	}
 
 	_, err = io.Copy(fd, body)
-	fd.Close()
 	if err != nil {
 		return err
 	}
