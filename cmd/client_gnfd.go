@@ -17,6 +17,7 @@ import (
 
 var NewPrivateKeyManager = keys.NewPrivateKeyManager
 var WithGrpcDialOption = client.WithGrpcDialOption
+var WithKeyManager = client.WithKeyManager
 
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
@@ -48,6 +49,7 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	}
 
 	client, err := gnfdclient.NewGnfdClient(grpcAddr, chainId, endpoint, keyManager, false,
+		WithKeyManager(keyManager),
 		WithGrpcDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
 
 	if err != nil {
