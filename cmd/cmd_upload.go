@@ -64,7 +64,7 @@ $ gnfd put --txnhash xx  file.txt gnfd://bucket-name/file.txt`,
 			&cli.StringFlag{
 				Name:     "txnhash",
 				Value:    "",
-				Usage:    "the txn hash of tranction of createObjectMsg",
+				Usage:    "the txn hash of transaction of createObjectMsg",
 				Required: true,
 			},
 			&cli.StringFlag{
@@ -101,8 +101,8 @@ func uploadObject(ctx *cli.Context) error {
 	exists, objectSize, err := pathExists(filePath)
 	if !exists {
 		return fmt.Errorf("upload file not exists")
-	} else if objectSize > int64(500*1024*1024) {
-		return fmt.Errorf("upload file larger than 500M ")
+	} else if objectSize > int64(5*1024*1024*1024) {
+		return fmt.Errorf("upload file larger than 5G")
 	}
 
 	// Open the referenced file.

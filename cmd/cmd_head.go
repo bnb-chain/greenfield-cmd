@@ -17,7 +17,7 @@ func cmdHeadObj() *cli.Command {
 		Description: `
 send headObject txn to chain and fetch objectInfo on greenfield chain
 Examples:
-$ gnfd head-bucket gnfd://bucket-name/object-name`,
+$ gnfd-cmd head-bucket gnfd://bucket-name/object-name`,
 	}
 }
 
@@ -31,7 +31,7 @@ func cmdHeadBucket() *cli.Command {
 		Description: `
 send headBucket txn to chain and fetch bucketInfo on greenfield chain
 Examples:
-$ gnfd head-bucket gnfd://bucket-name`,
+$ gnfd-cmd head-bucket gnfd://bucket-name`,
 	}
 }
 

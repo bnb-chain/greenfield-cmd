@@ -20,7 +20,7 @@ func cmdCalHash() *cli.Command {
 
 Examples:
 # Compute file path
-$ gnfd get-hash --segSize 16  --dataShards 4 --parityShards 2 /home/test.text `,
+$ gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 /home/test.text `,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  "segSize",

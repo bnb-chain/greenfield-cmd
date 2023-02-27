@@ -53,7 +53,6 @@ func getObject(ctx *cli.Context) error {
 
 	// filePath := ctx.String("filepath")
 	filePath := ctx.Args().Get(1)
-	log.Printf("download object %s into file:%s \n", objectName, filePath)
 
 	// If file exist, open it in append mode
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
@@ -72,6 +71,6 @@ func getObject(ctx *cli.Context) error {
 		return err
 	}
 
-	log.Println("downaload object finish")
+	log.Println("download object inti file:" + filePath)
 	return nil
 }

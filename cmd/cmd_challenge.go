@@ -16,13 +16,12 @@ func cmdChallenge() *cli.Command {
 	return &cli.Command{
 		Name:      "challenge",
 		Action:    getChallengeInfo,
-		Usage:     "make a challenge to sp",
+		Usage:     "Send challenge to storage provider",
 		ArgsUsage: "",
 		Description: `
 
 Examples:
-# Make challenge
-$ gnfd challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
+$ gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "objectId",
@@ -39,7 +38,7 @@ $ gnfd challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
 			&cli.IntFlag{
 				Name:     "spIndex",
 				Value:    -1,
-				Usage:    "show which sp of the s",
+				Usage:    "indicate the challenge sp index",
 				Required: true,
 			},
 		},

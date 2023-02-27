@@ -18,7 +18,7 @@ cmd % cat config.toml
 endpoint = "http://127.0.0.1:8888"
 host = "nodereal.gnfd.com"
 grpcAddr = "http://127.0.0.1:26750"
-chainId = "greenfield_9000-1741"% 
+chainId = "greenfield_9000-1741"
 
 ```
 
