@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/bnb-chain/greenfield v0.0.0-20230223070939-63c25ce5c8c3
-	github.com/bnb-chain/greenfield-go-sdk v0.0.0-20230224040240-657b2f7f219e
+	github.com/bnb-chain/greenfield-go-sdk v0.0.5
 	github.com/cosmos/cosmos-sdk v0.46.4
 	github.com/rs/zerolog v1.29.0
 	github.com/urfave/cli/v2 v2.3.0
@@ -22,7 +22,7 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
-	github.com/bnb-chain/greenfield-common/go v0.0.0-20230223065707-93ad9f4b1365 // indirect
+	github.com/bnb-chain/greenfield-common/go v0.0.0-20230227091017-b60c7936a1c6 // indirect
 	github.com/btcsuite/btcd v0.22.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect

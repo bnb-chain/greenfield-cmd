@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	sp_type "github.com/bnb-chain/greenfield/x/sp/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -77,6 +78,17 @@ func createBucket(ctx *cli.Context) error {
 
 	primarySpAddr := sdk.MustAccAddressFromHex(primarySpAddrStr)
 
+	request := &sp_type.QueryStorageProvidersRequest{
+		nil}
+
+	gnfdRep1, err := client.ChainClient.StorageProviders(c, request)
+	if err != nil {
+		return nil
+	}
+
+	for _, addr := range gnfdRep1.GetSps() {
+		fmt.Println("sp address:", addr.GetOperatorAddress())
+	}
 	gnfdResp := client.CreateBucket(c, bucketName, primarySpAddr, opts)
 	if gnfdResp.Err != nil {
 		return gnfdResp.Err
