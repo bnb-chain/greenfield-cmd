@@ -94,6 +94,7 @@ func getChallengeInfo(ctx *cli.Context) error {
 
 	res, err := s3Client.SPClient.ChallengeSP(c, info, spClient.NewAuthInfo(false, ""))
 	if err != nil {
+		fmt.Println("challenge fail:", err.Error())
 		return err
 	}
 

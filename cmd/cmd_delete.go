@@ -58,6 +58,7 @@ func deleteBucket(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	gnfdResp := client.DelBucket(bucketName, types.TxOption{Mode: &broadcastMode})
 	if gnfdResp.Err != nil {
+		fmt.Println("delete bucket error:", gnfdResp.Err.Error())
 		return err
 	}
 
@@ -85,6 +86,7 @@ func deleteObject(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	gnfdResp := client.DelObject(bucketName, objectName, types.TxOption{Mode: &broadcastMode})
 	if gnfdResp.Err != nil {
+		fmt.Println("delete object error:", gnfdResp.Err.Error())
 		return err
 	}
 

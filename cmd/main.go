@@ -44,6 +44,12 @@ func main() {
 				Usage: "greenfield chainId",
 			},
 		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Name:  "privateKey",
+				Usage: "greenfield client key, hex encoding string",
+			},
+		),
 	}
 
 	app := &cli.App{

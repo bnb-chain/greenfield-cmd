@@ -63,6 +63,7 @@ func getObject(ctx *cli.Context) error {
 
 	body, _, err := gnfdClient.DownloadObject(c, bucketName, objectName)
 	if err != nil {
+		fmt.Println("download object fail:", err.Error())
 		return err
 	}
 

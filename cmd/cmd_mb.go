@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
-	sp_type "github.com/bnb-chain/greenfield/x/sp/types"
+	spType "github.com/bnb-chain/greenfield/x/sp/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -25,7 +25,7 @@ the bucket name should unique and the default acl is not public.
 
 Examples:
 # Create a new bucket
-$ gnfd mb --primarySP "test-account" gnfd://bucketname`,
+$ gnfd mb  gnfd://bucketname`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "public",
@@ -33,10 +33,9 @@ $ gnfd mb --primarySP "test-account" gnfd://bucketname`,
 				Usage: "indicate whether the bucket is public",
 			},
 			&cli.StringFlag{
-				Name:     "primarySP",
-				Value:    "",
-				Usage:    "indicate the primarySP address, using the string type",
-				Required: true,
+				Name:  "primarySP",
+				Value: "",
+				Usage: "indicate the primarySP address, using the string type",
 			},
 			&cli.StringFlag{
 				Name:  "PaymentAddr",
@@ -72,23 +71,34 @@ func createBucket(ctx *cli.Context) error {
 	if paymentAddrStr != "" {
 		opts.PaymentAddress = sdk.MustAccAddressFromHex(paymentAddrStr)
 	}
+
+	request := &spType.QueryStorageProvidersRequest{}
+	chainCtx := context.Background()
+	gnfdRep, err := client.ChainClient.StorageProviders(chainCtx, request)
+	if err != nil {
+		return err
+	}
+
 	if primarySpAddrStr == "" {
-		return errors.New("fail to parse the primary sp address ")
+		spList := gnfdRep.GetSps()
+		existPrimarySp := false
+		for _, sp := range spList {
+			if sp.Description.Moniker == "sp0" {
+				existPrimarySp = true
+				primarySpAddrStr = sp.GetOperatorAddress()
+				if sp.Status.String() != "STATUS_IN_SERVICE" {
+					return errors.New("primary sp")
+				}
+			}
+		}
+
+		if !existPrimarySp {
+			return errors.New("not exist primary sp")
+		}
+
 	}
 
 	primarySpAddr := sdk.MustAccAddressFromHex(primarySpAddrStr)
-
-	request := &sp_type.QueryStorageProvidersRequest{
-		nil}
-
-	gnfdRep1, err := client.ChainClient.StorageProviders(c, request)
-	if err != nil {
-		return nil
-	}
-
-	for _, addr := range gnfdRep1.GetSps() {
-		fmt.Println("sp address:", addr.GetOperatorAddress())
-	}
 	gnfdResp := client.CreateBucket(c, bucketName, primarySpAddr, opts)
 	if gnfdResp.Err != nil {
 		return gnfdResp.Err

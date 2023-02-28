@@ -21,9 +21,6 @@ var WithKeyManager = client.WithKeyManager
 
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
-	// generate for temp test, it should fetch private key from keystore
-	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
-
 	endpoint := ctx.String("endpoint")
 	if endpoint == "" {
 		return nil, fmt.Errorf("parse endpoint from config file fail")
@@ -43,7 +40,15 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 		return nil, fmt.Errorf("parse chain id from config file fail")
 	}
 
-	keyManager, err := keys.NewPrivateKeyManager(hex.EncodeToString(privKey.Bytes()))
+	privateKeyStr := ctx.String("privateKey")
+	if privateKeyStr == "" {
+		// generate private ke for temp test
+		privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
+		privateKeyStr = hex.EncodeToString(privKey.Bytes())
+		return nil, fmt.Errorf("parse private key from config file fail")
+	}
+
+	keyManager, err := keys.NewPrivateKeyManager(privateKeyStr)
 	if err != nil {
 		log.Error().Msg("new key manager fail" + err.Error())
 	}
@@ -51,10 +56,11 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	client, err := gnfdclient.NewGnfdClient(grpcAddr, chainId, endpoint, keyManager, false,
 		WithKeyManager(keyManager),
 		WithGrpcDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
-
 	if err != nil {
 		fmt.Println("create client fail" + err.Error())
 	}
+
+	fmt.Println("sender addr is:", client.SPClient.GetAccount().String(), " ,the address should have balance to test")
 
 	host := ctx.String("host")
 	if host != "" {

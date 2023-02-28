@@ -124,11 +124,11 @@ func uploadObject(ctx *cli.Context) error {
 	res, err := s3Client.UploadObject(c, bucketName, objectName, txnhash, objectSize, fileReader, opt)
 
 	if err != nil {
-		fmt.Println("upload payload fail:", err.Error())
+		fmt.Println("upload object fail:", err.Error())
 		return err
 	}
 
-	fmt.Println("upload succ:", res.String())
+	fmt.Println("upload object succ:", res.String())
 	return nil
 }
 
@@ -191,10 +191,11 @@ func createObject(ctx *cli.Context) error {
 
 	gnfdResp := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if gnfdResp.Err != nil {
+		fmt.Println("create object fail:", gnfdResp.Err.Error())
 		return err
 	}
 
-	fmt.Println("txn hash:", gnfdResp.TxnHash)
+	fmt.Println("createObject txn hash:", gnfdResp.TxnHash)
 	return nil
 }
 

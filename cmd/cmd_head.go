@@ -51,7 +51,7 @@ func headObject(ctx *cli.Context) error {
 	objectInfo, err := client.HeadObject(bucketName, objectName)
 	if err != nil {
 		fmt.Println("headObject fail:", err.Error())
-		return nil
+		return err
 	}
 	fmt.Println("object id:", objectInfo.ObjectId)
 	fmt.Println("object status", objectInfo.Status)
@@ -76,7 +76,7 @@ func headBucket(ctx *cli.Context) error {
 	bucketInfo, err := client.HeadBucket(bucketName)
 	if err != nil {
 		fmt.Println("headBucket fail:", err.Error())
-		return nil
+		return err
 	}
 	fmt.Println("bucket id:", bucketInfo.BucketId)
 	fmt.Println("bucket owner:", bucketInfo.Owner)
