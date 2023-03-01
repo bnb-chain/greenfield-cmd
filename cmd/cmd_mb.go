@@ -6,95 +6,105 @@ import (
 	"fmt"
 	"log"
 
-	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
+	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	spType "github.com/bnb-chain/greenfield/x/sp/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
-// cmdPreMakeBucket get approval of creating bucket from the storage provider
-func cmdPreMakeBucket() *cli.Command {
-	return &cli.Command{
-		Name:      "pre-mb",
-		Action:    preCreateBucket,
-		Usage:     "pre make bucket",
-		ArgsUsage: "BUCKET-URL",
-		Description: `
- preMakeBucket and get approval from storage provider
-
-Examples:
-# the first phase of putObject
-$ gnfd  pre-mb gnfd://bucketname`,
-	}
-}
-
 // cmdMakeBucket create a new Bucket
-func cmdMakeBucket() *cli.Command {
+func cmdCreateBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "mb",
 		Action:    createBucket,
-		Usage:     "create a new bucket",
+		Usage:     "create bucket",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
-Create a new bucket and set a createBucketMsg to storage provider, the bucket name should  unique and the default acl is Public
+Create a new bucket and set a createBucketMsg to storage provider, 
+the bucket name should unique and the default acl is not public.
 
 Examples:
 # Create a new bucket
-$ gnfd mb gnfd://bucketname`,
+$ gnfd mb  gnfd://bucketname`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "public",
 				Value: false,
 				Usage: "indicate whether the bucket is public",
 			},
+			&cli.StringFlag{
+				Name:  "primarySP",
+				Value: "",
+				Usage: "indicate the primarySP address, using the string type",
+			},
+			&cli.StringFlag{
+				Name:  "PaymentAddr",
+				Value: "",
+				Usage: "indicate the PaymentAddress info, using the string type",
+			},
 		},
 	}
 }
 
-// createBucket send the create bucket api to storage provider
+// createBucket send the create bucket request to storage provider
 func createBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketName(ctx)
 	if err != nil {
 		return err
 	}
 
-	s3Client, err := NewClient(ctx)
+	client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	if err = s3Client.CreateBucket(c, bucketName, spClient.NewAuthInfo(false, "")); err != nil {
-		return err
-	}
-	fmt.Println("create bucket succ")
-	return nil
-}
+	isPublic := ctx.Bool("public")
+	primarySpAddrStr := ctx.String("primarySP")
+	paymentAddrStr := ctx.String("PaymentAddr")
 
-// preCreateBucket send the request to sp to get approval of creating bucket
-func preCreateBucket(ctx *cli.Context) error {
-	bucketName, err := getBucketName(ctx)
-	if err != nil {
-
-		return err
+	opts := gnfdclient.CreateBucketOptions{}
+	opts.IsPublic = isPublic
+	if paymentAddrStr != "" {
+		opts.PaymentAddress = sdk.MustAccAddressFromHex(paymentAddrStr)
 	}
 
-	s3Client, err := NewClient(ctx)
-	if err != nil {
-		log.Println("create client fail", err.Error())
-		return err
-	}
-
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
-
-	signature, err := s3Client.GetApproval(c, bucketName, "", spClient.NewAuthInfo(false, ""))
+	request := &spType.QueryStorageProvidersRequest{}
+	chainCtx := context.Background()
+	gnfdRep, err := client.ChainClient.StorageProviders(chainCtx, request)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("get signature:", signature)
+	if primarySpAddrStr == "" {
+		spList := gnfdRep.GetSps()
+		existPrimarySp := false
+		for _, sp := range spList {
+			if sp.Description.Moniker == "sp0" {
+				existPrimarySp = true
+				primarySpAddrStr = sp.GetOperatorAddress()
+				if sp.Status.String() != "STATUS_IN_SERVICE" {
+					return errors.New("primary sp")
+				}
+			}
+		}
+
+		if !existPrimarySp {
+			return errors.New("not exist primary sp")
+		}
+
+	}
+
+	primarySpAddr := sdk.MustAccAddressFromHex(primarySpAddrStr)
+	gnfdResp := client.CreateBucket(c, bucketName, primarySpAddr, opts)
+	if gnfdResp.Err != nil {
+		return gnfdResp.Err
+	}
+
+	fmt.Println("create bucket succ, txn hash:", gnfdResp.TxnHash)
 	return nil
 }
 
