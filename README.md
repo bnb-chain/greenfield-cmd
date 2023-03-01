@@ -2,13 +2,6 @@
 
 Greenfield client cmd tool, support commands to make request to greenfield
 
-## build
-
-```
-cd cmd; go build -o gnfd-cmd main.go cmd_mb.go client_gnfd.go  cmd_upload.go  cmd_download.go
-cmd_hash.go  cmd_delete.go cmd_head.go cmd_challenge.go
-
-```
 ## Cmd usage
 
 ### basic config 
