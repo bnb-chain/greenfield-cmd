@@ -3,42 +3,67 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strings"
 
-	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
-	"github.com/bnb-chain/greenfield-go-sdk/keys"
+	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	"github.com/bnb-chain/greenfield/sdk/client"
+	"github.com/bnb-chain/greenfield/sdk/keys"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-// NewClient returns a new greenfield client
-func NewClient(ctx *cli.Context) (*spClient.SPClient, error) {
-	// generate for temp test, it should fetch private key from keystore
-	privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
+var NewPrivateKeyManager = keys.NewPrivateKeyManager
+var WithGrpcDialOption = client.WithGrpcDialOption
+var WithKeyManager = client.WithKeyManager
 
+// NewClient returns a new greenfield client
+func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	endpoint := ctx.String("endpoint")
 	if endpoint == "" {
-		return nil, fmt.Errorf("parse endpoint from config file fail")
+		return nil, fmt.Errorf("failed to parse endpoint from config file")
 	}
 
-	if len(endpoint) <= 7 {
-		return nil, fmt.Errorf("endpoint length error")
+	if strings.Contains(endpoint, "http") {
+		endpoint = endpoint[7:]
 	}
 
-	keyManager, err := keys.NewPrivateKeyManager(hex.EncodeToString(privKey.Bytes()))
+	grpcAddr := ctx.String("grpcAddr")
+	if grpcAddr == "" {
+		return nil, fmt.Errorf("failed to parse grpc address from config file")
+	}
+
+	chainId := ctx.String("chainId")
+	if chainId == "" {
+		return nil, fmt.Errorf("failed to parse chain id from config file")
+	}
+
+	privateKeyStr := ctx.String("privateKey")
+	if privateKeyStr == "" {
+		// generate private key if not provided
+		privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
+		privateKeyStr = hex.EncodeToString(privKey.Bytes())
+	}
+
+	keyManager, err := keys.NewPrivateKeyManager(privateKeyStr)
 	if err != nil {
-		log.Fatal("new key manager fail", err.Error())
+		log.Error().Msg("new key manager fail" + err.Error())
 	}
 
-	client, err := spClient.NewSpClientWithKeyManager(endpoint[7:], &spClient.Option{}, keyManager)
+	client, err := gnfdclient.NewGnfdClient(grpcAddr, chainId, endpoint, keyManager, false,
+		WithKeyManager(keyManager),
+		WithGrpcDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
 	if err != nil {
-		log.Println("create client fail")
+		fmt.Println("failed to create client" + err.Error())
 	}
+
+	fmt.Println("sender addr is:", client.SPClient.GetAccount().String())
 
 	host := ctx.String("host")
 	if host != "" {
-		client.SetHost(host)
+		client.SPClient.SetHost(host)
 	}
 
 	return client, err

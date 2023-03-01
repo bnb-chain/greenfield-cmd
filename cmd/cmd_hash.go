@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	"github.com/urfave/cli/v2"
 )
 
@@ -13,25 +14,28 @@ func cmdCalHash() *cli.Command {
 	return &cli.Command{
 		Name:      "get-hash",
 		Action:    computeHashRoot,
-		Usage:     "compute hash roots of object ",
+		Usage:     "compute hash roots of object",
 		ArgsUsage: "filePath",
 		Description: `
 
 Examples:
 # Compute file path
-$ gnfd get-hash --segSize 16  --shards 6 /home/test.text `,
+$ gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 /home/test.text `,
 		Flags: []cli.Flag{
-			&cli.IntFlag{
-				Name:     "segSize",
-				Value:    16,
-				Usage:    "the segment size (MB)",
-				Required: true,
+			&cli.Uint64Flag{
+				Name:  "segSize",
+				Value: 16,
+				Usage: "the segment size (MB)",
 			},
-			&cli.IntFlag{
-				Name:     "shards",
-				Value:    6,
-				Usage:    "the ec encode shard number",
-				Required: true,
+			&cli.Uint64Flag{
+				Name:  "dataShards",
+				Value: 4,
+				Usage: "the EC encode shard number",
+			},
+			&cli.Uint64Flag{
+				Name:  "parityShards",
+				Value: 2,
+				Usage: "the EC encode shard number",
 			},
 		},
 	}
@@ -48,6 +52,27 @@ func computeHashRoot(ctx *cli.Context) error {
 		return errors.New("upload file larger than 500M ")
 	}
 
+	opts := gnfdclient.ComputeHashOptions{}
+	segmentSize := ctx.Uint64("segSize")
+	if segmentSize > 0 {
+		opts.SegmentSize = segmentSize
+	}
+
+	dataBlocks := ctx.Uint64("dataShards")
+	if dataBlocks > 0 {
+		opts.DataShards = uint32(dataBlocks)
+	}
+
+	parityBlocks := ctx.Uint64("parityShards")
+	if parityBlocks > 0 {
+		opts.ParityShards = uint32(parityBlocks)
+	}
+
+	gnfdClient, err := NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Open the referenced file.
 	fReader, err := os.Open(filePath)
 	if err != nil {
@@ -55,31 +80,18 @@ func computeHashRoot(ctx *cli.Context) error {
 	}
 	defer fReader.Close()
 
-	segmentSize := ctx.Int("segSize")
-	if segmentSize <= 0 {
-		return errors.New("segment size should be more than 0 ")
-	}
-
-	ecShards := ctx.Int("shards")
-	if ecShards <= 0 {
-		return errors.New("encode shards number should be more than 0 ")
-	}
-
-	s3Client, err := NewClient(ctx)
+	hashes, size, err := gnfdClient.ComputeHashRoots(fReader)
 	if err != nil {
+		fmt.Println("compute hash root fail:", err.Error())
 		return err
 	}
 
-	priHash, secondHash, _, err := s3Client.GetPieceHashRoots(fReader, int64(segmentSize*1024*1024), ecShards)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("get primary sp hash root: \n%s\n", priHash)
+	fmt.Printf("get primary sp hash root: \n%s\n", hashes[0])
 	fmt.Println("get secondary sp hash list:")
-	for _, hash := range secondHash {
+	for _, hash := range hashes[1:] {
 		fmt.Println(hash)
 	}
+	fmt.Println("file size:", size)
 
 	return nil
 }

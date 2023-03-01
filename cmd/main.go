@@ -32,19 +32,43 @@ func main() {
 				Usage: "primary host",
 			},
 		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Name:  "grpcAddr",
+				Usage: "greenfield chain client grpc adress",
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Name:  "chainId",
+				Usage: "greenfield chainId",
+			},
+		),
+		altsrc.NewStringFlag(
+			&cli.StringFlag{
+				Name:     "privateKey",
+				Usage:    "hex encoding private key string",
+				Required: false,
+			},
+		),
 	}
 
 	app := &cli.App{
-		Name:  "gnfd",
-		Usage: "client for inscription blockchain object storage",
+		Name:  "gnfd-cmd",
+		Usage: "cmd tool for supporting greenfield storage functions",
 		Flags: flags,
 		Commands: []*cli.Command{
-			cmdMakeBucket(),
+			cmdCreateBucket(),
 			cmdPutObj(),
 			cmdGetObj(),
 			cmdPreCreateObj(),
-			cmdPreMakeBucket(),
 			cmdCalHash(),
+			cmdDelObject(),
+			cmdDelBucket(),
+			cmdHeadObj(),
+			cmdHeadBucket(),
+			cmdChallenge(),
+			cmdListSP(),
 		},
 		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
 	}
