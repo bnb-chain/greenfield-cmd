@@ -1,6 +1,6 @@
 # greenfield-cmd
 
-Greenfield client cmd tool, support api and cmd to make request to GreenField-StorageProvider and GreenField-BlockChain
+Greenfield client cmd tool, support commands to make request to greenfield
 
 ## build
 
@@ -28,20 +28,20 @@ privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefbbda4xxxxxxxx"
 ```
 COMMANDS:
    mb           create bucket
-   put          upload object
-   get          download object
-   create-obj   create object
+   put          upload an object
+   get          download an object
+   create-obj   create an object
    get-hash     compute hash roots of object
    del-obj      delete an existed object
    del-bucket   delete an existed bucket
    head-obj     query object info
    head-bucket  query bucket info
    challenge    Send challenge request
-      
 ```
 ### Precautions
 
 1.If the private key has not been configured, the tool will generate one and the operator address
+
 2.The operator account should have balance before testing
 
 ### Examples

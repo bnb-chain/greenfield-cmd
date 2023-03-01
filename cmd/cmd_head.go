@@ -44,7 +44,7 @@ func headObject(ctx *cli.Context) error {
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 
@@ -60,7 +60,7 @@ func headObject(ctx *cli.Context) error {
 	return nil
 }
 
-// headBucket send the create bucket api to storage provider
+// headBucket send the create bucket request to storage provider
 func headBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketName(ctx)
 	if err != nil {
@@ -69,7 +69,7 @@ func headBucket(ctx *cli.Context) error {
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 

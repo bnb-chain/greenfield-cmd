@@ -46,7 +46,7 @@ $ gnfd mb  gnfd://bucketname`,
 	}
 }
 
-// createBucket send the create bucket api to storage provider
+// createBucket send the create bucket request to storage provider
 func createBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketName(ctx)
 	if err != nil {
@@ -55,7 +55,7 @@ func createBucket(ctx *cli.Context) error {
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 

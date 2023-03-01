@@ -15,7 +15,7 @@ func cmdGetObj() *cli.Command {
 	return &cli.Command{
 		Name:      "get",
 		Action:    getObject,
-		Usage:     "download object",
+		Usage:     "download an object",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Download a specific object from storage provider
@@ -44,7 +44,7 @@ func getObject(ctx *cli.Context) error {
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 

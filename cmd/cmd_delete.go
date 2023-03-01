@@ -62,7 +62,7 @@ func deleteBucket(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("delete bucket finish, txn hash:", gnfdResp.TxnHash)
+	fmt.Println("delete bucket successfully, txn hash:", gnfdResp.TxnHash)
 	return nil
 }
 
@@ -90,6 +90,6 @@ func deleteObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("delete object finish, txn hash:", gnfdResp.TxnHash)
+	fmt.Println("delete object successfully, txn hash:", gnfdResp.TxnHash)
 	return nil
 }

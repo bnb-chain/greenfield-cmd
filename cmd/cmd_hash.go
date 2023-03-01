@@ -30,12 +30,12 @@ $ gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 /home/test.tex
 			&cli.Uint64Flag{
 				Name:  "dataShards",
 				Value: 4,
-				Usage: "the ec encode shard number",
+				Usage: "the EC encode shard number",
 			},
 			&cli.Uint64Flag{
 				Name:  "parityShards",
 				Value: 2,
-				Usage: "the ec encode shard number",
+				Usage: "the EC encode shard number",
 			},
 		},
 	}

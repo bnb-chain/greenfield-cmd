@@ -23,7 +23,7 @@ var WithKeyManager = client.WithKeyManager
 func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	endpoint := ctx.String("endpoint")
 	if endpoint == "" {
-		return nil, fmt.Errorf("parse endpoint from config file fail")
+		return nil, fmt.Errorf("failed to parse endpoint from config file")
 	}
 
 	if strings.Contains(endpoint, "http") {
@@ -32,12 +32,12 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 
 	grpcAddr := ctx.String("grpcAddr")
 	if grpcAddr == "" {
-		return nil, fmt.Errorf("parse grpc address from config file fail")
+		return nil, fmt.Errorf("failed to parse grpc address from config file")
 	}
 
 	chainId := ctx.String("chainId")
 	if chainId == "" {
-		return nil, fmt.Errorf("parse chain id from config file fail")
+		return nil, fmt.Errorf("failed to parse chain id from config file")
 	}
 
 	privateKeyStr := ctx.String("privateKey")
@@ -56,10 +56,10 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 		WithKeyManager(keyManager),
 		WithGrpcDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
 	if err != nil {
-		fmt.Println("create client fail" + err.Error())
+		fmt.Println("failed to create client" + err.Error())
 	}
 
-	fmt.Println("sender addr is:", client.SPClient.GetAccount().String(), " ,the address should have balance to test")
+	fmt.Println("sender addr is:", client.SPClient.GetAccount().String())
 
 	host := ctx.String("host")
 	if host != "" {

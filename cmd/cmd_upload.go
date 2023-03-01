@@ -19,7 +19,7 @@ func cmdPreCreateObj() *cli.Command {
 	return &cli.Command{
 		Name:      "create-obj",
 		Action:    createObject,
-		Usage:     "create object",
+		Usage:     "create an object",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Get approval from storage provider and send createObject txn to chain.
@@ -52,7 +52,7 @@ func cmdPutObj() *cli.Command {
 	return &cli.Command{
 		Name:      "put",
 		Action:    uploadObject,
-		Usage:     "upload object",
+		Usage:     "upload an object",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Upload the payload and send with txn to storage provider
@@ -90,7 +90,7 @@ func uploadObject(ctx *cli.Context) error {
 
 	s3Client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 
@@ -128,7 +128,7 @@ func uploadObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("upload object succ:", res.String())
+	fmt.Println("upload object successfully:", res.String())
 	return nil
 }
 
@@ -162,7 +162,7 @@ func createObject(ctx *cli.Context) error {
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
-		log.Println("create client fail", err.Error())
+		log.Println("failed to create client", err.Error())
 		return err
 	}
 
@@ -195,7 +195,7 @@ func createObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("createObject txn hash:", gnfdResp.TxnHash)
+	fmt.Println("create object successfully, txn hash:", gnfdResp.TxnHash)
 	return nil
 }
 
