@@ -16,7 +16,7 @@ func cmdChallenge() *cli.Command {
 	return &cli.Command{
 		Name:      "challenge",
 		Action:    getChallengeInfo,
-		Usage:     "Send challenge to storage provider",
+		Usage:     "Send challenge request",
 		ArgsUsage: "",
 		Description: `
 

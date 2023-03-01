@@ -12,7 +12,7 @@ func cmdHeadObj() *cli.Command {
 	return &cli.Command{
 		Name:      "head-obj",
 		Action:    headObject,
-		Usage:     "headObject and get objectInfo",
+		Usage:     "query object info",
 		ArgsUsage: "OBJECT-URL",
 		Description: `
 send headObject txn to chain and fetch objectInfo on greenfield chain
@@ -26,7 +26,7 @@ func cmdHeadBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "head-bucket",
 		Action:    headBucket,
-		Usage:     "headBucket and get bucketInfo",
+		Usage:     "query bucket info",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
 send headBucket txn to chain and fetch bucketInfo on greenfield chain

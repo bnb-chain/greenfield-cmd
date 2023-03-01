@@ -17,7 +17,7 @@ func cmdCreateBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "mb",
 		Action:    createBucket,
-		Usage:     "create a new bucket",
+		Usage:     "create bucket",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
 Create a new bucket and set a createBucketMsg to storage provider, 

@@ -8,34 +8,34 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// cmdDelBucket delete an existing Bucket,the bucket must be empty
+// cmdDelBucket delete an existed Bucket, the bucket must be empty
 func cmdDelBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "del-bucket",
 		Action:    deleteBucket,
-		Usage:     "delete an existing bucket",
+		Usage:     "delete an existed bucket",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
 Send a deleteBucket txn to greenfield chain, the bucket must be empty before deleting
 
 Examples:
-# Del an existing bucket
+# Del an existed bucket
 $ gnfd-cmd  del-bucket gnfd://bucketname`,
 	}
 }
 
-// cmdDelObject delete an existing object in bucket
+// cmdDelObject delete an existed object in bucket
 func cmdDelObject() *cli.Command {
 	return &cli.Command{
 		Name:      "del-obj",
 		Action:    deleteObject,
-		Usage:     "delete an existing object",
+		Usage:     "delete an existed object",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
 Send a deleteObject txn to greenfield chain
 
 Examples:
-# Del an existing object
+# Del an existed object
 $ gnfd-cmd del-obj gnfd://bucketname/objectname`,
 	}
 }

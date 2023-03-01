@@ -42,10 +42,9 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 
 	privateKeyStr := ctx.String("privateKey")
 	if privateKeyStr == "" {
-		// generate private ke for temp test
+		// generate private key if not provided
 		privKey, _, _ := testdata.KeyEthSecp256k1TestPubAddr()
 		privateKeyStr = hex.EncodeToString(privKey.Bytes())
-		return nil, fmt.Errorf("parse private key from config file fail")
 	}
 
 	keyManager, err := keys.NewPrivateKeyManager(privateKeyStr)

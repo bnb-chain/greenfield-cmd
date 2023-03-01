@@ -19,7 +19,7 @@ func cmdPreCreateObj() *cli.Command {
 	return &cli.Command{
 		Name:      "create-obj",
 		Action:    createObject,
-		Usage:     "create a new object",
+		Usage:     "create object",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Get approval from storage provider and send createObject txn to chain.
@@ -52,7 +52,7 @@ func cmdPutObj() *cli.Command {
 	return &cli.Command{
 		Name:      "put",
 		Action:    uploadObject,
-		Usage:     "upload object payload",
+		Usage:     "upload object",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Upload the payload and send with txn to storage provider

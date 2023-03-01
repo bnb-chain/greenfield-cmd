@@ -46,15 +46,16 @@ func main() {
 		),
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
-				Name:  "privateKey",
-				Usage: "greenfield client key, hex encoding string",
+				Name:     "privateKey",
+				Usage:    "hex encoding private key string",
+				Required: false,
 			},
 		),
 	}
 
 	app := &cli.App{
-		Name:  "gnfd",
-		Usage: "client for greenfield storage functions",
+		Name:  "gnfd-cmd",
+		Usage: "cmd tool for supporting greenfield storage functions",
 		Flags: flags,
 		Commands: []*cli.Command{
 			cmdCreateBucket(),

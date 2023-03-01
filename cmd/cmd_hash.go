@@ -14,7 +14,7 @@ func cmdCalHash() *cli.Command {
 	return &cli.Command{
 		Name:      "get-hash",
 		Action:    computeHashRoot,
-		Usage:     "compute hash roots of object ",
+		Usage:     "compute hash roots of object",
 		ArgsUsage: "filePath",
 		Description: `
 
