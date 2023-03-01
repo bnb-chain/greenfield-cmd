@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/bnb-chain/greenfield v0.0.0-20230223070939-63c25ce5c8c3
-	github.com/bnb-chain/greenfield-go-sdk v0.0.5
+	github.com/bnb-chain/greenfield-go-sdk v0.0.0-20230228075009-f3cd5482075d
 	github.com/cosmos/cosmos-sdk v0.46.4
 	github.com/rs/zerolog v1.29.0
 	github.com/urfave/cli/v2 v2.3.0

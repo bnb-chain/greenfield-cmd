@@ -68,6 +68,7 @@ func main() {
 			cmdHeadObj(),
 			cmdHeadBucket(),
 			cmdChallenge(),
+			cmdListSP(),
 		},
 		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
 	}

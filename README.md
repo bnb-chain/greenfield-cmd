@@ -37,6 +37,7 @@ COMMANDS:
    head-obj     query object info
    head-bucket  query bucket info
    challenge    Send challenge request
+   list-sp      list sp info
 ```
 ### Precautions
 
@@ -45,11 +46,17 @@ COMMANDS:
 2.The operator account should have balance before testing
 
 ### Examples
+
+#### List Storage Provider 
+```
+ ./gnfd-cmd  --config=config.toml list-sp
+```
+
 #### Create Bucket
 
 create bucket: create a new bucket on greenfield chain
 ```
-(1) gnfd-cmd --config=config.toml mb  gnfd://bucketname
+  gnfd-cmd --config=config.toml mb  gnfd://bucketname
 ```
 
 #### Upload Object
