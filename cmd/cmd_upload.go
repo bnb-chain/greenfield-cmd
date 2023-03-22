@@ -99,6 +99,9 @@ func uploadObject(ctx *cli.Context) error {
 	filePath := ctx.Args().Get(0)
 
 	exists, objectSize, err := pathExists(filePath)
+	if err != nil {
+		return err
+	}
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(5*1024*1024*1024) {
@@ -147,6 +150,9 @@ func createObject(ctx *cli.Context) error {
 	// read the local file payload
 	filePath := ctx.Args().Get(0)
 	exists, objectSize, err := pathExists(filePath)
+	if err != nil {
+		return err
+	}
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(5*1024*1024*1024) {

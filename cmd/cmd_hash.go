@@ -46,6 +46,10 @@ func computeHashRoot(ctx *cli.Context) error {
 	filePath := ctx.Args().Get(0)
 
 	exists, objectSize, err := pathExists(filePath)
+
+	if err != nil {
+		return err
+	}
 	if !exists {
 		return errors.New("upload file not exists")
 	} else if objectSize > int64(500*1024*1024) {
