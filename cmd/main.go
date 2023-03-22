@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli/v2/altsrc"
 )
 
-var globalContext, globalCancel = context.WithCancel(context.Background())
+var globalContext, _ = context.WithCancel(context.Background())
 
 func main() {
 	flags := []cli.Flag{
