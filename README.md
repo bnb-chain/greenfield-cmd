@@ -1,14 +1,20 @@
 # greenfield-cmd
 
-Greenfield client cmd tool, support commands to make request to greenfield
+---
+Greenfield client cmd tool, supporting commands to make requests to greenfield
+
+
+## Disclaimer
+**The software and related documentation are under active development, all subject to potential future change without
+notification and not ready for production use. The code and security audit have not been fully completed and not ready
+for any bug bounty. We advise you to be careful and experiment on the network at your own risk. Stay safe out there.**
 
 ## Cmd usage
 
 ### basic config 
 
-config file example
+ config file example
 ```
-cmd % cat config.toml 
 endpoint = "http://127.0.0.1:8888"
 host = "nodereal.gnfd.com"
 grpcAddr = "127.0.0.1:26750"
@@ -42,26 +48,26 @@ COMMANDS:
 
 #### List Storage Provider 
 ```
- ./gnfd-cmd  --config=config.toml list-sp
+gnfd-cmd  --config=config.toml list-sp
 ```
 
 #### Create Bucket
 
-create bucket: create a new bucket on greenfield chain
+ create bucket: create a new bucket on greenfield chain
 ```
-  gnfd-cmd --config=config.toml mb  gnfd://bucketname
+gnfd-cmd --config=config.toml mb  gnfd://bucketname
 ```
 
 #### Upload Object
 
 (1) first stage: create a new object on greenfield chain
 ```
-   gnfd-cmd  --config=config.toml  create-obj --contenType "text/xml"  gnfd://bucketname/objectname
+gnfd-cmd  --config=config.toml  create-obj --contenType "text/xml"  gnfd://bucketname/objectname
 ```
 (2) second stage: upload payload to greenfield storage provide
 
 ```
-   gnfd-cmd --config=config.toml  put --txnhash xxx  test.txt  gnfd://bucketname/objectname
+gnfd-cmd --config=config.toml  put --txnhash xxx  test.txt  gnfd://bucketname/objectname
 ```
 required param:  --txnhash
 
@@ -83,20 +89,20 @@ gnfd-cmd --config=config.toml  del-obj gnfd://bucketname/objectname
 
 ```
 // head bucekt:
-gnfd --config=config.toml  head-bucket gnfd://bucket-name
+gnfd-cmd --config=config.toml  head-bucket gnfd://bucket-name
 
 // head object:
-gnfd --config=config.toml  head-obj gnfd://bucket-name/object-name
+gnfd-cmd --config=config.toml  head-obj gnfd://bucket-name/object-name
 ```
 
 #### Compute Hash
 
 ```
-./gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 test.txt  
+gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 test.txt  
 ```
 
-#### Challege
+#### Challenge
 
 ```
-./gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1
+gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1
 ```
