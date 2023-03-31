@@ -23,16 +23,16 @@ $ gnfd-cmd  list-sp `,
 func ListSP(ctx *cli.Context) error {
 	client, err := NewClient(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	spInfo, err := client.ListSP(c)
+	spInfo, err := client.ListSP(c, false)
 	if err != nil {
 		fmt.Println("fail to list sp:", err.Error())
-		return err
+		return nil
 	}
 
 	fmt.Println("sp list:")

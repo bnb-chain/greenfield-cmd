@@ -3,21 +3,23 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 
 	"github.com/urfave/cli/v2"
 )
 
-// cmdPreCreateObj send the request get approval of uploading
-func cmdPreCreateObj() *cli.Command {
+// cmdCreateObj send the request get approval of uploading
+func cmdCreateObj() *cli.Command {
 	return &cli.Command{
-		Name:      "create-obj",
+		Name:      "create-object",
 		Action:    createObject,
 		Usage:     "create an object",
 		ArgsUsage: "[filePath] OBJECT-URL",
@@ -28,20 +30,23 @@ Examples:
 # the first phase of putObject
 $ gnfd  create-obj test.file gnfd://bucketname/objectname`,
 		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "public",
-				Value: false,
-				Usage: "indicate whether the object is public",
-			},
 			&cli.StringFlag{
-				Name:  "SecondarySPs",
+				Name:  secondarySPFlagName,
 				Value: "",
-				Usage: "indicate the Secondary SP addr, input like addr1,addr2,addr3",
+				Usage: "indicate the Secondary SP addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  "contentType",
-				Value: "application/xml",
+				Name:  contentTypeFlagName,
+				Value: "",
 				Usage: "indicate object content-type",
+			},
+			&cli.GenericFlag{
+				Name: visibilityFlagName,
+				Value: &CmdEnumValue{
+					Enum:    []string{publicReadType, privateType, inheritType},
+					Default: inheritType,
+				},
+				Usage: "set visibility of the object",
 			},
 		},
 	}
@@ -62,24 +67,24 @@ Examples:
 $ gnfd put --txnhash xx  file.txt gnfd://bucket-name/file.txt`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "txnhash",
+				Name:     txnHashFlagName,
 				Value:    "",
 				Usage:    "the txn hash of transaction of createObjectMsg",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:  "content-type",
-				Value: "application/xml",
+				Name:  contentTypeFlagName,
+				Value: "",
 				Usage: "indicate object content-type",
 			},
 		},
 	}
 }
 
-// uploadObject upload the payload of file, finish the third stage of putObject
-func uploadObject(ctx *cli.Context) error {
+// createObject get approval of uploading from sp
+func createObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
-		return fmt.Errorf("the args number should be two")
+		return toCmdErr(fmt.Errorf("args number should be two"))
 	}
 
 	urlInfo := ctx.Args().Get(1)
@@ -88,13 +93,92 @@ func uploadObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	s3Client, err := NewClient(ctx)
+	// read the local file payload
+	filePath := ctx.Args().Get(0)
+	exists, objectSize, err := pathExists(filePath)
 	if err != nil {
-		log.Println("failed to create client", err.Error())
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("upload file not exists")
+	} else if objectSize > int64(maxFileSize) {
+		return fmt.Errorf("upload file larger than 5G ")
+	}
+
+	// Open the referenced file.
+	fileReader, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer fileReader.Close()
+
+	gnfdClient, err := NewClient(ctx)
+	if err != nil {
 		return err
 	}
 
-	txnhash := ctx.String("txnhash")
+	start := time.Now()
+	c, cancelCreateBucket := context.WithCancel(globalContext)
+	defer cancelCreateBucket()
+
+	contentType := ctx.String(contentTypeFlagName)
+	secondarySPAccs := ctx.String(secondarySPFlagName)
+
+	opts := gnfdclient.CreateObjectOptions{}
+	if contentType != "" {
+		opts.ContentType = contentType
+	}
+
+	visibity := ctx.Generic(visibilityFlagName)
+	if visibity != "" {
+		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
+		if typeErr != nil {
+			return typeErr
+		}
+		opts.Visibility = visibityTypeVal
+	}
+
+	// set second sp address if provided by user
+	if secondarySPAccs != "" {
+		secondarySplist := strings.Split(secondarySPAccs, ",")
+		addrList := make([]sdk.AccAddress, len(secondarySplist))
+		for idx, addr := range secondarySplist {
+			addrList[idx] = sdk.MustAccAddressFromHex(addr)
+		}
+		opts.SecondarySPAccs = addrList
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+	opts.TxOpts = &txnOpt
+
+	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("create object successfully, txn hash:", txnHash, "cost time:", time.Since(start).Milliseconds(), "ms")
+	return nil
+}
+
+// uploadObject upload the payload of file, finish the third stage of putObject
+func uploadObject(ctx *cli.Context) error {
+	if ctx.NArg() != 2 {
+		return toCmdErr(fmt.Errorf("args number more than one"))
+	}
+
+	urlInfo := ctx.Args().Get(1)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return nil
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	txnhash := ctx.String(txnHashFlagName)
 	// read the local file payload to be uploaded
 	filePath := ctx.Args().Get(0)
 
@@ -118,90 +202,19 @@ func uploadObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	opt := spClient.UploadOption{}
-	contentType := ctx.String("content-type")
+	opt := spClient.PutObjectOption{}
+	contentType := ctx.String(contentTypeFlagName)
 	if contentType != "" {
 		opt.ContentType = contentType
 	}
 
-	res, err := s3Client.UploadObject(c, bucketName, objectName, txnhash, objectSize, fileReader, opt)
-
-	if err != nil {
+	if err = client.PutObject(c, bucketName, objectName,
+		txnhash, objectSize, fileReader, opt); err != nil {
 		fmt.Println("upload object fail:", err.Error())
 		return err
 	}
 
-	fmt.Println("upload object successfully:", res.String())
-	return nil
-}
-
-// createObject get approval of uploading from sp
-func createObject(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return fmt.Errorf("the args number should be two")
-	}
-
-	urlInfo := ctx.Args().Get(1)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return nil
-	}
-
-	// read the local file payload
-	filePath := ctx.Args().Get(0)
-	exists, objectSize, err := pathExists(filePath)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("upload file not exists")
-	} else if objectSize > int64(5*1024*1024*1024) {
-		return fmt.Errorf("upload file larger than 5G ")
-	}
-
-	// Open the referenced file.
-	fileReader, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer fileReader.Close()
-
-	gnfdClient, err := NewClient(ctx)
-	if err != nil {
-		log.Println("failed to create client", err.Error())
-		return err
-	}
-
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
-
-	isPublic := ctx.Bool("public")
-	contentType := ctx.String("contentType")
-	secondarySPAccs := ctx.String("SecondarySPs")
-
-	opts := gnfdclient.CreateObjectOptions{}
-	opts.IsPublic = isPublic
-	if contentType != "" {
-		opts.ContentType = contentType
-	}
-
-	// set second sp address if provided by user
-	if secondarySPAccs != "" {
-		secondarySplist := strings.Split(secondarySPAccs, ",")
-		addrList := make([]sdk.AccAddress, len(secondarySplist))
-		for idx, addr := range secondarySplist {
-			addrList[idx] = sdk.MustAccAddressFromHex(addr)
-		}
-		opts.SecondarySPAccs = addrList
-	}
-
-	gnfdResp := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
-	if gnfdResp.Err != nil {
-		fmt.Println("create object fail:", gnfdResp.Err.Error())
-		return err
-	}
-
-	fmt.Println("create object successfully, txn hash:", gnfdResp.TxnHash)
+	fmt.Printf("upload object: %s successfully ", objectName)
 	return nil
 }
 
@@ -222,8 +235,8 @@ func pathExists(path string) (bool, int64, error) {
 }
 
 func getObjAndBucketNames(urlInfo string) (string, string, error) {
-	bucketName, objectName := ParseBucketAndObject(urlInfo)
-	if bucketName == "" || objectName == "" {
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if bucketName == "" || objectName == "" || err != nil {
 		return "", "", fmt.Errorf("fail to parse bucket name or object name")
 	}
 	return bucketName, objectName, nil

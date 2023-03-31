@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 
 	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
@@ -19,24 +18,25 @@ func cmdChallenge() *cli.Command {
 		Usage:     "Send challenge request",
 		ArgsUsage: "",
 		Description: `
+Send challenge request to storage provider, need to set the object id,piece index and sp index.
 
 Examples:
 $ gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "objectId",
+				Name:     objectIDFlagName,
 				Value:    "",
 				Usage:    "the objectId to be challenge",
 				Required: true,
 			},
 			&cli.IntFlag{
-				Name:     "pieceIndex",
+				Name:     pieceIndexFlagName,
 				Value:    0,
 				Usage:    "show which piece to be challenge",
 				Required: true,
 			},
 			&cli.IntFlag{
-				Name:     "spIndex",
+				Name:     spIndexFlagName,
 				Value:    -1,
 				Usage:    "indicate the challenge sp index",
 				Required: true,
@@ -46,19 +46,19 @@ $ gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
 }
 
 func getChallengeInfo(ctx *cli.Context) error {
-	objectId := ctx.String("objectId")
+	objectId := ctx.String(objectIDFlagName)
 	if objectId == "" {
-		return errors.New("object id empty ")
+		return toCmdErr(errors.New("object id empty "))
 	}
 
-	pieceIndex := ctx.Int("pieceIndex")
+	pieceIndex := ctx.Int(pieceIndexFlagName)
 	if pieceIndex < 0 {
-		return errors.New("pieceIndex should not be less than 0 ")
+		return toCmdErr(errors.New("pieceIndex should not be less than 0 "))
 	}
 
-	spIndex := ctx.Int("spIndex")
+	spIndex := ctx.Int(spIndexFlagName)
 	if spIndex < -1 {
-		return errors.New("redundancyIndex should not be less than -1")
+		return toCmdErr(errors.New("redundancyIndex should not be less than -1"))
 	}
 
 	s3Client, err := NewClient(ctx)
@@ -67,20 +67,19 @@ func getChallengeInfo(ctx *cli.Context) error {
 	}
 
 	filePath := ctx.Args().Get(0)
-	log.Printf("download challenge payload into file:%s \n", filePath)
 
 	st, err := os.Stat(filePath)
 	if err == nil {
 		// If the destination exists and is a directory.
 		if st.IsDir() {
-			return errors.New("fileName is a directory.")
+			return toCmdErr(errors.New("fileName is a directory"))
 		}
 	}
 
 	// If file exist, open it in append mode
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	info := spClient.ChallengeInfo{
@@ -94,14 +93,14 @@ func getChallengeInfo(ctx *cli.Context) error {
 
 	res, err := s3Client.SPClient.ChallengeSP(c, info, spClient.NewAuthInfo(false, ""))
 	if err != nil {
-		fmt.Println("challenge fail:", err.Error())
-		return err
+		fmt.Println("fail to challenge:", err.Error())
+		return nil
 	}
 
 	if res.PiecesHash != nil {
 		fmt.Println("get hash result", res.PiecesHash)
 	} else {
-		return errors.New("fail to fetch piece hashes")
+		return toCmdErr(errors.New("fail to fetch piece hashes"))
 	}
 
 	if res.PieceData != nil {
@@ -109,13 +108,12 @@ func getChallengeInfo(ctx *cli.Context) error {
 		_, err = io.Copy(fd, res.PieceData)
 		fd.Close()
 		if err != nil {
-			log.Println("err:", err.Error())
-			return err
+			return toCmdErr(err)
 		}
 
 		fmt.Printf("download challenge payload into file:%s successfully \n", filePath)
 	} else {
-		return errors.New("fail to fetch challenge data")
+		return toCmdErr(errors.New("fail to fetch challenge data"))
 	}
 
 	return nil

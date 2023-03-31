@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
@@ -40,56 +41,101 @@ $ gnfd-cmd del-obj gnfd://bucketname/objectname`,
 	}
 }
 
+// cmdDelGroup delete an existed group
+func cmdDelGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "del-group",
+		Action:    deleteGroup,
+		Usage:     "delete an existed group",
+		ArgsUsage: "GROUP-URL",
+		Description: `
+Send a deleteGroup txn to greenfield chain
+
+Examples:
+# Del an existed group
+$ gnfd-cmd del-group gnfd://group-name`,
+	}
+}
+
 // deleteBucket send the deleteBucket msg to greenfield
 func deleteBucket(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
-		return fmt.Errorf("the args number should be one")
+		return toCmdErr(fmt.Errorf("args number more than one"))
 	}
-	bucketName, err := getBucketName(ctx)
+	bucketName, err := getBucketNameByUrl(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	gnfdResp := client.DelBucket(bucketName, types.TxOption{Mode: &broadcastMode})
-	if gnfdResp.Err != nil {
-		fmt.Println("delete bucket error:", gnfdResp.Err.Error())
-		return err
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+	txnHash, err := client.DeleteBucket(bucketName, gnfdclient.DeleteBucketOption{TxOpts: &txnOpt})
+	if err != nil {
+		fmt.Println("delete bucket error:", err.Error())
+		return nil
 	}
 
-	fmt.Println("delete bucket successfully, txn hash:", gnfdResp.TxnHash)
+	fmt.Printf("delete bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
 	return nil
 }
 
 // deleteObject send the deleteBucket msg to greenfield
 func deleteObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
-		return fmt.Errorf("the args number should be one")
+		return toCmdErr(fmt.Errorf("args number more than one"))
 	}
 
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
 	if err != nil {
-		return nil
+		return toCmdErr(err)
 	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	gnfdResp := client.DelObject(bucketName, objectName, types.TxOption{Mode: &broadcastMode})
-	if gnfdResp.Err != nil {
-		fmt.Println("delete object error:", gnfdResp.Err.Error())
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+	txnHash, err := client.DeleteObject(bucketName, objectName, gnfdclient.DeleteObjectOption{TxOpts: &txnOpt})
+	if err != nil {
+		fmt.Println("delete object error:", err.Error())
 		return err
 	}
 
-	fmt.Println("delete object successfully, txn hash:", gnfdResp.TxnHash)
+	fmt.Printf("delete object %s successfully, txn hash:%s \n",
+		objectName, txnHash)
+	return nil
+}
+
+// deleteGroup send the deleteGroup msg to greenfield
+func deleteGroup(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number more than one"))
+	}
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+	txnHash, err := client.DeleteGroup(groupName, txnOpt)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("delete group: %s successfully, txn hash: %s \n", groupName, txnHash)
 	return nil
 }

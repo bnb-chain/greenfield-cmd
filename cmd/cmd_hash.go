@@ -48,7 +48,7 @@ func computeHashRoot(ctx *cli.Context) error {
 	exists, objectSize, err := pathExists(filePath)
 
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 	if !exists {
 		return errors.New("upload file not exists")
@@ -84,14 +84,14 @@ func computeHashRoot(ctx *cli.Context) error {
 	}
 	defer fReader.Close()
 
-	hashes, size, err := gnfdClient.ComputeHashRoots(fReader)
+	hashes, size, _, err := gnfdClient.ComputeHashRoots(fReader)
 	if err != nil {
 		fmt.Println("compute hash root fail:", err.Error())
 		return err
 	}
 
-	fmt.Printf("get primary sp hash root: \n%s\n", hashes[0])
-	fmt.Println("get secondary sp hash list:")
+	fmt.Printf("get primary sp hash root: \n%s\n %s \n", hashes[0], "get secondary sp hash list:")
+
 	for _, hash := range hashes[1:] {
 		fmt.Println(hash)
 	}

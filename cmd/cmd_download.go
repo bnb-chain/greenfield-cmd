@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 
+	"github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -24,10 +24,15 @@ Examples:
 # download a file
 $ gnfd get gnfd://bucketname/file.txt file.txt `,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "filepath",
-				Value: "",
-				Usage: "file path info to be uploaded",
+			&cli.Int64Flag{
+				Name:  startOffsetFlagName,
+				Value: 0,
+				Usage: "start offset info of the download body",
+			},
+			&cli.Int64Flag{
+				Name:  endOffsetFlagName,
+				Value: 0,
+				Usage: "end offset info of the download body",
 			},
 		},
 	}
@@ -36,22 +41,23 @@ $ gnfd get gnfd://bucketname/file.txt file.txt `,
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
-		return fmt.Errorf("the args number should be two")
+		return toCmdErr(fmt.Errorf("args number more than one"))
 	}
 
 	urlInfo := ctx.Args().Get(0)
-	bucketName, objectName := ParseBucketAndObject(urlInfo)
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
-		log.Println("failed to create client", err.Error())
-		return err
+		return toCmdErr(err)
 	}
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	// filePath := ctx.String("filepath")
 	filePath := ctx.Args().Get(1)
 
 	// If file exist, open it in append mode
@@ -61,17 +67,28 @@ func getObject(ctx *cli.Context) error {
 	}
 	defer fd.Close()
 
-	body, _, err := gnfdClient.DownloadObject(c, bucketName, objectName)
+	opt := sp.GetObjectOption{}
+	startOffset := ctx.Int64(endOffsetFlagName)
+	endOffset := ctx.Int64(endOffsetFlagName)
+
+	// flag has been set
+	if startOffset != 0 || endOffset != 0 {
+		if err = opt.SetRange(startOffset, endOffset); err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	body, _, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
 	if err != nil {
-		fmt.Println("download object fail:", err.Error())
-		return err
+		return toCmdErr(err)
 	}
 
 	_, err = io.Copy(fd, body)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
-	log.Println("download object inti file:" + filePath)
+	fmt.Printf("download object %s successfully, the file path is %s,", objectName, filePath)
+
 	return nil
 }

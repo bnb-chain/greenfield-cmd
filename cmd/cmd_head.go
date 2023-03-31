@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 
 	"github.com/urfave/cli/v2"
 )
@@ -39,47 +39,48 @@ func headObject(ctx *cli.Context) error {
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
 	if err != nil {
-		return nil
+		return toCmdErr(err)
 	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("failed to create client", err.Error())
-		return err
+		return toCmdErr(err)
 	}
 
-	objectInfo, err := client.HeadObject(bucketName, objectName)
+	c, cancelHeadObject := context.WithCancel(globalContext)
+	defer cancelHeadObject()
+
+	objectInfo, err := client.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		fmt.Println("headObject fail:", err.Error())
-		return err
+		fmt.Println("no such object")
+		return nil
 	}
-	fmt.Println("object id:", objectInfo.ObjectId)
-	fmt.Println("object status", objectInfo.Status)
-	fmt.Println("object size:", objectInfo.Size)
-
+	parseChainInfo(objectInfo.String(), false)
+	fmt.Println("object status:", objectInfo.ObjectStatus.String())
 	return nil
 }
 
 // headBucket send the create bucket request to storage provider
 func headBucket(ctx *cli.Context) error {
-	bucketName, err := getBucketName(ctx)
+	bucketName, err := getBucketNameByUrl(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
-		log.Println("failed to create client", err.Error())
-		return err
+		return toCmdErr(err)
 	}
 
-	bucketInfo, err := client.HeadBucket(bucketName)
+	c, cancelHeadBucket := context.WithCancel(globalContext)
+	defer cancelHeadBucket()
+
+	bucketInfo, err := client.HeadBucket(c, bucketName)
 	if err != nil {
-		fmt.Println("headBucket fail:", err.Error())
-		return err
+		fmt.Println("no such bucket")
+		return nil
 	}
-	fmt.Println("bucket id:", bucketInfo.BucketId)
-	fmt.Println("bucket owner:", bucketInfo.Owner)
 
+	parseChainInfo(bucketInfo.String(), true)
 	return nil
 }
