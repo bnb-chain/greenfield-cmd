@@ -46,7 +46,7 @@ func cmdBuyQuota() *cli.Command {
 Update the visibility, payment account or read quota meta of the bucket
 
 Examples:
-$ gnfd  buy-quota   gnfd://bucket-name`,
+$ gnfd  buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:     chargeQuotaFlagName,
@@ -69,14 +69,6 @@ Get charged quota, free quota and consumed quota info from storage provider
 
 Examples:
 $ gnfd  quota-info  gnfd://bucket-name`,
-		Flags: []cli.Flag{
-			&cli.Uint64Flag{
-				Name:     chargeQuotaFlagName,
-				Value:    0,
-				Usage:    "indicate the target quota to be set for the bucket",
-				Required: true,
-			},
-		},
 	}
 }
 
@@ -138,7 +130,7 @@ func getQuotaPrice(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Println("get bucket read quota price:", price)
+	fmt.Println("get bucket read quota price:", price, " wei/byte")
 	return nil
 }
 
@@ -162,7 +154,7 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("quota info:\n charged quota:%d \nfree quota:%d \n consumed quota%d",
+	fmt.Printf("quota info:\n charged quota:%d \nfree quota:%d \n consumed quota:%d \n",
 		quotaInfo.ReadQuotaSize, quotaInfo.SPFreeReadQuotaSize, quotaInfo.ReadConsumedSize)
 	return nil
 }

@@ -72,6 +72,8 @@ func main() {
 			cmdListSP(),
 			cmdCreateGroup(),
 			cmdUpdateGroup(),
+			cmdHeadGroup(),
+			cmdHeadGroupMember(),
 			cmdDelGroup(),
 			cmdBuyQuota(),
 			cmdGetQuotaPrice(),

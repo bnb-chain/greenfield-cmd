@@ -31,6 +31,7 @@ const (
 	addMemberFlagName    = "addMembers"
 	removeMemberFlagName = "removeMembers"
 	groupOwnerFlagName   = "groupOwner"
+	headMemberFlagName   = "headMember"
 	spAddressFlagName    = "spAddress"
 	objectIDFlagName     = "objectId"
 	pieceIndexFlagName   = "pieceIndex"

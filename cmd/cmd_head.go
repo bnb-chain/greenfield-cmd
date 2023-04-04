@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
-// cmdHeadObj return the command to finish uploading payload of the object
+// cmdHeadObj query the object info and return
 func cmdHeadObj() *cli.Command {
 	return &cli.Command{
 		Name:      "head-obj",
@@ -21,7 +24,7 @@ $ gnfd-cmd head-bucket gnfd://bucket-name/object-name`,
 	}
 }
 
-// cmdHeadBucket return the command to finish uploading payload of the object
+// cmdHeadBucket query the bucket info and return
 func cmdHeadBucket() *cli.Command {
 	return &cli.Command{
 		Name:      "head-bucket",
@@ -32,6 +35,53 @@ func cmdHeadBucket() *cli.Command {
 send headBucket txn to chain and fetch bucketInfo on greenfield chain
 Examples:
 $ gnfd-cmd head-bucket gnfd://bucket-name`,
+	}
+}
+
+// cmdHeadGroup query the group info and return
+func cmdHeadGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "head-group",
+		Action:    headGroup,
+		Usage:     "query group info",
+		ArgsUsage: "GROUP-URL",
+		Description: `
+send headGroup txn to chain and fetch bucketInfo on greenfield chain
+Examples:
+$ gnfd-cmd head-group --groupOwner  gnfd://group-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  groupOwnerFlagName,
+				Value: "",
+				Usage: "need set the owner address if you are not the owner of the group",
+			},
+		},
+	}
+}
+
+// cmdHeadGroupMember query the group member if it exists in group
+func cmdHeadGroupMember() *cli.Command {
+	return &cli.Command{
+		Name:      "head-member",
+		Action:    headGroupMember,
+		Usage:     "check group member if it exists",
+		ArgsUsage: "GROUP-URL",
+		Description: `
+send headGroupMember txn to chain and check if member is in the group
+Examples:
+$ gnfd-cmd  head-group --headMember  gnfd://group-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  groupOwnerFlagName,
+				Value: "",
+				Usage: "need set the owner address if you are not the owner of the group",
+			},
+			&cli.StringFlag{
+				Name:  headMemberFlagName,
+				Value: "",
+				Usage: "indicate the head member address",
+			},
+		},
 	}
 }
 
@@ -60,7 +110,6 @@ func headObject(ctx *cli.Context) error {
 	return nil
 }
 
-// headBucket send the create bucket request to storage provider
 func headBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketNameByUrl(ctx)
 	if err != nil {
@@ -82,5 +131,75 @@ func headBucket(ctx *cli.Context) error {
 	}
 
 	parseChainInfo(bucketInfo.String(), true)
+	return nil
+}
+
+func headGroup(ctx *cli.Context) error {
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelHeadGroup := context.WithCancel(globalContext)
+	defer cancelHeadGroup()
+
+	groupOwner, err := getGroupOwner(ctx, client)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupInfo, err := client.HeadGroup(c, groupName, groupOwner)
+	if err != nil {
+		fmt.Println("no such group")
+		return nil
+	}
+
+	infoStr := strings.Split(groupInfo.String(), " ")
+	for _, info := range infoStr {
+		fmt.Println(info)
+	}
+	return nil
+}
+
+func headGroupMember(ctx *cli.Context) error {
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelHeadBucket := context.WithCancel(globalContext)
+	defer cancelHeadBucket()
+
+	groupOwner, err := getGroupOwner(ctx, client)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	headMember := ctx.String(headMemberFlagName)
+	if headMember == "" {
+		return toCmdErr(errors.New("no head member address"))
+	}
+	headMemberAddr, err := sdk.AccAddressFromHexUnsafe(headMember)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	exist := client.HeadGroupMember(c, groupName, groupOwner, headMemberAddr)
+	if !exist {
+		fmt.Println("the user does not exist in the group")
+		return nil
+	}
+
+	fmt.Println("the user is a member of the group")
 	return nil
 }
