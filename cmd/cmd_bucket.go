@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	"github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
@@ -84,6 +85,29 @@ $ gnfd  update-bucket   --visibility=public-read  --paymentAddress=".."  gnfd://
 					Default: privateType,
 				},
 				Usage: "set visibility of the bucket",
+			},
+		},
+	}
+}
+
+// cmdListBuckets list the bucket of the owner
+func cmdListBuckets() *cli.Command {
+	return &cli.Command{
+		Name:      "ls-bucket",
+		Action:    listBuckets,
+		Usage:     "list bucket info of the provided user",
+		ArgsUsage: "",
+		Description: `
+Update the visibility, payment account or read quota meta of the bucket
+
+Examples:
+$ gnfd  ls-bucket --user `,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  userAddressFlagName,
+				Value: "",
+				Usage: "indicate which user's buckets to be list, you" +
+					" don't need to specify this if you want to list your own bucket ",
 			},
 		},
 	}
@@ -194,4 +218,51 @@ func updateBucket(ctx *cli.Context) error {
 	fmt.Printf("latest bucket meta on chain:\nvisibility:%s\nread quota:%d\npayment address:%s", bucketInfo.GetVisibility().String(),
 		bucketInfo.GetChargedReadQuota(), bucketInfo.GetPaymentAddress())
 	return nil
+}
+
+// listBuckets list the buckets of the specific owner
+func listBuckets(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+	
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelCreateBucket := context.WithCancel(globalContext)
+	defer cancelCreateBucket()
+
+	var userAddr string
+	userAddrStr := ctx.String(userAddressFlagName)
+	if userAddrStr != "" {
+		userAddr = userAddrStr
+	} else {
+		km, err := client.ChainClient.GetKeyManager()
+		if err != nil {
+			return toCmdErr(err)
+		}
+		userAddr = km.GetAddr().String()
+	}
+
+	bucketListRes, err := client.SPClient.ListBuckets(c, sp.UserInfo{Address: userAddr},
+		sp.NewAuthInfo(false, ""))
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	if len(bucketListRes.Buckets) == 0 {
+		fmt.Println("no buckets")
+		return nil
+	}
+
+	fmt.Println("bucket list:")
+	for _, bucket := range bucketListRes.Buckets {
+		info := bucket.BucketInfo
+		fmt.Printf("bucket name: %s, bucket id: %s", info.BucketName, info.Id)
+	}
+	return nil
+
 }

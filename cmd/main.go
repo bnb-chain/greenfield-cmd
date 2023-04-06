@@ -78,6 +78,8 @@ func main() {
 			cmdBuyQuota(),
 			cmdGetQuotaPrice(),
 			cmdGetQuotaInfo(),
+			cmdListBuckets(),
+			cmdListObjects(),
 		},
 		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
 	}

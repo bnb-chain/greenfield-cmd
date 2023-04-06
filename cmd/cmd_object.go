@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -76,6 +77,57 @@ $ gnfd put --txnhash xx  file.txt gnfd://bucket-name/file.txt`,
 				Name:  contentTypeFlagName,
 				Value: "",
 				Usage: "indicate object content-type",
+			},
+		},
+	}
+}
+
+// cmdGetObj return the command to finish downloading object payload
+func cmdGetObj() *cli.Command {
+	return &cli.Command{
+		Name:      "get",
+		Action:    getObject,
+		Usage:     "download an object",
+		ArgsUsage: "[filePath] OBJECT-URL",
+		Description: `
+Download a specific object from storage provider
+
+Examples:
+# download a file
+$ gnfd get gnfd://bucketname/file.txt file.txt `,
+		Flags: []cli.Flag{
+			&cli.Int64Flag{
+				Name:  startOffsetFlagName,
+				Value: 0,
+				Usage: "start offset info of the download body",
+			},
+			&cli.Int64Flag{
+				Name:  endOffsetFlagName,
+				Value: 0,
+				Usage: "end offset info of the download body",
+			},
+		},
+	}
+}
+
+// cmdListObjects list the objects of the bucket
+func cmdListObjects() *cli.Command {
+	return &cli.Command{
+		Name:      "ls",
+		Action:    listObjects,
+		Usage:     "list object info of the bucket",
+		ArgsUsage: "BUCKET-URL",
+		Description: `
+List Objects of the bucket , including object name, object id, object status
+
+Examples:
+$ gnfd  ls  gnfd://bucket-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  userAddressFlagName,
+				Value: "",
+				Usage: "indicate which user's buckets to be list, you" +
+					" don't need to specify this if you want to list your own bucket ",
 			},
 		},
 	}
@@ -216,6 +268,103 @@ func uploadObject(ctx *cli.Context) error {
 
 	fmt.Printf("upload object: %s successfully ", objectName)
 	return nil
+}
+
+// getObject download the object payload from sp
+func getObject(ctx *cli.Context) error {
+	if ctx.NArg() != 2 {
+		return toCmdErr(fmt.Errorf("args number more than one"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	gnfdClient, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelCreateBucket := context.WithCancel(globalContext)
+	defer cancelCreateBucket()
+
+	filePath := ctx.Args().Get(1)
+
+	// If file exist, open it in append mode
+	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	opt := spClient.GetObjectOption{}
+	startOffset := ctx.Int64(endOffsetFlagName)
+	endOffset := ctx.Int64(endOffsetFlagName)
+
+	// flag has been set
+	if startOffset != 0 || endOffset != 0 {
+		if err = opt.SetRange(startOffset, endOffset); err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	body, _, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	_, err = io.Copy(fd, body)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("download object %s successfully, the file path is %s,", objectName, filePath)
+
+	return nil
+}
+
+func listObjects(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	bucketName, err := getBucketNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	c, cancelCreateBucket := context.WithCancel(globalContext)
+	defer cancelCreateBucket()
+
+	listObjectsRes, err := client.SPClient.ListObjects(c, bucketName, spClient.NewAuthInfo(false, ""))
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	if len(listObjectsRes.Objects) == 0 {
+		fmt.Println("no objects")
+		return nil
+	}
+
+	listNum := 0
+	for _, object := range listObjectsRes.Objects {
+		listNum++
+		if listNum > maxListObjects {
+			return nil
+		}
+		info := object.ObjectInfo
+		fmt.Printf("object name: %s , object id:%s, object status:%s", info.ObjectName, info.Id, info.ObjectStatus)
+	}
+
+	return nil
+
 }
 
 func pathExists(path string) (bool, int64, error) {

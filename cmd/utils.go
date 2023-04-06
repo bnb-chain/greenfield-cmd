@@ -15,6 +15,7 @@ import (
 
 const (
 	maxFileSize          = 5 * 1024 * 1024 * 1024
+	maxListObjects       = 50
 	publicReadType       = "public-read"
 	privateType          = "private"
 	inheritType          = "inherit"
@@ -36,6 +37,7 @@ const (
 	objectIDFlagName     = "objectId"
 	pieceIndexFlagName   = "pieceIndex"
 	spIndexFlagName      = "spIndex"
+	userAddressFlagName  = "user"
 )
 
 type CmdEnumValue struct {
