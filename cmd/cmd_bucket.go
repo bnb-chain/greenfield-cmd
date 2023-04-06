@@ -222,10 +222,6 @@ func updateBucket(ctx *cli.Context) error {
 
 // listBuckets list the buckets of the specific owner
 func listBuckets(ctx *cli.Context) error {
-	if ctx.NArg() != 1 {
-		return toCmdErr(fmt.Errorf("args number should be one"))
-	}
-	
 	client, err := NewClient(ctx)
 	if err != nil {
 		return toCmdErr(err)
@@ -261,7 +257,7 @@ func listBuckets(ctx *cli.Context) error {
 	fmt.Println("bucket list:")
 	for _, bucket := range bucketListRes.Buckets {
 		info := bucket.BucketInfo
-		fmt.Printf("bucket name: %s, bucket id: %s", info.BucketName, info.Id)
+		fmt.Printf("bucket name: %s, bucket id: %s \n", info.BucketName, info.Id)
 	}
 	return nil
 
