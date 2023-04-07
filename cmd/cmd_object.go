@@ -169,7 +169,6 @@ func createObject(ctx *cli.Context) error {
 		return err
 	}
 
-	start := time.Now()
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
@@ -209,7 +208,7 @@ func createObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("create object successfully, txn hash:", txnHash, "cost time:", time.Since(start).Milliseconds(), "ms")
+	fmt.Println("create object successfully, txn hash:", txnHash)
 	return nil
 }
 
@@ -352,6 +351,7 @@ func listObjects(ctx *cli.Context) error {
 		fmt.Println("no objects")
 		return nil
 	}
+	start := time.Now()
 
 	listNum := 0
 	for _, object := range listObjectsRes.Objects {
@@ -362,6 +362,8 @@ func listObjects(ctx *cli.Context) error {
 		info := object.ObjectInfo
 		fmt.Printf("object name: %s , object id:%s, object status:%s \n", info.ObjectName, info.Id, info.ObjectStatus)
 	}
+
+	time.Since(start).Milliseconds()
 
 	return nil
 

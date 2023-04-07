@@ -106,7 +106,6 @@ func headObject(ctx *cli.Context) error {
 		return nil
 	}
 	parseChainInfo(objectInfo.String(), false)
-	fmt.Println("object status:", objectInfo.ObjectStatus.String())
 	return nil
 }
 

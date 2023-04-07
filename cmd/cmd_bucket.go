@@ -215,7 +215,7 @@ func updateBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("latest bucket meta on chain:\nvisibility:%s\nread quota:%d\npayment address:%s", bucketInfo.GetVisibility().String(),
+	fmt.Printf("latest bucket meta on chain:\nvisibility:%s\nread quota:%d\npayment address:%s \n", bucketInfo.GetVisibility().String(),
 		bucketInfo.GetChargedReadQuota(), bucketInfo.GetPaymentAddress())
 	return nil
 }
