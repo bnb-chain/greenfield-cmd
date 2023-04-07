@@ -9,14 +9,14 @@ import (
 
 func cmdListSP() *cli.Command {
 	return &cli.Command{
-		Name:      "list-sp",
+		Name:      "ls-sp",
 		Action:    ListSP,
 		Usage:     "list sp info",
 		ArgsUsage: "",
 		Description: `
 
 Examples:
-$ gnfd-cmd  list-sp `,
+$ gnfd-cmd  ls-sp `,
 	}
 }
 

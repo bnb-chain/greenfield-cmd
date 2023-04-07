@@ -15,7 +15,7 @@ import (
 
 const (
 	maxFileSize          = 5 * 1024 * 1024 * 1024
-	maxListObjects       = 50
+	maxListObjects       = 100
 	publicReadType       = "public-read"
 	privateType          = "private"
 	inheritType          = "inherit"
