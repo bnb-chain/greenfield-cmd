@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,24 +19,7 @@ func cmdCalHash() *cli.Command {
 
 Examples:
 # Compute file path
-$ gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 /home/test.text `,
-		Flags: []cli.Flag{
-			&cli.Uint64Flag{
-				Name:  "segSize",
-				Value: 16,
-				Usage: "the segment size (MB)",
-			},
-			&cli.Uint64Flag{
-				Name:  "dataShards",
-				Value: 4,
-				Usage: "the EC encode shard number",
-			},
-			&cli.Uint64Flag{
-				Name:  "parityShards",
-				Value: 2,
-				Usage: "the EC encode shard number",
-			},
-		},
+$ gnfd-cmd get-hash  /home/test.text `,
 	}
 }
 
@@ -46,30 +28,14 @@ func computeHashRoot(ctx *cli.Context) error {
 	filePath := ctx.Args().Get(0)
 
 	exists, objectSize, err := pathExists(filePath)
-
 	if err != nil {
 		return toCmdErr(err)
 	}
+	
 	if !exists {
 		return errors.New("upload file not exists")
-	} else if objectSize > int64(500*1024*1024) {
-		return errors.New("upload file larger than 500M ")
-	}
-
-	opts := gnfdclient.ComputeHashOptions{}
-	segmentSize := ctx.Uint64("segSize")
-	if segmentSize > 0 {
-		opts.SegmentSize = segmentSize
-	}
-
-	dataBlocks := ctx.Uint64("dataShards")
-	if dataBlocks > 0 {
-		opts.DataShards = uint32(dataBlocks)
-	}
-
-	parityBlocks := ctx.Uint64("parityShards")
-	if parityBlocks > 0 {
-		opts.ParityShards = uint32(parityBlocks)
+	} else if objectSize > int64(2*1024*1024*1024) {
+		return errors.New("upload file larger than 2G ")
 	}
 
 	gnfdClient, err := NewClient(ctx)
