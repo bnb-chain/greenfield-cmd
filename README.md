@@ -13,12 +13,12 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 
 ### basic config 
 
- config file example
+config file example
 ```
-endpoint = "http://127.0.0.1:8888"
-grpcAddr = "127.0.0.1:26750"
+endpoint = "sp.gnfd.cc"
+grpcAddr = "gnfd-grpc-plaintext.qa.bnbchain.world:9090"
 chainId = "greenfield_9000-1741"
-privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefbbda4xxxxxxxx"
+privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
 
 ### support commands
@@ -56,11 +56,6 @@ COMMANDS:
 2.The operator account should have balance before testing
 
 ### Examples
-
-#### List Storage Provider 
-```
-gnfd-cmd --config=config.toml list-sp
-```
 
 #### Bucket Operations
 ```
@@ -135,12 +130,18 @@ gnfd-cmd --config=config.toml  head-obj gnfd://bucket-name/object-name
 gnfd-cmd --config=config.toml head-group gnfd://groupname
 ```
 
+#### Storage Provider Operations
+```
+// list storage providers
+gnfd-cmd --config=config.toml list-sp
+
+// get quota price of storage provider:
+gnfd-cmd --config=config.toml  get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
+```
+
 #### Payment Operations
 
 ```
-// get quota price of storage provider:
-gnfd-cmd --config=config.toml  get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
-
 // get quota info:
 gnfd-cmd --config=config.toml  quota-info gnfd://bucketname
 
@@ -149,14 +150,12 @@ gnfd-cmd --config=config.toml buy-quota   --chargedQuota 1000000   gnfd://bucket
 ```
 
 
-#### Compute Integrity Hash
+#### Hash Operations
 
 ```
+// compute integrity hash
 gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 test.txt  
-```
 
-#### Challenge
-
-```
+// get challenge result
 gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1
 ```
