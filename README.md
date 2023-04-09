@@ -55,6 +55,8 @@ COMMANDS:
 
 2.The operator account should have balance before testing
 
+3.The config file should be toml format
+
 ### Examples
 
 #### Bucket Operations
@@ -133,7 +135,7 @@ gnfd-cmd --config=config.toml head-group gnfd://groupname
 #### Storage Provider Operations
 ```
 // list storage providers
-gnfd-cmd --config=config.toml list-sp
+gnfd-cmd --config=config.toml ls-sp
 
 // get quota price of storage provider:
 gnfd-cmd --config=config.toml  get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
@@ -146,7 +148,7 @@ gnfd-cmd --config=config.toml  get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13
 gnfd-cmd --config=config.toml  quota-info gnfd://bucketname
 
 // buy quota:
-gnfd-cmd --config=config.toml buy-quota   --chargedQuota 1000000   gnfd://bucket-name
+gnfd-cmd --config=config.toml buy-quota  --chargedQuota 1000000   gnfd://bucket-name
 ```
 
 
@@ -154,7 +156,7 @@ gnfd-cmd --config=config.toml buy-quota   --chargedQuota 1000000   gnfd://bucket
 
 ```
 // compute integrity hash
-gnfd-cmd get-hash --segSize 16  --dataShards 4 --parityShards 2 test.txt  
+gnfd-cmd get-hash  filepath
 
 // get challenge result
 gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1
