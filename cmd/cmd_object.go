@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
@@ -351,7 +350,6 @@ func listObjects(ctx *cli.Context) error {
 		fmt.Println("no objects")
 		return nil
 	}
-	start := time.Now()
 
 	listNum := 0
 	for _, object := range listObjectsRes.Objects {
@@ -362,8 +360,6 @@ func listObjects(ctx *cli.Context) error {
 		info := object.ObjectInfo
 		fmt.Printf("object name: %s , object id:%s, object status:%s \n", info.ObjectName, info.Id, info.ObjectStatus)
 	}
-
-	time.Since(start).Milliseconds()
 
 	return nil
 

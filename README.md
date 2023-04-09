@@ -58,8 +58,7 @@ COMMANDS:
 gnfd-cmd -h
 
 // For specific commands, use the following command:
-gnfd-cmd update-bucket -h 
-
+gnfd-cmd command-name -h 
 ```
 
 ### Precautions
@@ -74,7 +73,7 @@ gnfd-cmd update-bucket -h
 
 ```
 // create bucket
-gnfd-cmd -c config.toml mb  gnfd://bucketname
+gnfd-cmd -c config.toml mb gnfd://bucketname
 
 // update bucket visibility, charged quota or payment address
 (1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
@@ -90,7 +89,7 @@ gnfd-cmd -c config.toml  create-obj --contenType "text/xml" --visibility private
 (2) second stage of uploading : upload payload to greenfield storage provide
 
 ```
-gnfd-cmd -c config.toml put --txnhash xxx  file-path   gnfd://bucketname/objectname
+gnfd-cmd -c config.toml put --txnhash xxx  file-path  gnfd://bucketname/objectname
 ```
 required param:  --txnhash
 
@@ -110,7 +109,7 @@ gnfd-cmd -c config.toml mg gnfd://groupname
 gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // head group member
-gnfd-cmd -c config.toml head-member --headMember  0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+gnfd-cmd -c config.toml head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 ```
 
 ### List Operations
@@ -164,14 +163,14 @@ gnfd-cmd -c config.toml get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc5
 gnfd-cmd -c config.toml quota-info gnfd://bucketname
 
 // buy quota:
-gnfd-cmd -c config.toml buy-quota  --chargedQuota 1000000   gnfd://bucket-name
+gnfd-cmd -c config.toml buy-quota --chargedQuota 1000000 gnfd://bucket-name
 ```
 
 #### Hash Operations
 
 ```
 // compute integrity hash
-gnfd-cmd  -c config.toml get-hash  filepath
+gnfd-cmd  -c config.toml get-hash filepath
 
 // get challenge result
 gnfd-cmd -c config.toml challenge --objectId "test" --pieceIndex 2  --spIndex -1
