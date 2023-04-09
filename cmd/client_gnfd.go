@@ -26,7 +26,7 @@ const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	endpoint := ctx.String("endpoint")
 	if endpoint == "" {
-		return nil, fmt.Errorf("failed to parse endpoint from config file")
+		return nil, fmt.Errorf("failed to parse endpoint")
 	}
 
 	if strings.Contains(endpoint, "http") {
@@ -35,12 +35,12 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 
 	grpcAddr := ctx.String("grpcAddr")
 	if grpcAddr == "" {
-		return nil, fmt.Errorf("failed to parse grpc address from config file")
+		return nil, fmt.Errorf("failed to parse grpc address")
 	}
 
 	chainId := ctx.String("chainId")
 	if chainId == "" {
-		return nil, fmt.Errorf("failed to parse chain id from config file")
+		return nil, fmt.Errorf("failed to parse chain id")
 	}
 
 	privateKeyStr := ctx.String("privateKey")
@@ -52,7 +52,7 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 
 	keyManager, err := keys.NewPrivateKeyManager(privateKeyStr)
 	if err != nil {
-		log.Error().Msg("new key manager fail" + err.Error())
+		log.Error().Msg("fail to new key manager" + err.Error())
 	}
 
 	client, err := gnfdclient.NewGnfdClient(grpcAddr, chainId, endpoint, keyManager, false,
