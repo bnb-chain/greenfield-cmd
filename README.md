@@ -13,7 +13,9 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 
 ### basic config 
 
-config file example
+The command should run with "-c filePath" to load the config file and the config should be toml format
+
+Config file example:
 ```
 endpoint = "sp.gnfd.cc"
 grpcAddr = "gnfd-grpc-plaintext.qa.bnbchain.world:9090"
@@ -49,115 +51,128 @@ COMMANDS:
    ls             list object info of the bucket
 ```
 
+#### Get help
+
+```
+// get help for supporing commands and basic command format
+gnfd-cmd -h
+
+// For specific commands, use the following command:
+gnfd-cmd update-bucket -h 
+
+```
+
 ### Precautions
 
 1.If the private key has not been configured, the tool will generate one and the operator address
 
 2.The operator account should have balance before testing
 
-3.The config file should be toml format
-
 ### Examples
 
 #### Bucket Operations
+
 ```
 // create bucket
-gnfd-cmd --config=config.toml mb  gnfd://bucketname
+gnfd-cmd -c config.toml mb  gnfd://bucketname
 
 // update bucket visibility, charged quota or payment address
-(1) gnfd-cmd --config=config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
-(2) gnfd-cmd --config=config.toml update-bucket  --chargedQuota 50000 gnfd://cmdbucket78
+(1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
+(2) gnfd-cmd -c config.toml update-bucket  --chargedQuota 50000 gnfd://cmdbucket78
 ```
 
 #### Upload/Download Operations
 
 (1) first stage of uploading: create a new object on greenfield chain
 ```
-gnfd-cmd --config=config.toml  create-obj --contenType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
+gnfd-cmd -c config.toml  create-obj --contenType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 ```
 (2) second stage of uploading : upload payload to greenfield storage provide
 
 ```
-gnfd-cmd --config=config.toml  put --txnhash xxx  file-path   gnfd://bucketname/objectname
+gnfd-cmd -c config.toml put --txnhash xxx  file-path   gnfd://bucketname/objectname
 ```
 required param:  --txnhash
 
 (3) download object
 
 ```
-gnfd-cmd --config=config.toml  get gnfd://bucketname/objectname  file-path 
+gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
 ```
 
 ### Group Operations
+
 ```
 // create group
-gnfd-cmd --config=config.toml mg gnfd://groupname
+gnfd-cmd -c config.toml mg gnfd://groupname
 
 // update group member
-gnfd-cmd --config=config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // head group member
-gnfd-cmd --config=config.toml   head-member --headMember  0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+gnfd-cmd -c config.toml head-member --headMember  0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 ```
 
 ### List Operations
+
 ```
 // list buckets
-gnfd-cmd --config=config.toml ls-bucket 
+gnfd-cmd -c config.toml ls-bucket 
 
 // list objects
-gnfd-cmd --config=config.toml ls gnfd://bucketname
+gnfd-cmd -c config.toml ls gnfd://bucketname
 
 ```
 
 #### Delete Operations
+
 ```
 // delete bucekt:
-gnfd-cmd --config=config.toml  del-bucket gnfd://bucketname
+gnfd-cmd -c config.toml del-bucket gnfd://bucketname
 
 //delete object:
-gnfd-cmd --config=config.toml  del-obj gnfd://bucketname/objectname
+gnfd-cmd -c config.toml del-obj gnfd://bucketname/objectname
 ```
 
 #### Head Operations
 
 ```
 // head bucekt:
-gnfd-cmd --config=config.toml  head-bucket gnfd://bucket-name
+gnfd-cmd -c config.toml head-bucket gnfd://bucket-name
 
 // head object:
-gnfd-cmd --config=config.toml  head-obj gnfd://bucket-name/object-name
+gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name
 
 // head Group
-gnfd-cmd --config=config.toml head-group gnfd://groupname
+gnfd-cmd -c config.toml head-group gnfd://groupname
 ```
 
 #### Storage Provider Operations
+
 ```
 // list storage providers
-gnfd-cmd --config=config.toml ls-sp
+gnfd-cmd -c config.toml ls-sp
 
 // get quota price of storage provider:
-gnfd-cmd --config=config.toml  get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
+gnfd-cmd -c config.toml get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
 ```
 
 #### Payment Operations
 
 ```
 // get quota info:
-gnfd-cmd --config=config.toml  quota-info gnfd://bucketname
+gnfd-cmd -c config.toml quota-info gnfd://bucketname
 
 // buy quota:
-gnfd-cmd --config=config.toml buy-quota  --chargedQuota 1000000   gnfd://bucket-name
+gnfd-cmd -c config.toml buy-quota  --chargedQuota 1000000   gnfd://bucket-name
 ```
-
 
 #### Hash Operations
 
 ```
 // compute integrity hash
-gnfd-cmd get-hash  filepath
+gnfd-cmd  -c config.toml get-hash  filepath
 
 // get challenge result
-gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1
+gnfd-cmd -c config.toml challenge --objectId "test" --pieceIndex 2  --spIndex -1
 ```
