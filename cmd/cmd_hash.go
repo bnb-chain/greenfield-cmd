@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -31,7 +32,7 @@ func computeHashRoot(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	
+
 	if !exists {
 		return errors.New("upload file not exists")
 	} else if objectSize > int64(2*1024*1024*1024) {
@@ -40,27 +41,28 @@ func computeHashRoot(ctx *cli.Context) error {
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	// Open the referenced file.
 	fReader, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 	defer fReader.Close()
 
 	hashes, size, _, err := gnfdClient.ComputeHashRoots(fReader)
 	if err != nil {
 		fmt.Println("compute hash root fail:", err.Error())
-		return err
+		return toCmdErr(err)
 	}
 
-	fmt.Printf("get primary sp hash root: \n%s\n %s \n", hashes[0], "get secondary sp hash list:")
+	fmt.Printf("the primary sp hash root: \n%s\n%s\n", hex.EncodeToString(hashes[0]), "the secondary sp hash list:")
 
 	for _, hash := range hashes[1:] {
-		fmt.Println(hash)
+		fmt.Println(hex.EncodeToString(hash))
 	}
+
 	fmt.Println("file size:", size)
 
 	return nil
