@@ -52,7 +52,6 @@ $ gnfd-cmd -c config.toml buy-quota  --chargedQuota 1000000  gnfd://bucket-name`
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:     chargeQuotaFlagName,
-				Value:    0,
 				Usage:    "indicate the target quota to be set for the bucket",
 				Required: true,
 			},
