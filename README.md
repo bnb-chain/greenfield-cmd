@@ -57,7 +57,7 @@ COMMANDS:
 // get help for supporing commands and basic command format
 gnfd-cmd -h
 
-// For specific commands, use the following command:
+// get help of specific commands
 gnfd-cmd command-name -h 
 ```
 
