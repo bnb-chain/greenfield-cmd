@@ -79,7 +79,6 @@ $ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddres
 			},
 			&cli.Uint64Flag{
 				Name:  chargeQuotaFlagName,
-				Value: 0,
 				Usage: "indicate the read quota info of the bucket",
 			},
 			&cli.GenericFlag{

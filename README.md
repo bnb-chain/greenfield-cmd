@@ -79,7 +79,6 @@ gnfd-cmd -c config.toml mb gnfd://bucketname
 (1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
 (2) gnfd-cmd -c config.toml update-bucket  --chargedQuota 50000 gnfd://cmdbucket78
 ```
-
 #### Upload/Download Operations
 
 (1) first stage of uploading: create a new object on greenfield chain
@@ -98,7 +97,6 @@ required param:  --txnhash
 ```
 gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
 ```
-
 ### Group Operations
 
 ```
@@ -111,7 +109,6 @@ gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa353178
 // head group member
 gnfd-cmd -c config.toml head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 ```
-
 ### List Operations
 
 ```
@@ -122,17 +119,18 @@ gnfd-cmd -c config.toml ls-bucket
 gnfd-cmd -c config.toml ls gnfd://bucketname
 
 ```
-
 #### Delete Operations
 
 ```
-// delete bucekt:
+// delete bucekt
 gnfd-cmd -c config.toml del-bucket gnfd://bucketname
 
-//delete object:
+//delete object
 gnfd-cmd -c config.toml del-obj gnfd://bucketname/objectname
-```
 
+// delete group
+gnfd-cmd -c config.toml del-group gnfd://group-name
+```
 #### Head Operations
 
 ```
@@ -145,7 +143,6 @@ gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name
 // head Group
 gnfd-cmd -c config.toml head-group gnfd://groupname
 ```
-
 #### Storage Provider Operations
 
 ```
@@ -155,17 +152,15 @@ gnfd-cmd -c config.toml ls-sp
 // get quota price of storage provider:
 gnfd-cmd -c config.toml get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
 ```
-
 #### Payment Operations
 
 ```
-// get quota info:
+// get quota info
 gnfd-cmd -c config.toml quota-info gnfd://bucketname
 
-// buy quota:
+// buy quota
 gnfd-cmd -c config.toml buy-quota --chargedQuota 1000000 gnfd://bucket-name
 ```
-
 #### Hash Operations
 
 ```
