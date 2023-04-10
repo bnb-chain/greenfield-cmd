@@ -14,13 +14,13 @@ func cmdCalHash() *cli.Command {
 	return &cli.Command{
 		Name:      "get-hash",
 		Action:    computeHashRoot,
-		Usage:     "compute hash roots of object",
+		Usage:     "compute the integrity hash of file",
 		ArgsUsage: "filePath",
 		Description: `
+Compute the integrity hash value of the file which use same algorithm of greenfield
 
 Examples:
-# Compute file path
-$ gnfd-cmd get-hash  /home/test.text `,
+$ gnfd-cmd -c config.toml get-hash /home/test.text `,
 	}
 }
 

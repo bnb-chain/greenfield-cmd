@@ -21,14 +21,16 @@ func cmdCreateObj() *cli.Command {
 	return &cli.Command{
 		Name:      "create-object",
 		Action:    createObject,
-		Usage:     "create an object",
+		Usage:     "create an object on chain",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
 Get approval from storage provider and send createObject txn to chain.
 The command need to pass the file path inorder to compute hash roots on client
+This is the first phase of uploading object.
+
 Examples:
-# the first phase of putObject
-$ gnfd  create-obj test.file gnfd://bucketname/objectname`,
+# create an object called gnfdObject on the bucket called gnfdBucket
+$ gnfd-cmd -c config.toml create-obj test.file gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlagName,
@@ -57,14 +59,16 @@ func cmdPutObj() *cli.Command {
 	return &cli.Command{
 		Name:      "put",
 		Action:    uploadObject,
-		Usage:     "upload an object",
+		Usage:     "upload payload of object to SP",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
-Upload the payload and send with txn to storage provider
+Upload the payload of object to the storage provider.
+The command need to set the txn hash value of creating object txn with --txnHash.
+This is the second phase of uploading object.
 
 Examples:
-# the second phase of putObject: upload file to storage provider
-$ gnfd put --txnhash xx  file.txt gnfd://bucket-name/file.txt`,
+# upload file to storage provider, the corresponding object is gnfdObject
+$ gnfd-cmd -c config.toml put --txnHash xx  file.txt gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     txnHashFlagName,
@@ -92,8 +96,8 @@ func cmdGetObj() *cli.Command {
 Download a specific object from storage provider
 
 Examples:
-# download a file
-$ gnfd get gnfd://bucketname/file.txt file.txt `,
+# download an object payload to file
+$ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
 				Name:  startOffsetFlagName,
@@ -114,13 +118,13 @@ func cmdListObjects() *cli.Command {
 	return &cli.Command{
 		Name:      "ls",
 		Action:    listObjects,
-		Usage:     "list object info of the bucket",
+		Usage:     "list objects of the bucket",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
-List Objects of the bucket , including object name, object id, object status
+List Objects of the bucket, including object name, object id, object status
 
 Examples:
-$ gnfd  ls  gnfd://bucket-name`,
+$ gnfd  ls  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  userAddressFlagName,

@@ -20,12 +20,13 @@ func cmdCreateBucket() *cli.Command {
 		Usage:     "create bucket",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
-Create a new bucket and set a createBucketMsg to storage provider, 
-the bucket name should unique and the default acl is not public.
+Create a new bucket and set a createBucketMsg to storage provider.
+The bucket name should unique and the default visibility is private.
+The command need to set the primary SP address with --primarySP
 
 Examples:
-# Create a new bucket
-$ gnfd-cmd mb  --primarySP  --visibility=public-read  gnfd://bucket-name`,
+# Create a new bucket called gnfdBucket, visibility is public-read
+$ gnfd-cmd -c config.toml mb  --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     primarySPFlagName,
@@ -63,10 +64,13 @@ func cmdUpdateBucket() *cli.Command {
 		Usage:     "update bucket meta on chain",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
-Update the visibility, payment account or read quota meta of the bucket
+Update the visibility, payment account or read quota meta of the bucket.
+The visibility value can be public-read, private or inherit.
+You can update only one item or multiple items at the same time.
 
 Examples:
-$ gnfd  update-bucket   --visibility=public-read  --paymentAddress=".."  gnfd://bucket-name`,
+update visibility and the payment address of the gnfdBucket
+$ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  paymentFlagName,
@@ -95,13 +99,13 @@ func cmdListBuckets() *cli.Command {
 	return &cli.Command{
 		Name:      "ls-bucket",
 		Action:    listBuckets,
-		Usage:     "list bucket info of the provided user",
+		Usage:     "list buckets of the user",
 		ArgsUsage: "",
 		Description: `
-Update the visibility, payment account or read quota meta of the bucket
+List the bucket names and bucket ids of the user.
 
 Examples:
-$ gnfd  ls-bucket --user `,
+$ gnfd-cmd -c config.toml ls-bucket `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  userAddressFlagName,

@@ -17,10 +17,10 @@ func cmdCreateGroup() *cli.Command {
 		Usage:     "create group",
 		ArgsUsage: "GROUP-URL",
 		Description: `
-Create a new group
+Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
 
 Examples:
-$ gnfd-cmd mg gnfd://group-name`,
+$ gnfd-cmd -c config.toml mg gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlagName,
@@ -41,9 +41,10 @@ func cmdUpdateGroup() *cli.Command {
 		Description: `
 Add or remove group members of the group, you can set add members 
 and remove members list at the same time.
+You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
-$ gnfd-cmd update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
+$ gnfd-cmd -c config.toml update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addMemberFlagName,

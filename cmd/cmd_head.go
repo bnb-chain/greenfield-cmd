@@ -18,9 +18,9 @@ func cmdHeadObj() *cli.Command {
 		Usage:     "query object info",
 		ArgsUsage: "OBJECT-URL",
 		Description: `
-send headObject txn to chain and fetch objectInfo on greenfield chain
+send headObject txn to chain and fetch object info on greenfield chain
 Examples:
-$ gnfd-cmd head-bucket gnfd://bucket-name/object-name`,
+$ gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name`,
 	}
 }
 
@@ -32,9 +32,9 @@ func cmdHeadBucket() *cli.Command {
 		Usage:     "query bucket info",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
-send headBucket txn to chain and fetch bucketInfo on greenfield chain
+send headBucket txn to chain and fetch bucket info on greenfield chain
 Examples:
-$ gnfd-cmd head-bucket gnfd://bucket-name`,
+$ gnfd-cmd -c config.toml head-bucket gnfd://bucket-name`,
 	}
 }
 
@@ -48,7 +48,7 @@ func cmdHeadGroup() *cli.Command {
 		Description: `
 send headGroup txn to chain and fetch bucketInfo on greenfield chain
 Examples:
-$ gnfd-cmd head-group --groupOwner  gnfd://group-name`,
+$ gnfd-cmd -c config.toml head-group --groupOwner  gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlagName,
@@ -64,12 +64,12 @@ func cmdHeadGroupMember() *cli.Command {
 	return &cli.Command{
 		Name:      "head-member",
 		Action:    headGroupMember,
-		Usage:     "check group member if it exists",
+		Usage:     "check if a group member exists",
 		ArgsUsage: "GROUP-URL",
 		Description: `
 send headGroupMember txn to chain and check if member is in the group
 Examples:
-$ gnfd-cmd  head-group --headMember  gnfd://group-name`,
+$ gnfd-cmd -c config.toml head-member --headMember gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlagName,

@@ -15,13 +15,14 @@ func cmdChallenge() *cli.Command {
 	return &cli.Command{
 		Name:      "challenge",
 		Action:    getChallengeInfo,
-		Usage:     "Send challenge request",
+		Usage:     "send challenge request",
 		ArgsUsage: "",
 		Description: `
-Send challenge request to storage provider, need to set the object id,piece index and sp index.
+Send challenge request to the storage provider. 
+The command need to need to set the object id, piece index and sp index.
 
 Examples:
-$ gnfd-cmd  challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
+$ gnfd-cmd -c config.toml challenge --objectId "test" --pieceIndex 2  --spIndex -1`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     objectIDFlagName,
