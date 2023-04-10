@@ -18,7 +18,7 @@ The command should run with "-c filePath" to load the config file and the config
 Config file example:
 ```
 endpoint = "sp.gnfd.cc"
-grpcAddr = "gnfd-grpc-plaintext.qa.bnbchain.world:9090"
+grpcAddr = "greenfield.bnbchain.world:9090"
 chainId = "greenfield_9000-1741"
 privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
