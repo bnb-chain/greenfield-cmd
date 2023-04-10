@@ -13,13 +13,6 @@ var globalContext, _ = context.WithCancel(context.Background())
 
 func main() {
 	flags := []cli.Flag{
-		&cli.StringFlag{
-			Name:        "config",
-			Aliases:     []string{"c"},
-			Usage:       "Load configuration from config.toml",
-			DefaultText: "./config.toml",
-			Value:       "config.toml",
-		},
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
 				Name:  "endpoint",
@@ -51,17 +44,23 @@ func main() {
 				Required: false,
 			},
 		),
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Usage:   "Load configuration from `FILE`",
+		},
 	}
 
 	app := &cli.App{
 		Name:  "gnfd-cmd",
-		Usage: "cmd tool for supporting greenfield storage functions",
+		Usage: "cmd tool for supporting making request to greenfield",
 		Flags: flags,
 		Commands: []*cli.Command{
 			cmdCreateBucket(),
+			cmdUpdateBucket(),
 			cmdPutObj(),
 			cmdGetObj(),
-			cmdPreCreateObj(),
+			cmdCreateObj(),
 			cmdCalHash(),
 			cmdDelObject(),
 			cmdDelBucket(),
@@ -69,8 +68,22 @@ func main() {
 			cmdHeadBucket(),
 			cmdChallenge(),
 			cmdListSP(),
+			cmdCreateGroup(),
+			cmdUpdateGroup(),
+			cmdHeadGroup(),
+			cmdHeadGroupMember(),
+			cmdDelGroup(),
+			cmdBuyQuota(),
+			cmdGetQuotaPrice(),
+			cmdGetQuotaInfo(),
+			cmdListBuckets(),
+			cmdListObjects(),
 		},
-		Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config")),
+	}
+	app.Before = func(ctx *cli.Context) error {
+		BeforeFunc := altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))
+		_ = BeforeFunc(ctx)
+		return nil
 	}
 
 	err := app.Run(os.Args)

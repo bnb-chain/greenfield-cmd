@@ -9,33 +9,34 @@ import (
 
 func cmdListSP() *cli.Command {
 	return &cli.Command{
-		Name:      "list-sp",
+		Name:      "ls-sp",
 		Action:    ListSP,
-		Usage:     "list sp info",
+		Usage:     "list storage providers info",
 		ArgsUsage: "",
 		Description: `
+List the storage provider info including the endpoint and the address on chain
 
 Examples:
-$ gnfd-cmd  list-sp `,
+$ gnfd-cmd -c config.toml ls-sp `,
 	}
 }
 
 func ListSP(ctx *cli.Context) error {
 	client, err := NewClient(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	spInfo, err := client.ListSP(c)
+	spInfo, err := client.ListSP(c, false)
 	if err != nil {
-		fmt.Println("fail to list sp:", err.Error())
-		return err
+		fmt.Println("fail to list SP:", err.Error())
+		return nil
 	}
 
-	fmt.Println("sp list:")
+	fmt.Println("SP list:")
 	for id, info := range spInfo {
 		fmt.Println(fmt.Sprintf("sp[%d]: operator-address:%s, endpoint:%s,"+
 			" Status:%s", id, info.OperatorAddress, info.Endpoint, info.Status))
