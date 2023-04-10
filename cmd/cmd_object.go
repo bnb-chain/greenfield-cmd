@@ -19,7 +19,7 @@ import (
 // cmdCreateObj send the request get approval of uploading
 func cmdCreateObj() *cli.Command {
 	return &cli.Command{
-		Name:      "create-object",
+		Name:      "create-obj",
 		Action:    createObject,
 		Usage:     "create an object on chain",
 		ArgsUsage: "[filePath] OBJECT-URL",

@@ -31,7 +31,7 @@ COMMANDS:
    update-bucket  update bucket meta on chain
    put            upload an object
    get            download an object
-   create-object  create an object
+   create-obj     create an object
    get-hash       compute hash roots of object
    del-obj        delete an existed object
    del-bucket     delete an existed bucket
