@@ -97,7 +97,7 @@ required param:  --txnhash
 ```
 gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
 ```
-### Group Operations
+#### Group Operations
 
 ```
 // create group
@@ -109,7 +109,7 @@ gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa353178
 // head group member
 gnfd-cmd -c config.toml head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 ```
-### List Operations
+#### List Operations
 
 ```
 // list buckets
