@@ -28,9 +28,10 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	if endpoint == "" {
 		return nil, fmt.Errorf("failed to parse endpoint")
 	}
-
+	
 	if strings.Contains(endpoint, "http") {
-		endpoint = endpoint[7:]
+		s := strings.Split(endpoint, "//")
+		endpoint = s[1]
 	}
 
 	grpcAddr := ctx.String("grpcAddr")
