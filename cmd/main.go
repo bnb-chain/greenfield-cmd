@@ -67,7 +67,6 @@ func main() {
 			cmdDelBucket(),
 			cmdHeadObj(),
 			cmdHeadBucket(),
-			cmdChallenge(),
 			cmdListSP(),
 			cmdCreateGroup(),
 			cmdUpdateGroup(),
