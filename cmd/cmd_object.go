@@ -113,6 +113,21 @@ $ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
 	}
 }
 
+// cmdCancelObjects cancel the object which has been created
+func cmdCancelObjects() *cli.Command {
+	return &cli.Command{
+		Name:      "cancel",
+		Action:    cancelCreateObject,
+		Usage:     "send cancel create object txn",
+		ArgsUsage: "BUCKET-URL",
+		Description: `
+Cancel the created object 
+
+Examples:
+$ gnfd  cancel gnfd://gnfdBucket/gnfdObject`,
+	}
+}
+
 // cmdListObjects list the objects of the bucket
 func cmdListObjects() *cli.Command {
 	return &cli.Command{
@@ -324,6 +339,35 @@ func getObject(ctx *cli.Context) error {
 
 	fmt.Printf("download object %s successfully, the file path is %s,", objectName, filePath)
 
+	return nil
+}
+
+// cancelCreateObject
+func cancelCreateObject(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	cli, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+
+	_, err = cli.CancelCreateObject(bucketName, objectName, gnfdclient.CancelCreateOption{TxOpts: &txnOpt})
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Println("cancel create object:", objectName)
 	return nil
 }
 
