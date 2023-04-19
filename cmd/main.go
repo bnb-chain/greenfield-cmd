@@ -78,6 +78,12 @@ func main() {
 			cmdGetQuotaInfo(),
 			cmdListBuckets(),
 			cmdListObjects(),
+			cmdTransfer(),
+			cmdTransferOut(),
+			cmdCreatePaymentAccount(),
+			cmdPaymentDeposit(),
+			cmdPaymentWithdraw(),
+			cmdListPaymentAccounts(),
 		},
 	}
 	app.Before = func(ctx *cli.Context) error {

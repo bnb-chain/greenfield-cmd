@@ -1,9 +1,11 @@
 package main
 
 import (
+	"cosmossdk.io/math"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +40,10 @@ const (
 	pieceIndexFlagName   = "pieceIndex"
 	spIndexFlagName      = "spIndex"
 	userAddressFlagName  = "user"
+
+	toAddressFlagName   = "toAddress"
+	fromAddressFlagName = "fromAddress"
+	amountFlagName      = "amount"
 )
 
 type CmdEnumValue struct {
@@ -145,4 +151,15 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 		}
 	}
 	return addrList, nil
+}
+
+func amountStrToCoins(amountStr string) (sdk.Coin, error) {
+	if amountStr == "" {
+		return sdk.Coin{}, fmt.Errorf("empty amount string")
+	}
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return sdk.Coin{}, fmt.Errorf("%s is not valid amount", amount)
+	}
+	return sdk.NewCoin(gnfdsdktypes.Denom, amount), nil
 }
