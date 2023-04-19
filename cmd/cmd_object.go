@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
-	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
+	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -217,7 +217,7 @@ func putObject(ctx *cli.Context) error {
 	contentType := ctx.String(contentTypeFlagName)
 	secondarySPAccs := ctx.String(secondarySPFlagName)
 
-	opts := gnfdclient.CreateObjectOptions{}
+	opts := sdkTypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
 	}
@@ -395,7 +395,7 @@ func getObject(ctx *cli.Context) error {
 	}
 	defer fd.Close()
 
-	opt := spClient.GetObjectOption{}
+	opt := sdkTypes.GetObjectOption{}
 	startOffset := ctx.Int64(endOffsetFlagName)
 	endOffset := ctx.Int64(endOffsetFlagName)
 
@@ -421,7 +421,7 @@ func getObject(ctx *cli.Context) error {
 	return nil
 }
 
-// cancelCreateObject
+// cancelCreateObject cancel the created object on chain
 func cancelCreateObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return toCmdErr(fmt.Errorf("args number should be one"))
@@ -438,10 +438,18 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	c, cancelCancelCreate := context.WithCancel(globalContext)
+	defer cancelCancelCreate()
+
+	_, err = cli.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(objectNotCreatedError)
+	}
+
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 
-	_, err = cli.CancelCreateObject(bucketName, objectName, gnfdclient.CancelCreateOption{TxOpts: &txnOpt})
+	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdkTypes.CancelCreateOption{TxOpts: &txnOpt})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -464,10 +472,15 @@ func listObjects(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelList := context.WithCancel(globalContext)
+	defer cancelList()
 
-	listObjectsRes, err := client.SPClient.ListObjects(c, bucketName, spClient.NewAuthInfo(false, ""))
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(bucketNotExistError)
+	}
+
+	listObjectsRes, err := client.ListObjects(c, bucketName, sdkTypes.ListObjectsOptions{})
 
 	if err != nil {
 		return toCmdErr(err)

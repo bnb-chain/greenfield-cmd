@@ -1,5 +1,0 @@
-endpoint = "http://127.0.0.1:8888"
-host = "nodereal.gnfd.com"
-grpcAddr = "localhost:9090"
-chainId = "greenfield_9000-1741"
-privateKey = "dea8947c6da33078d4a3f856545195ef57d424de4159130202398fcb42f2317f"

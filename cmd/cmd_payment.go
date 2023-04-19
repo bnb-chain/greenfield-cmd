@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
@@ -101,7 +100,8 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, gnfdclient.BuyQuotaOption{TxOpts: &txnOpt})
+
+	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdkTypes.BuyQuotaOption{TxOpts: &txnOpt})
 
 	if err != nil {
 		fmt.Println("buy quota error:", err.Error())
@@ -127,17 +127,25 @@ func getQuotaPrice(ctx *cli.Context) error {
 		return toCmdErr(errors.New("fail to fetch sp address"))
 	}
 
-	spAddr, err := sdk.AccAddressFromHexUnsafe(spAddressStr)
+	price, err := client.GetStoragePrice(c, spAddressStr)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	price, err := client.GetQuotaPrice(c, spAddr)
+	quotaPrice, err := price.ReadPrice.Float64()
 	if err != nil {
-		return toCmdErr(err)
+		fmt.Println("get quota price error:", err.Error())
+		return err
 	}
 
-	fmt.Println("get bucket read quota price:", price, " wei/byte")
+	storagePrice, err := price.StorePrice.Float64()
+	if err != nil {
+		fmt.Println("get storage price error:", err.Error())
+		return err
+	}
+
+	fmt.Println("get bucket read quota price:", quotaPrice, " wei/byte")
+	fmt.Println("get bucket storage price:", storagePrice, " wei/byte")
 	return nil
 }
 
@@ -153,8 +161,14 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelGetQuota := context.WithCancel(globalContext)
+	defer cancelGetQuota()
+
+	// if bucket not exist, no need to get info of quota
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(bucketNotExistError)
+	}
 
 	quotaInfo, err := client.GetBucketReadQuota(c, bucketName)
 	if err != nil {

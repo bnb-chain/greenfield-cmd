@@ -30,7 +30,6 @@ const (
 	paymentFlagName      = "paymentAddress"
 	secondarySPFlagName  = "secondarySPs"
 	contentTypeFlagName  = "contentType"
-	txnHashFlagName      = "txnHash"
 	startOffsetFlagName  = "start"
 	endOffsetFlagName    = "end"
 	initMemberFlagName   = "initMembers"

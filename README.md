@@ -17,12 +17,8 @@ The command should run with "-c filePath" to load the config file and the config
 
 Config file example:
 ```
-# the primary storage provider endpoint
-endpoint = "https://gnfd-testnet-sp-1.nodereal.io"
-# the grpc address of greenfield
-grpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
-# the chain id info of greenfield
-chainId = "greenfield_5600-1"
+rpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
+chainId = "greenfield_9000-1741"
 privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
 
@@ -78,6 +74,9 @@ gnfd-cmd command-name -h
 1. The private key of the account has to be configured in config file
 
 2. The operator account should have enough balance before sending request to greenfield
+
+3.The cmd to have ability to intelligently select the correct SP
+
 
 ### Examples
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -188,12 +187,8 @@ func headGroupMember(ctx *cli.Context) error {
 	if headMember == "" {
 		return toCmdErr(errors.New("no head member address"))
 	}
-	headMemberAddr, err := sdk.AccAddressFromHexUnsafe(headMember)
-	if err != nil {
-		return toCmdErr(err)
-	}
 
-	exist := client.HeadGroupMember(c, groupName, groupOwner, headMemberAddr)
+	exist := client.HeadGroupMember(c, groupName, groupOwner, headMember)
 	if !exist {
 		fmt.Println("the user does not exist in the group")
 		return nil
