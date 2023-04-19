@@ -84,6 +84,7 @@ func main() {
 			cmdPaymentDeposit(),
 			cmdPaymentWithdraw(),
 			cmdListPaymentAccounts(),
+			cmdGetAccountBalance(),
 		},
 	}
 	app.Before = func(ctx *cli.Context) error {

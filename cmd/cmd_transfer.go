@@ -10,8 +10,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const ()
-
 func cmdTransfer() *cli.Command {
 	return &cli.Command{
 		Name:      "transfer",

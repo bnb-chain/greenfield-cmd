@@ -41,9 +41,11 @@ const (
 	spIndexFlagName      = "spIndex"
 	userAddressFlagName  = "user"
 
+	addressFlagName     = "address"
 	toAddressFlagName   = "toAddress"
 	fromAddressFlagName = "fromAddress"
 	amountFlagName      = "amount"
+	balanceFlagName     = "balance"
 )
 
 type CmdEnumValue struct {

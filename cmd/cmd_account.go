@@ -4,7 +4,9 @@ import (
 	"context"
 	"cosmossdk.io/math"
 	"fmt"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	paymenttypes "github.com/bnb-chain/greenfield/x/payment/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -243,5 +245,58 @@ func listPaymentAccounts(ctx *cli.Context) error {
 	for i, a := range accounts.PaymentAccounts {
 		fmt.Printf("%d: %s \n", i+1, a)
 	}
+	return nil
+}
+
+func cmdGetAccountBalance() *cli.Command {
+	return &cli.Command{
+		Name:      "balance",
+		Action:    getAccountBalance,
+		Usage:     "query a account's balance",
+		ArgsUsage: "",
+		Description: `
+Get the account balance, if address not specified, default to cur account
+
+Examples:
+$ gnfd-cmd -c config.toml balance `,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  addressFlagName,
+				Value: "",
+				Usage: "indicate the address's balance",
+			},
+		},
+	}
+}
+
+func getAccountBalance(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelCreateBucket := context.WithCancel(globalContext)
+	defer cancelCreateBucket()
+
+	var addr string
+	flagAddr := ctx.String(addressFlagName)
+	if flagAddr != "" {
+		addr = flagAddr
+	} else {
+		km, err := client.ChainClient.GetKeyManager()
+		if err != nil {
+			return toCmdErr(err)
+		}
+		addr = km.GetAddr().String()
+	}
+
+	req := banktypes.QueryBalanceRequest{Address: addr,
+		Denom: gnfdsdktypes.Denom}
+
+	resp, err := client.ChainClient.BankQueryClient.Balance(c, &req)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("balance: %s%s\n", resp.Balance.Amount.String(), gnfdsdktypes.Denom)
 	return nil
 }
