@@ -27,28 +27,37 @@ privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 
 ```
 COMMANDS:
-   mb             create bucket
-   update-bucket  update bucket meta on chain
-   put            upload an object
-   get            download an object
-   create-obj     create an object
-   get-hash       compute hash roots of object
-   del-obj        delete an existed object
-   del-bucket     delete an existed bucket
-   head-obj       query object info
-   head-bucket    query bucket info
-   challenge      Send challenge request
-   list-sp        list sp info
-   mg             create group
-   update-group   update group member
-   head-group     query group info
-   head-member    check group member if it exists
-   del-group      delete an existed group
-   buy-quota      update bucket meta on chain
-   get-price      get the quota price of sp
-   quota-info     get quota info of the bucket
-   ls-bucket      list bucket info of the provided user
-   ls             list object info of the bucket
+   mb                      create bucket
+   update-bucket           update bucket meta on chain
+   put                     upload payload of object to SP
+   get                     download an object
+   put-obj-policy          put object policy to group or account
+   create-obj              create an object on chain
+   cancel                  send cancel create object txn
+   get-hash                compute the integrity hash of file
+   del-obj                 delete an existed object
+   del-bucket              delete an existed bucket
+   head-obj                query object info
+   head-bucket             query bucket info
+   ls-sp                   list storage providers info
+   mg                      create group
+   update-group            update group member
+   head-group              query group info
+   head-member             check if a group member exists
+   del-group               delete an existed group
+   buy-quota               update bucket quota info
+   get-price               get the quota price of the SP
+   quota-info              get quota info of the bucket
+   ls-bucket               list buckets of the user
+   ls                      list objects of the bucket
+   transfer                transfer
+   transfer-out            transfer out
+   payment-create-account  create a payment account
+   payment-deposit         deposit
+   payment-withdraw        withdraw
+   ls-payment-account      list payment accounts of the owner
+   balance                 query a account's balance
+   mirror                  mirror resource to bsc
 ```
 
 #### Get help
@@ -169,6 +178,7 @@ gnfd-cmd -c config.toml head-group gnfd://groupname
 ```
 // the object policy actions can be create, delete, copy, get or execute 
 // you can set the actions by combined string like "create,delete"
+// the object policy effect can be allow or deny, default is allow
 
 // Put object policy to group:
 gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://group-name/object-name
