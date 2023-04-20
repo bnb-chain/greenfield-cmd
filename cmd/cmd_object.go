@@ -167,7 +167,7 @@ Set Object Policy
 The command need to set granted account or group-id to which the policy will be applied 
 
 Examples:
-$ gnfd-cmd -c config.toml put-obj-policy --groupId  --action get,delete   gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlagName,
@@ -183,7 +183,8 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId  --action get,delete   gnfd:/
 				Name:  actionsFlagName,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"action can be the following: create, delete, copy, get or execute",
+					"actions can be the following: create, delete, copy, get or execute." +
+					"multi actions like delete,copy is supported",
 				Required: true,
 			},
 			&cli.GenericFlag{
