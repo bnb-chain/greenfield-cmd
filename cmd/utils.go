@@ -45,7 +45,8 @@ const (
 	toAddressFlagName   = "toAddress"
 	fromAddressFlagName = "fromAddress"
 	amountFlagName      = "amount"
-	balanceFlagName     = "balance"
+	resourceFlagName    = "resource"
+	IdFlagName          = "id"
 )
 
 type CmdEnumValue struct {

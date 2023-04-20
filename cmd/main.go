@@ -85,6 +85,7 @@ func main() {
 			cmdPaymentWithdraw(),
 			cmdListPaymentAccounts(),
 			cmdGetAccountBalance(),
+			cmdMirrorResource(),
 		},
 	}
 	app.Before = func(ctx *cli.Context) error {
