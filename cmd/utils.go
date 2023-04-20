@@ -41,12 +41,13 @@ const (
 	spIndexFlagName      = "spIndex"
 	userAddressFlagName  = "user"
 
-	addressFlagName     = "address"
-	toAddressFlagName   = "toAddress"
-	fromAddressFlagName = "fromAddress"
-	amountFlagName      = "amount"
-	resourceFlagName    = "resource"
-	IdFlagName          = "id"
+	ownerAddressFlagName = "owner"
+	addressFlagName      = "address"
+	toAddressFlagName    = "toAddress"
+	fromAddressFlagName  = "fromAddress"
+	amountFlagName       = "amount"
+	resourceFlagName     = "resource"
+	IdFlagName           = "id"
 )
 
 type CmdEnumValue struct {

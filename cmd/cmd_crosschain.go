@@ -3,11 +3,77 @@ package main
 import (
 	"cosmossdk.io/math"
 	"fmt"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
+	bridgetypes "github.com/bnb-chain/greenfield/x/bridge/types"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
+
+// cmdTransferOut makes a transfer from Greenfield to BSC
+func cmdTransferOut() *cli.Command {
+	return &cli.Command{
+		Name:      "transfer-out",
+		Action:    TransferOut,
+		Usage:     "transfer out",
+		ArgsUsage: "",
+		Description: `
+Create a cross chain transfer from Greenfield to a BSC account
+
+Examples:
+# Create a crosschain transfer
+$ gnfd-cmd -c config.toml transfer-out --toAddress 0x.. --amount 12345`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     toAddressFlagName,
+				Value:    "",
+				Usage:    "the receiver address in BSC",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     amountFlagName,
+				Value:    "",
+				Usage:    "the amount of BNB to be sent",
+				Required: true,
+			},
+		},
+	}
+}
+
+func TransferOut(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	toAddr := ctx.String(toAddressFlagName)
+	amountStr := ctx.String(amountFlagName)
+	amount, _ := math.NewIntFromString(amountStr)
+
+	km, err := client.ChainClient.GetKeyManager()
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	msgTransferOut := bridgetypes.NewMsgTransferOut(
+		km.GetAddr().String(),
+		toAddr,
+		&sdk.Coin{Denom: gnfdsdktypes.Denom, Amount: amount},
+	)
+
+	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msgTransferOut}, nil)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	txHash := resp.TxResponse.TxHash
+	if resp.TxResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("transfer out %s BNB to %s failed, txHash=%s\n", amountStr, toAddr, txHash))
+	}
+	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	return nil
+}
 
 func cmdMirrorResource() *cli.Command {
 	return &cli.Command{

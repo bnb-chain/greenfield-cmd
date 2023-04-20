@@ -69,6 +69,27 @@ gnfd-cmd command-name -h
 
 ### Examples
 
+#### Account Operations
+```
+// transfer to an account in Greenfield
+gnfd-cmd -c config.toml transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
+// query the balance of account
+gnfd-cmd -c config.toml balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
+
+// create a payment account
+gnfd-cmd -c config.toml payment-create-account
+
+// query payments account under owner or a address with optional flag --user 
+gnfd-cmd -c config.toml ls-payment-account  --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
+
+// deposit from owner's account to the payment account 
+gnfd-cmd -c config.toml payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
+// witharaw from a payment account to owner's account
+gnfd-cmd -c config.toml payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+```
+
 #### Bucket Operations
 
 ```
@@ -169,4 +190,19 @@ gnfd-cmd  -c config.toml get-hash filepath
 
 // get challenge result
 gnfd-cmd -c config.toml challenge --objectId "test" --pieceIndex 2  --spIndex -1
+```
+
+#### Crosschain Operations
+```
+// crosschain transfer to an account in BSC
+gnfd-cmd -c config.toml transfer-out --toAddress "0x2eDD53b48726a887c98aDAb97e0a8600f855570d" --amount 12345
+
+// mirror a group to BSC
+gnfd-cmd -c config.toml mirror --resource group --id 1
+
+// mirror a bucket to BSC
+gnfd-cmd -c config.toml mirror --resource bucket --id 1
+
+// mirror a object to BSC
+gnfd-cmd -c config.toml mirror --resource object --id 1
 ```

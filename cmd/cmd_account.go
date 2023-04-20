@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// cmdCreatePaymentAccount creates a payment account under the owner
 func cmdCreatePaymentAccount() *cli.Command {
 	return &cli.Command{
 		Name:      "payment-create-account",
@@ -22,7 +23,7 @@ func cmdCreatePaymentAccount() *cli.Command {
 Create a payment account
 
 Examples:
-# Create a transfer
+# Create a payment account
 $ gnfd-cmd -c config.toml create-payment-account `,
 	}
 }
@@ -47,20 +48,20 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	}
 	txHash := resp.TxResponse.TxHash
 	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("create-payment-account for %s failed, txHash=%s\n", creator, txHash))
+		return toCmdErr(fmt.Errorf("create-payment-account for %s failed, txHash=%s\n", txHash))
 	}
 	fmt.Printf("create-payment-account for %s succ, txHash: %s\n", creator, txHash)
 	return nil
 }
 
-// cmdPaymentDeposit
+// cmdPaymentDeposit makes deposit from the owner account to the payment account
 func cmdPaymentDeposit() *cli.Command {
 	return &cli.Command{
 		Name:   "payment-deposit",
 		Action: Deposit,
 		Usage:  "deposit",
 		Description: `
-Make a deposit into stream account 
+Make a deposit into stream(payment) account 
 
 Examples:
 # deposit a stream account
@@ -112,23 +113,24 @@ func Deposit(ctx *cli.Context) error {
 
 	txHash := resp.TxResponse.TxHash
 	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("Deposit %s to %s failed, txHash=%s\n", amount.String(), toAddr, txHash))
+		return toCmdErr(fmt.Errorf("Deposit %s BNB to %s failed, txHash=%s\n", amount.String(), toAddr, txHash))
 	}
-	fmt.Printf("Deposit %s to %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
+	fmt.Printf("Deposit %s BNB to %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
 	return nil
 }
 
+// cmdPaymentWithdraw makes a withdrawal from payment account to owner account
 func cmdPaymentWithdraw() *cli.Command {
 	return &cli.Command{
 		Name:   "payment-withdraw",
 		Action: Withdraw,
 		Usage:  "withdraw",
 		Description: `
-Make a withdrawal from stream account 
+Make a withdrawal from stream(payment) account 
 
 Examples:
-# withdraw from a stream account
-$ gnfd-cmd -c config.toml payment-withdraw --toAddress 0x.. --amount 12345`,
+# withdraw from a stream account back to the creator account
+$ gnfd-cmd -c config.toml payment-withdraw --fromAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     fromAddressFlagName,
@@ -187,18 +189,18 @@ func cmdListPaymentAccounts() *cli.Command {
 	return &cli.Command{
 		Name:      "ls-payment-account",
 		Action:    listPaymentAccounts,
-		Usage:     "list payment accounts of the user",
-		ArgsUsage: "",
+		Usage:     "list payment accounts of the owner",
+		ArgsUsage: "address of owner",
 		Description: `
-List payment accounts of the user.
+List payment accounts of the owner.
 
 Examples:
 $ gnfd-cmd -c config.toml ls-payment-account `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  userAddressFlagName,
+				Name:  ownerAddressFlagName,
 				Value: "",
-				Usage: "indicate user's payment accounts to be list, account address can be omitted for current user",
+				Usage: "indicate a owner's payment accounts to be list, account address can be omitted for current user's accounts listing",
 			},
 		},
 	}
@@ -213,19 +215,19 @@ func listPaymentAccounts(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	var userAddr string
-	userAddrStr := ctx.String(userAddressFlagName)
-	if userAddrStr != "" {
-		userAddr = userAddrStr
+	var ownerAddr string
+	ownerAddrStr := ctx.String(ownerAddressFlagName)
+	if ownerAddrStr != "" {
+		ownerAddr = ownerAddrStr
 	} else {
 		km, err := client.ChainClient.GetKeyManager()
 		if err != nil {
 			return toCmdErr(err)
 		}
-		userAddr = km.GetAddr().String()
+		ownerAddr = km.GetAddr().String()
 	}
 
-	req := paymenttypes.QueryGetPaymentAccountsByOwnerRequest{Owner: userAddr}
+	req := paymenttypes.QueryGetPaymentAccountsByOwnerRequest{Owner: ownerAddr}
 
 	accounts, err := client.ChainClient.PaymentQueryClient.GetPaymentAccountsByOwner(c, &req)
 	if err != nil {
@@ -255,15 +257,15 @@ func cmdGetAccountBalance() *cli.Command {
 		Usage:     "query a account's balance",
 		ArgsUsage: "",
 		Description: `
-Get the account balance, if address not specified, default to cur account
+Get the account balance, if address not specified, default to cur user's account
 
 Examples:
-$ gnfd-cmd -c config.toml balance `,
+$ gnfd-cmd -c config.toml balance --address 0x... `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addressFlagName,
 				Value: "",
-				Usage: "indicate the address's balance",
+				Usage: "indicate the address's balance to be retrieved",
 			},
 		},
 	}
@@ -298,5 +300,74 @@ func getAccountBalance(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 	fmt.Printf("balance: %s%s\n", resp.Balance.Amount.String(), gnfdsdktypes.Denom)
+	return nil
+}
+
+func cmdTransfer() *cli.Command {
+	return &cli.Command{
+		Name:      "transfer",
+		Action:    Transfer,
+		Usage:     "transfer",
+		ArgsUsage: "",
+		Description: `
+Make a transfer from your account to a dest account
+
+Examples:
+# Create a transfer
+$ gnfd-cmd -c config.toml transfer --toAddress 0x.. --amount 12345`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     toAddressFlagName,
+				Value:    "",
+				Usage:    "the receiver address in BSC",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:  amountFlagName,
+				Value: "",
+				Usage: "the amount to be sent",
+			},
+		},
+	}
+}
+
+func Transfer(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	toAddr := ctx.String(toAddressFlagName)
+	amountStr := ctx.String(amountFlagName)
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
+	}
+
+	km, err := client.ChainClient.GetKeyManager()
+	if err != nil {
+		return toCmdErr(err)
+	}
+	to, err := sdk.AccAddressFromHexUnsafe(toAddr)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	msg := banktypes.NewMsgSend(
+		km.GetAddr(),
+		to,
+		sdk.NewCoins(sdk.NewCoin(gnfdsdktypes.Denom, amount)),
+	)
+
+	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msg}, nil)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	txHash := resp.TxResponse.TxHash
+	if resp.TxResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("transfer %s BNB to %s failed, txHash=%s\n", amountStr, toAddr, txHash))
+
+	}
+	fmt.Printf("transfer %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txHash)
 	return nil
 }
