@@ -19,6 +19,7 @@ func cmdCreatePaymentAccount() *cli.Command {
 	return &cli.Command{
 		Name:      "payment-create-account",
 		Action:    CreatePaymentAccount,
+		Usage:     "create a payment account",
 		ArgsUsage: "",
 		Description: `
 Create a payment account

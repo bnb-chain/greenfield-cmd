@@ -159,7 +159,7 @@ func cmdPutObjPolicy() *cli.Command {
 	return &cli.Command{
 		Name:      "put-obj-policy",
 		Action:    putObjectPolicy,
-		Usage:     "put Object Policy",
+		Usage:     "put object policy to group or account",
 		ArgsUsage: " OBJECT-URL",
 		Description: `
 Set Object Policy 

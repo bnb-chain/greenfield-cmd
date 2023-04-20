@@ -1,8 +1,9 @@
 package main
 
 import (
-	"cosmossdk.io/math"
 	"fmt"
+
+	"cosmossdk.io/math"
 	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	bridgetypes "github.com/bnb-chain/greenfield/x/bridge/types"
 	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
@@ -79,6 +80,7 @@ func cmdMirrorResource() *cli.Command {
 	return &cli.Command{
 		Name:      "mirror",
 		Action:    Mirror,
+		Usage:     "mirror resource to bsc",
 		ArgsUsage: "",
 		Description: `
 Mirror resource to BSC
