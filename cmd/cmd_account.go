@@ -187,7 +187,7 @@ func Withdraw(ctx *cli.Context) error {
 // cmdListPaymentAccounts list the payment accounts belong to the owner
 func cmdListPaymentAccounts() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-payment-accounts",
+		Name:      "ls-payment-account",
 		Action:    listPaymentAccounts,
 		Usage:     "list payment accounts of the owner",
 		ArgsUsage: "address of owner",
@@ -195,7 +195,7 @@ func cmdListPaymentAccounts() *cli.Command {
 List payment accounts of the owner.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-payment-accounts `,
+$ gnfd-cmd -c config.toml ls-payment-account `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  ownerAddressFlagName,
