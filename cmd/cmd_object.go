@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
@@ -192,6 +193,11 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId  --action get,delete   gnfd:/
 					Default: effectAllow,
 				},
 				Usage: "set the effect of the policy, default is allow",
+			},
+			&cli.Uint64Flag{
+				Name:  expireTimeFlagName,
+				Value: 0,
+				Usage: "set the expire unix time stamp of the policy",
 			},
 		},
 	}
@@ -390,7 +396,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	actionList := strings.Split(actionListStr, ",")
 	for _, v := range actionList {
-		action, err := getAction(v)
+		action, err := getObjectActObion(v)
 		if err != nil {
 			return err
 		}
@@ -410,7 +416,14 @@ func putObjectPolicy(ctx *cli.Context) error {
 		return err
 	}
 
-	statement := gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+	expireTime := ctx.Uint64(expireTimeFlagName)
+	var statement permTypes.Statement
+	if expireTime > 0 {
+		tm := time.Unix(int64(expireTime), 0)
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+	} else {
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+	}
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 
@@ -597,7 +610,7 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 	return bucketName, objectName, nil
 }
 
-func getAction(action string) (permTypes.ActionType, error) {
+func getObjectActObion(action string) (permTypes.ActionType, error) {
 	switch action {
 	case "create":
 		return permTypes.ACTION_CREATE_OBJECT, nil

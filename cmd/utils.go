@@ -41,6 +41,7 @@ const (
 	actionsFlagName      = "actions"
 	effectFlagName       = "effect"
 	userAddressFlagName  = "user"
+	expireTimeFlagName   = "expire"
 
 	ownerAddressFlagName = "owner"
 	addressFlagName      = "address"
