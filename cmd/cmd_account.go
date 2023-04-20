@@ -17,7 +17,7 @@ import (
 // cmdCreatePaymentAccount creates a payment account under the owner
 func cmdCreatePaymentAccount() *cli.Command {
 	return &cli.Command{
-		Name:      "payment-create-account",
+		Name:      "create-payment-account",
 		Action:    CreatePaymentAccount,
 		Usage:     "create a payment account",
 		ArgsUsage: "",
@@ -61,7 +61,7 @@ func cmdPaymentDeposit() *cli.Command {
 	return &cli.Command{
 		Name:   "payment-deposit",
 		Action: Deposit,
-		Usage:  "deposit",
+		Usage:  "deposit into stream(payment) account",
 		Description: `
 Make a deposit into stream(payment) account 
 
@@ -125,7 +125,7 @@ func cmdPaymentWithdraw() *cli.Command {
 	return &cli.Command{
 		Name:   "payment-withdraw",
 		Action: Withdraw,
-		Usage:  "withdraw",
+		Usage:  "withdraw from stream(payment) account",
 		Description: `
 Make a withdrawal from stream(payment) account 
 
@@ -187,7 +187,7 @@ func Withdraw(ctx *cli.Context) error {
 // cmdListPaymentAccounts list the payment accounts belong to the owner
 func cmdListPaymentAccounts() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-payment-account",
+		Name:      "ls-payment-accounts",
 		Action:    listPaymentAccounts,
 		Usage:     "list payment accounts of the owner",
 		ArgsUsage: "address of owner",
@@ -195,7 +195,7 @@ func cmdListPaymentAccounts() *cli.Command {
 List payment accounts of the owner.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-payment-account `,
+$ gnfd-cmd -c config.toml ls-payment-accounts `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  ownerAddressFlagName,
@@ -307,7 +307,7 @@ func cmdTransfer() *cli.Command {
 	return &cli.Command{
 		Name:      "transfer",
 		Action:    Transfer,
-		Usage:     "transfer",
+		Usage:     "transfer from your account to a dest account",
 		ArgsUsage: "",
 		Description: `
 Make a transfer from your account to a dest account

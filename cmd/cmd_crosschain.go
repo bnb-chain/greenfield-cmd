@@ -17,7 +17,7 @@ func cmdTransferOut() *cli.Command {
 	return &cli.Command{
 		Name:      "transfer-out",
 		Action:    TransferOut,
-		Usage:     "transfer out",
+		Usage:     "transfer from greenfield to a BSC account",
 		ArgsUsage: "",
 		Description: `
 Create a cross chain transfer from Greenfield to a BSC account
