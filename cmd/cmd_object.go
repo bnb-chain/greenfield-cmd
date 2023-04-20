@@ -193,7 +193,7 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 					Enum:    []string{effectDeny, effectAllow},
 					Default: effectAllow,
 				},
-				Usage: "set the effect of the policy, default is allow",
+				Usage: "set the effect of the policy",
 			},
 			&cli.Uint64Flag{
 				Name:  expireTimeFlagName,

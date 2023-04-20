@@ -17,8 +17,11 @@ The command should run with "-c filePath" to load the config file and the config
 
 Config file example:
 ```
+# the primary storage provider endpoint
 endpoint = "https://gnfd-testnet-sp-1.nodereal.io"
+# the grpc address of greenfield
 grpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
+# the chain id info of greenfield
 chainId = "greenfield_5600-1"
 privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
