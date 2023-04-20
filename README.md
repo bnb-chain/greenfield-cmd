@@ -55,7 +55,7 @@ COMMANDS:
    create-payment-account  create a payment account
    payment-deposit         deposit into stream(payment) account
    payment-withdraw        withdraw from stream(payment) account
-   ls-payment-accounts     list payment accounts of the owner
+   ls-payment-account     list payment accounts of the owner
    balance                 query a account's balance
    mirror                  mirror resource to bsc
 ```
@@ -90,7 +90,7 @@ gnfd-cmd -c config.toml balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477
 gnfd-cmd -c config.toml create-payment-account
 
 // query payments account under owner or a address with optional flag --user 
-gnfd-cmd -c config.toml ls-payment-accounts  --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
+gnfd-cmd -c config.toml ls-payment-account --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 
 // deposit from owner's account to the payment account 
 gnfd-cmd -c config.toml payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
