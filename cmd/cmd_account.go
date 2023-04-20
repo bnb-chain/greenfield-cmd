@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"fmt"
+	"strings"
+
+	"cosmossdk.io/math"
 	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	paymenttypes "github.com/bnb-chain/greenfield/x/payment/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
@@ -48,7 +49,7 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	}
 	txHash := resp.TxResponse.TxHash
 	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("create-payment-account for %s failed, txHash=%s\n", txHash))
+		return toCmdErr(fmt.Errorf("create-payment-account for %s failed, txHash=%s\n", creator, txHash))
 	}
 	fmt.Printf("create-payment-account for %s succ, txHash: %s\n", creator, txHash)
 	return nil

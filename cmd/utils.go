@@ -8,9 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"cosmossdk.io/math"
-	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
-
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
@@ -167,15 +164,4 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 		}
 	}
 	return addrList, nil
-}
-
-func amountStrToCoins(amountStr string) (sdk.Coin, error) {
-	if amountStr == "" {
-		return sdk.Coin{}, fmt.Errorf("empty amount string")
-	}
-	amount, ok := math.NewIntFromString(amountStr)
-	if !ok {
-		return sdk.Coin{}, fmt.Errorf("%s is not valid amount", amount)
-	}
-	return sdk.NewCoin(gnfdsdktypes.Denom, amount), nil
 }
