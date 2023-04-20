@@ -14,19 +14,29 @@ const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (client.Client, error) {
+<<<<<<< HEAD
 	grpcAddr := ctx.String("rpcAddr")
 	if grpcAddr == "" {
 		return nil, fmt.Errorf("failed to parse grpc address, please set it in the config file")
+=======
+	rpcAddr := ctx.String("rpcAddr")
+	if rpcAddr == "" {
+		return nil, fmt.Errorf("failed to parse grpc address, please config it in the config file")
+>>>>>>> 621eb11 (fix: fix comment)
 	}
 
 	chainId := ctx.String("chainId")
 	if chainId == "" {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to parse chain id, please set it in the config file")
+=======
+		return nil, fmt.Errorf("failed to parse chain id, please config it in the config file")
+>>>>>>> 621eb11 (fix: fix comment)
 	}
 
 	privateKeyStr := ctx.String("privateKey")
 	if privateKeyStr == "" {
-		return nil, fmt.Errorf("failed to private key")
+		return nil, fmt.Errorf("missing private key, please config it in the config file")
 	}
 
 	account, err := sdkTypes.NewAccountFromPrivateKey("gnfd-account", privateKeyStr)
@@ -37,16 +47,17 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 	var cli client.Client
 	host := ctx.String("host")
 	if host != "" {
-		cli, err = client.New(chainId, grpcAddr, client.Option{DefaultAccount: account, Host: host})
+		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host})
 	} else {
-		cli, err = client.New(chainId, grpcAddr, client.Option{DefaultAccount: account})
+		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account})
 	}
 
 	if err != nil {
-		fmt.Println("failed to create client" + err.Error())
+		fmt.Printf("failed to create client %s \n", err.Error())
+		return nil, err
 	}
 
-	return cli, err
+	return cli, nil
 }
 
 // ParseBucketAndObject parse the bucket-name and object-name from url

@@ -34,17 +34,17 @@ Examples:
 $ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  secondarySPFlagName,
+				Name:  secondarySPFlag,
 				Value: "",
 				Usage: "indicate the Secondary SP addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  contentTypeFlagName,
+				Name:  contentTypeFlag,
 				Value: "",
 				Usage: "indicate object content-type",
 			},
 			&cli.GenericFlag{
-				Name: visibilityFlagName,
+				Name: visibilityFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{publicReadType, privateType, inheritType},
 					Default: inheritType,
@@ -70,12 +70,12 @@ Examples:
 $ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
-				Name:  startOffsetFlagName,
+				Name:  startOffsetFlag,
 				Value: 0,
 				Usage: "start offset info of the download body",
 			},
 			&cli.Int64Flag{
-				Name:  endOffsetFlagName,
+				Name:  endOffsetFlag,
 				Value: 0,
 				Usage: "end offset info of the download body",
 			},
@@ -112,7 +112,7 @@ Examples:
 $ gnfd  ls  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  userAddressFlagName,
+				Name:  userAddressFlag,
 				Value: "",
 				Usage: "indicate which user's buckets to be list, you" +
 					" don't need to specify this if you want to list your own bucket ",
@@ -214,17 +214,17 @@ func putObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	contentType := ctx.String(contentTypeFlagName)
-	secondarySPAccs := ctx.String(secondarySPFlagName)
+	contentType := ctx.String(contentTypeFlag)
+	secondarySPAccs := ctx.String(secondarySPFlag)
 
 	opts := sdkTypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
 	}
 
-	visibility := ctx.Generic(visibilityFlagName)
-	if visibility != "" {
-		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
+	visibity := ctx.Generic(visibilityFlag)
+	if visibity != "" {
+		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
 		if typeErr != nil {
 			return typeErr
 		}
@@ -396,8 +396,8 @@ func getObject(ctx *cli.Context) error {
 	defer fd.Close()
 
 	opt := sdkTypes.GetObjectOption{}
-	startOffset := ctx.Int64(endOffsetFlagName)
-	endOffset := ctx.Int64(endOffsetFlagName)
+	startOffset := ctx.Int64(endOffsetFlag)
+	endOffset := ctx.Int64(endOffsetFlag)
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
@@ -443,7 +443,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 
 	_, err = cli.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		return toCmdErr(objectNotCreatedError)
+		return toCmdErr(ErrObjectNotCreated)
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
@@ -477,7 +477,7 @@ func listObjects(ctx *cli.Context) error {
 
 	_, err = client.HeadBucket(c, bucketName)
 	if err != nil {
-		return toCmdErr(bucketNotExistError)
+		return toCmdErr(ErrBucketNotExist)
 	}
 
 	listObjectsRes, err := client.ListObjects(c, bucketName, sdkTypes.ListObjectsOptions{})

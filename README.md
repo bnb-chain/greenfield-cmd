@@ -18,7 +18,7 @@ The command should run with "-c filePath" to load the config file and the config
 Config file example:
 ```
 rpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
-chainId = "greenfield_9000-1741"
+chainId = "greenfield_5600-1"
 privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
 
@@ -75,7 +75,7 @@ gnfd-cmd command-name -h
 
 2. The operator account should have enough balance before sending request to greenfield
 
-3.The cmd to have ability to intelligently select the correct SP
+3.The cmd tool has ability to intelligently select the correct SP
 
 
 ### Examples
@@ -104,8 +104,10 @@ gnfd-cmd -c config.toml payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2d
 #### Bucket Operations
 
 ```
-// create bucket
-gnfd-cmd -c config.toml make-bucket gnfd://bucketname
+// create bucket. 
+// The primary SP address which the bucket will be created at need to be set by --primarySP
+gnfd-cmd -c config.toml mb --primarySP 0xxxxx..  gnfd://bucketname
+
 
 // update bucket visibility, charged quota or payment address
 (1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78

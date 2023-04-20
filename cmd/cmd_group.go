@@ -27,7 +27,7 @@ Examples:
 $ gnfd-cmd -c config.toml make-group gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  initMemberFlagName,
+				Name:  initMemberFlag,
 				Value: "",
 				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
 			},
@@ -51,17 +51,17 @@ Examples:
 $ gnfd-cmd -c config.toml update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  addMemberFlagName,
+				Name:  addMemberFlag,
 				Value: "",
 				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  removeMemberFlagName,
+				Name:  removeMemberFlag,
 				Value: "",
 				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  groupOwnerFlagName,
+				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
 			},
@@ -83,7 +83,7 @@ func createGroup(ctx *cli.Context) error {
 
 	opts := sdkTypes.CreateGroupOptions{}
 
-	initMembersInfo := ctx.String(initMemberFlagName)
+	initMembersInfo := ctx.String(initMemberFlag)
 	// set group init members if provided by user
 	if initMembersInfo != "" {
 		addrList, err := parseAddrList(initMembersInfo)
@@ -99,6 +99,8 @@ func createGroup(ctx *cli.Context) error {
 	c, cancelCreateGroup := context.WithCancel(globalContext)
 	defer cancelCreateGroup()
 
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.CreateGroup(c, groupName, opts)
 	if err != nil {
 		return toCmdErr(err)
@@ -131,8 +133,8 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	addMembersInfo := ctx.String(addMemberFlagName)
-	removeMembersInfo := ctx.String(removeMemberFlagName)
+	addMembersInfo := ctx.String(addMemberFlag)
+	removeMembersInfo := ctx.String(removeMemberFlag)
 
 	if addMembersInfo == "" && removeMembersInfo == "" {
 		return toCmdErr(errors.New("fail to get members to update"))
@@ -154,7 +156,10 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers, sdkTypes.UpdateGroupMemberOption{})
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txOpts := &types.TxOption{Mode: &broadcastMode}
+	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
+		sdkTypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -164,16 +169,15 @@ func updateGroupMember(ctx *cli.Context) error {
 }
 
 func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
-	groupOwnerAddrStr := ctx.String(groupOwnerFlagName)
+	groupOwnerAddrStr := ctx.String(groupOwnerFlag)
 
 	if groupOwnerAddrStr != "" {
 		return groupOwnerAddrStr, nil
-	} else {
-		acc, err := client.GetDefaultAccount()
-		if err != nil {
-			return "", toCmdErr(err)
-		}
-		return acc.GetAddress().String(), nil
 	}
-	return "", errors.New("fail to fetch group owner")
+
+	acc, err := client.GetDefaultAccount()
+	if err != nil {
+		return "", toCmdErr(err)
+	}
+	return acc.GetAddress().String(), nil
 }

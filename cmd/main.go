@@ -15,20 +15,14 @@ func main() {
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
-				Name:  "endpoint",
-				Usage: "sp provider endpoint info",
-			},
-		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
 				Name:  "host",
-				Usage: "primary host",
+				Usage: "host name of request",
 			},
 		),
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
-				Name:  "grpcAddr",
-				Usage: "greenfield chain client grpc adress",
+				Name:  "rpcAddr",
+				Usage: "greenfield chain client rpc address",
 			},
 		),
 		altsrc.NewStringFlag(

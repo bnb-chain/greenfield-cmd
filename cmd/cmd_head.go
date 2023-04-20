@@ -50,7 +50,7 @@ Examples:
 $ gnfd-cmd -c config.toml head-group --groupOwner  gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  groupOwnerFlagName,
+				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
 			},
@@ -71,12 +71,12 @@ Examples:
 $ gnfd-cmd -c config.toml head-member --headMember gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  groupOwnerFlagName,
+				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
 			},
 			&cli.StringFlag{
-				Name:  headMemberFlagName,
+				Name:  headMemberFlag,
 				Value: "",
 				Usage: "indicate the head member address",
 			},
@@ -183,7 +183,7 @@ func headGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	headMember := ctx.String(headMemberFlagName)
+	headMember := ctx.String(headMemberFlag)
 	if headMember == "" {
 		return toCmdErr(errors.New("no head member address"))
 	}

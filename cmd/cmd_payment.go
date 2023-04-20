@@ -26,7 +26,7 @@ Examples:
 $ gnfd-cmd -c config.toml get-price --spAddress "0x.."`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     spAddressFlagName,
+				Name:     spAddressFlag,
 				Value:    "",
 				Usage:    "indicate the storage provider chain address string",
 				Required: true,
@@ -50,7 +50,7 @@ Examples:
 $ gnfd-cmd -c config.toml buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
-				Name:     chargeQuotaFlagName,
+				Name:     chargeQuotaFlag,
 				Usage:    "indicate the target quota to be set for the bucket",
 				Required: true,
 			},
@@ -93,7 +93,7 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	targetQuota := ctx.Uint64(chargeQuotaFlagName)
+	targetQuota := ctx.Uint64(chargeQuotaFlag)
 	if targetQuota == 0 {
 		return toCmdErr(errors.New("target quota not set"))
 	}
@@ -122,7 +122,7 @@ func getQuotaPrice(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	spAddressStr := ctx.String(spAddressFlagName)
+	spAddressStr := ctx.String(spAddressFlag)
 	if spAddressStr == "" {
 		return toCmdErr(errors.New("fail to fetch sp address"))
 	}
@@ -167,7 +167,7 @@ func getQuotaInfo(ctx *cli.Context) error {
 	// if bucket not exist, no need to get info of quota
 	_, err = client.HeadBucket(c, bucketName)
 	if err != nil {
-		return toCmdErr(bucketNotExistError)
+		return toCmdErr(ErrBucketNotExist)
 	}
 
 	quotaInfo, err := client.GetBucketReadQuota(c, bucketName)

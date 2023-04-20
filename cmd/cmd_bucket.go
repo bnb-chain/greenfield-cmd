@@ -32,22 +32,23 @@ Examples:
 $ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  primarySPFlagName,
-				Value: "",
-				Usage: "indicate the primarySP address, using the string type",
+				Name:     primarySPFlag,
+				Value:    "",
+				Usage:    "indicate the primarySP address, using the string type",
+				Required: true,
 			},
 			&cli.StringFlag{
-				Name:  paymentFlagName,
+				Name:  paymentFlag,
 				Value: "",
 				Usage: "indicate the PaymentAddress info, using the string type",
 			},
 			&cli.Uint64Flag{
-				Name:  chargeQuotaFlagName,
+				Name:  chargeQuotaFlag,
 				Value: 0,
 				Usage: "indicate the read quota info of the bucket",
 			},
 			&cli.GenericFlag{
-				Name: visibilityFlagName,
+				Name: visibilityFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{publicReadType, privateType, inheritType},
 					Default: privateType,
@@ -75,16 +76,16 @@ update visibility and the payment address of the gnfdBucket
 $ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  paymentFlagName,
+				Name:  paymentFlag,
 				Value: "",
 				Usage: "indicate the PaymentAddress info, using the string type",
 			},
 			&cli.Uint64Flag{
-				Name:  chargeQuotaFlagName,
+				Name:  chargeQuotaFlag,
 				Usage: "indicate the read quota info of the bucket",
 			},
 			&cli.GenericFlag{
-				Name: visibilityFlagName,
+				Name: visibilityFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{publicReadType, privateType, inheritType},
 					Default: privateType,
@@ -173,18 +174,18 @@ func createBucket(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	primarySpAddrStr := ctx.String(primarySPFlagName)
+	primarySpAddrStr := ctx.String(primarySPFlag)
 	if primarySpAddrStr == "" {
 		return toCmdErr(errors.New("primary sp address must be set"))
 	}
 
 	opts := sdkTypes.CreateBucketOptions{}
-	paymentAddrStr := ctx.String(paymentFlagName)
+	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		opts.PaymentAddress = sdk.MustAccAddressFromHex(paymentAddrStr)
 	}
 
-	visibility := ctx.Generic(visibilityFlagName)
+	visibility := ctx.Generic(visibilityFlag)
 	if visibility != "" {
 		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
 		if typeErr != nil {
@@ -193,7 +194,7 @@ func createBucket(ctx *cli.Context) error {
 		opts.Visibility = visibilityTypeVal
 	}
 
-	chargedQuota := ctx.Uint64(chargeQuotaFlagName)
+	chargedQuota := ctx.Uint64(chargeQuotaFlag)
 	if chargedQuota > 0 {
 		opts.ChargedQuota = chargedQuota
 	}
@@ -232,7 +233,7 @@ func updateBucket(ctx *cli.Context) error {
 	}
 
 	opts := sdkTypes.UpdateBucketOption{}
-	paymentAddrStr := ctx.String(paymentFlagName)
+	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		paymentAddress, err := sdk.AccAddressFromHexUnsafe(paymentAddrStr)
 		if err != nil {
@@ -241,7 +242,7 @@ func updateBucket(ctx *cli.Context) error {
 		opts.PaymentAddress = paymentAddress
 	}
 
-	visibility := ctx.Generic(visibilityFlagName)
+	visibility := ctx.Generic(visibilityFlag)
 	if visibility != "" {
 		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
 		if typeErr != nil {
@@ -250,7 +251,7 @@ func updateBucket(ctx *cli.Context) error {
 		opts.Visibility = visibilityTypeVal
 	}
 
-	chargedQuota := ctx.Uint64(chargeQuotaFlagName)
+	chargedQuota := ctx.Uint64(chargeQuotaFlag)
 	if chargedQuota > 0 {
 		opts.ChargedQuota = &chargedQuota
 	}
