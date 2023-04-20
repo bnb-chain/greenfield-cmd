@@ -50,12 +50,12 @@ COMMANDS:
    quota-info              get quota info of the bucket
    ls-bucket               list buckets of the user
    ls                      list objects of the bucket
-   transfer                transfer
-   transfer-out            transfer out
-   payment-create-account  create a payment account
-   payment-deposit         deposit
-   payment-withdraw        withdraw
-   ls-payment-account      list payment accounts of the owner
+   transfer                transfer from your account to a dest account
+   transfer-out            transfer from greenfield to a BSC account
+   create-payment-account  create a payment account
+   payment-deposit         deposit into stream(payment) account
+   payment-withdraw        withdraw from stream(payment) account
+   ls-payment-accounts     list payment accounts of the owner
    balance                 query a account's balance
    mirror                  mirror resource to bsc
 ```
@@ -72,9 +72,9 @@ gnfd-cmd command-name -h
 
 ### Precautions
 
-1.If the private key has not been configured, the tool will generate one and the operator address
+1. The private key of the account has to be configured in config file
 
-2.The operator account should have balance before testing
+2. The operator account should have enough balance before sending request to greenfield
 
 ### Examples
 
@@ -87,10 +87,10 @@ gnfd-cmd -c config.toml transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8
 gnfd-cmd -c config.toml balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
 // create a payment account
-gnfd-cmd -c config.toml payment-create-account
+gnfd-cmd -c config.toml create-payment-account
 
 // query payments account under owner or a address with optional flag --user 
-gnfd-cmd -c config.toml ls-payment-account  --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
+gnfd-cmd -c config.toml ls-payment-accounts  --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 
 // deposit from owner's account to the payment account 
 gnfd-cmd -c config.toml payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
@@ -176,9 +176,9 @@ gnfd-cmd -c config.toml head-group gnfd://groupname
 
 #### Policy Operations
 ```
-// the object policy actions can be create, delete, copy, get or execute 
-// you can set the actions by combined string like "create,delete"
-// the object policy effect can be allow or deny, default is allow
+// The object policy actions can be create, delete, copy, get or execute
+// It can be set with combined string like "create,delete" by --actions
+// The object policy effect can set to be allow or deny by --effect
 
 // Put object policy to group:
 gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://group-name/object-name
