@@ -212,8 +212,6 @@ gnfd-cmd -c config.toml buy-quota --chargedQuota 1000000 gnfd://bucket-name
 // compute integrity hash
 gnfd-cmd  -c config.toml get-hash filepath
 
-// get challenge result
-gnfd-cmd -c config.toml challenge --objectId "test" --pieceIndex 2  --spIndex -1
 ```
 
 #### Crosschain Operations
