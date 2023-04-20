@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -151,6 +154,49 @@ $ gnfd  ls  gnfd://gnfdBucket`,
 	}
 }
 
+// cmdPutObjPolicy
+func cmdPutObjPolicy() *cli.Command {
+	return &cli.Command{
+		Name:      "put-obj-policy",
+		Action:    putObjectPolicy,
+		Usage:     "put Object Policy",
+		ArgsUsage: " OBJECT-URL",
+		Description: `
+Set Object Policy 
+The command need to set granted account or group-id to which the policy will be applied 
+
+Examples:
+$ gnfd-cmd -c config.toml put-obj-policy --groupId  --action get,delete   gnfd://gnfdBucket/gnfdObject`,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  groupIDFlagName,
+				Value: 0,
+				Usage: "the group id of the group",
+			},
+			&cli.StringFlag{
+				Name:  granterFlagName,
+				Value: "",
+				Usage: "the account address to set the policy",
+			},
+			&cli.StringFlag{
+				Name:  actionsFlagName,
+				Value: "",
+				Usage: "set the actions of the policy," +
+					"action can be the following: create, delete, copy, get or execute",
+				Required: true,
+			},
+			&cli.GenericFlag{
+				Name: effectFlagName,
+				Value: &CmdEnumValue{
+					Enum:    []string{effectDeny, effectAllow},
+					Default: effectAllow,
+				},
+				Usage: "set the effect of the policy, default is allow",
+			},
+		},
+	}
+}
+
 // createObject get approval of uploading from sp
 func createObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
@@ -268,8 +314,13 @@ func uploadObject(ctx *cli.Context) error {
 	}
 	defer fileReader.Close()
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelUpload := context.WithCancel(globalContext)
+	defer cancelUpload()
+
+	_, err = client.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrObjectNotCreated)
+	}
 
 	opt := spClient.PutObjectOption{}
 	contentType := ctx.String(contentTypeFlagName)
@@ -283,7 +334,111 @@ func uploadObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("upload object: %s successfully ", objectName)
+	fmt.Printf("upload object: %s successfully \n", objectName)
+	return nil
+}
+
+func putObjectPolicy(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+	urlInfo := ctx.Args().Get(0)
+
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return nil
+	}
+
+	groupId := ctx.Uint64(groupIDFlagName)
+	granter := ctx.String(granterFlagName)
+
+	if granter == "" && groupId == 0 {
+		return toCmdErr(errors.New("group id or account need to be set"))
+	}
+
+	if granter != "" && groupId > 0 {
+		return toCmdErr(errors.New("not support setting group id and account at the same time"))
+	}
+
+	var principal gnfdclient.Principal
+	var granterAddr sdk.AccAddress
+	if groupId > 0 {
+		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
+		principalBytes, err := p.Marshal()
+		if err != nil {
+			return err
+		}
+		principal = gnfdclient.Principal(principalBytes)
+	} else {
+		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
+		if err != nil {
+			return err
+		}
+		p := permTypes.NewPrincipalWithAccount(granterAddr)
+		principalBytes, err := p.Marshal()
+		if err != nil {
+			return err
+		}
+		principal = gnfdclient.Principal(principalBytes)
+	}
+
+	actions := make([]permTypes.ActionType, 0)
+	actionListStr := ctx.String(actionsFlagName)
+	if actionListStr == "" {
+		return errors.New("fail to parse actions")
+	}
+
+	actionList := strings.Split(actionListStr, ",")
+	for _, v := range actionList {
+		action, err := getAction(v)
+		if err != nil {
+			return err
+		}
+		actions = append(actions, action)
+	}
+
+	effect := permTypes.EFFECT_ALLOW
+	effectStr := ctx.String(effectFlagName)
+	if effectStr != "" {
+		if effectStr == effectDeny {
+			effect = permTypes.EFFECT_DENY
+		}
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	statement := gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txOpts := &types.TxOption{Mode: &broadcastMode}
+
+	statements := []*permTypes.Statement{&statement}
+	policyTx, err := client.PutObjectPolicy(bucketName, objectName, principal, statements,
+		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
+
+	c, cancelCreateBucket := context.WithCancel(globalContext)
+	defer cancelCreateBucket()
+
+	if groupId > 0 {
+		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
+		if err == nil {
+			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
+		}
+	} else {
+		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granterAddr)
+		if err == nil {
+			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+		}
+	}
+
 	return nil
 }
 
@@ -304,8 +459,13 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelGetObject := context.WithCancel(globalContext)
+	defer cancelGetObject()
+
+	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrObjectNotExist)
+	}
 
 	filePath := ctx.Args().Get(1)
 
@@ -435,4 +595,21 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 		return "", "", fmt.Errorf("fail to parse bucket name or object name")
 	}
 	return bucketName, objectName, nil
+}
+
+func getAction(action string) (permTypes.ActionType, error) {
+	switch action {
+	case "create":
+		return permTypes.ACTION_CREATE_OBJECT, nil
+	case "delete":
+		return permTypes.ACTION_DELETE_OBJECT, nil
+	case "copy":
+		return permTypes.ACTION_COPY_OBJECT, nil
+	case "get":
+		return permTypes.ACTION_GET_OBJECT, nil
+	case "execute":
+		return permTypes.ACTION_EXECUTE_OBJECT, nil
+	default:
+		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action")
+	}
 }

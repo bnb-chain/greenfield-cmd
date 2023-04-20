@@ -60,6 +60,7 @@ func main() {
 			cmdUpdateBucket(),
 			cmdPutObj(),
 			cmdGetObj(),
+			cmdPutObjPolicy(),
 			cmdCreateObj(),
 			cmdCancelObjects(),
 			cmdCalHash(),

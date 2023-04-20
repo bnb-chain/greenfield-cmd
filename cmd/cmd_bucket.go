@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	"github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	spType "github.com/bnb-chain/greenfield/x/sp/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
@@ -29,10 +32,9 @@ Examples:
 $ gnfd-cmd -c config.toml mb  --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     primarySPFlagName,
-				Value:    "",
-				Usage:    "indicate the primarySP address, using the string type",
-				Required: true,
+				Name:  primarySPFlagName,
+				Value: "",
+				Usage: "indicate the primarySP address, using the string type",
 			},
 			&cli.StringFlag{
 				Name:  paymentFlagName,
@@ -132,7 +134,41 @@ func createBucket(ctx *cli.Context) error {
 	defer cancelCreateBucket()
 
 	primarySpAddrStr := ctx.String(primarySPFlagName)
-	primarySpAddr := sdk.MustAccAddressFromHex(primarySpAddrStr)
+
+	if primarySpAddrStr == "" {
+		request := &spType.QueryStorageProvidersRequest{}
+		chainCtx := context.Background()
+		gnfdRep, err := client.ChainClient.StorageProviders(chainCtx, request)
+		if err != nil {
+			fmt.Println("fail to fetch sp info on chain", err.Error())
+			return nil
+		}
+		spList := gnfdRep.GetSps()
+		findPrimarySp := false
+		for _, sp := range spList {
+			endpoint := sp.GetEndpoint()
+			if strings.Contains(endpoint, "http") {
+				s := strings.Split(endpoint, "//")
+				endpoint = s[1]
+			}
+			if endpoint == client.SPClient.GetURL().Hostname() {
+				findPrimarySp = true
+				primarySpAddrStr = sp.GetOperatorAddress()
+				if sp.Status.String() != "STATUS_IN_SERVICE" {
+					return errors.New("primary sp not in service")
+				}
+				break
+			}
+		}
+		if !findPrimarySp {
+			return errors.New("can not find the right primary sp, please set it using --primarySP")
+		}
+	}
+
+	primarySpAddr, err := sdk.AccAddressFromHexUnsafe(primarySpAddrStr)
+	if err != nil {
+		return err
+	}
 
 	paymentAddrStr := ctx.String(paymentFlagName)
 	opts := gnfdclient.CreateBucketOptions{}
@@ -153,6 +189,9 @@ func createBucket(ctx *cli.Context) error {
 	if chargedQuota > 0 {
 		opts.ChargedQuota = chargedQuota
 	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddr, opts)
 	if err != nil {
@@ -177,6 +216,12 @@ func updateBucket(ctx *cli.Context) error {
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
+
+	// if bucket not exist, no need to update it
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
 
 	opts := gnfdclient.UpdateBucketOption{}
 	paymentAddrStr := ctx.String(paymentFlagName)

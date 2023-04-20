@@ -17,9 +17,9 @@ The command should run with "-c filePath" to load the config file and the config
 
 Config file example:
 ```
-endpoint = "sp.gnfd.cc"
-grpcAddr = "greenfield.bnbchain.world:9090"
-chainId = "greenfield_9000-1741"
+endpoint = "https://gnfd-testnet-sp-1.nodereal.io"
+grpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
+chainId = "greenfield_5600-1"
 privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
 
@@ -104,12 +104,12 @@ gnfd-cmd -c config.toml mb gnfd://bucketname
 
 (1) first stage of uploading: create a new object on greenfield chain
 ```
-gnfd-cmd -c config.toml  create-obj --contenType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
+gnfd-cmd -c config.toml  create-obj --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 ```
 (2) second stage of uploading : upload payload to greenfield storage provide
 
 ```
-gnfd-cmd -c config.toml put --txnhash xxx  file-path  gnfd://bucketname/objectname
+gnfd-cmd -c config.toml put --txnHash xxx  file-path  gnfd://bucketname/objectname
 ```
 required param:  --txnhash
 
@@ -164,6 +164,20 @@ gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name
 // head Group
 gnfd-cmd -c config.toml head-group gnfd://groupname
 ```
+
+#### Policy Operations
+```
+// the object policy actions can be create, delete, copy, get or execute 
+// you can set the actions by combined string like "create,delete"
+
+// Put object policy to group:
+gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://group-name/object-name
+
+// put object policy to account 
+gnfd-cmd -c config.toml put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://group-name/object-name
+
+```
+
 #### Storage Provider Operations
 
 ```

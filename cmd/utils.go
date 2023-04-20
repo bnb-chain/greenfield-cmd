@@ -1,14 +1,15 @@
 package main
 
 import (
-	"cosmossdk.io/math"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	"strconv"
 	"strings"
 	"time"
+
+	"cosmossdk.io/math"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +22,8 @@ const (
 	publicReadType       = "public-read"
 	privateType          = "private"
 	inheritType          = "inherit"
+	effectAllow          = "allow"
+	effectDeny           = "deny"
 	primarySPFlagName    = "primarySP"
 	chargeQuotaFlagName  = "chargedQuota"
 	visibilityFlagName   = "visibility"
@@ -36,9 +39,10 @@ const (
 	groupOwnerFlagName   = "groupOwner"
 	headMemberFlagName   = "headMember"
 	spAddressFlagName    = "spAddress"
-	objectIDFlagName     = "objectId"
-	pieceIndexFlagName   = "pieceIndex"
-	spIndexFlagName      = "spIndex"
+	groupIDFlagName      = "groupId"
+	granterFlagName      = "granter"
+	actionsFlagName      = "actions"
+	effectFlagName       = "effect"
 	userAddressFlagName  = "user"
 
 	ownerAddressFlagName = "owner"
@@ -48,6 +52,14 @@ const (
 	amountFlagName       = "amount"
 	resourceFlagName     = "resource"
 	IdFlagName           = "id"
+)
+
+var (
+	ErrBucketNotExist   = errors.New("bucket not exist")
+	ErrObjectNotExist   = errors.New("object not exist")
+	ErrObjectNotCreated = errors.New("object not created on chain")
+	ErrObjectSeal       = errors.New("object not sealed before downloading")
+	ErrGroupNotExist    = errors.New("group not exist")
 )
 
 type CmdEnumValue struct {
