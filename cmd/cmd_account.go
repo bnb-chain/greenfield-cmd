@@ -90,7 +90,6 @@ func Deposit(ctx *cli.Context) error {
 
 	toAddr := ctx.String(toAddressFlagName)
 	amountStr := ctx.String(amountFlagName)
-	amount, _ := math.NewIntFromString(amountStr)
 
 	km, err := client.ChainClient.GetKeyManager()
 	if err != nil {
@@ -155,7 +154,6 @@ func Withdraw(ctx *cli.Context) error {
 
 	fromAddr := ctx.String(fromAddressFlagName)
 	amountStr := ctx.String(amountFlagName)
-	amount, _ := math.NewIntFromString(amountStr)
 
 	km, err := client.ChainClient.GetKeyManager()
 	if err != nil {
