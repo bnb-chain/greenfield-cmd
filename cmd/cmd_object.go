@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
@@ -184,7 +182,7 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: create, delete, copy, get or execute." +
-					"multi actions like delete,copy is supported",
+					" multi actions like \"delete,copy\" is supported",
 				Required: true,
 			},
 			&cli.GenericFlag{
@@ -353,55 +351,19 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
 	if err != nil {
-		return nil
+		return toCmdErr(err)
 	}
 
 	groupId := ctx.Uint64(groupIDFlagName)
 	granter := ctx.String(granterFlagName)
-
-	if granter == "" && groupId == 0 {
-		return toCmdErr(errors.New("group id or account need to be set"))
+	principal, err := parsePrincipal(ctx, granter, groupId)
+	if err != nil {
+		return toCmdErr(err)
 	}
 
-	if granter != "" && groupId > 0 {
-		return toCmdErr(errors.New("not support setting group id and account at the same time"))
-	}
-
-	var principal gnfdclient.Principal
-	var granterAddr sdk.AccAddress
-	if groupId > 0 {
-		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
-		principalBytes, err := p.Marshal()
-		if err != nil {
-			return err
-		}
-		principal = gnfdclient.Principal(principalBytes)
-	} else {
-		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
-		if err != nil {
-			return err
-		}
-		p := permTypes.NewPrincipalWithAccount(granterAddr)
-		principalBytes, err := p.Marshal()
-		if err != nil {
-			return err
-		}
-		principal = gnfdclient.Principal(principalBytes)
-	}
-
-	actions := make([]permTypes.ActionType, 0)
-	actionListStr := ctx.String(actionsFlagName)
-	if actionListStr == "" {
-		return errors.New("fail to parse actions")
-	}
-
-	actionList := strings.Split(actionListStr, ",")
-	for _, v := range actionList {
-		action, err := getObjectActObion(v)
-		if err != nil {
-			return err
-		}
-		actions = append(actions, action)
+	actions, err := parseActions(ctx, true)
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	effect := permTypes.EFFECT_ALLOW
@@ -438,18 +400,22 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
 
+	// get the latest policy from chain
 	if groupId > 0 {
 		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
 		if err == nil {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granterAddr)
+		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
 		if err == nil {
-			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granterAddr)
+			if err == nil {
+				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			}
 		}
 	}
 
@@ -609,21 +575,4 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 		return "", "", fmt.Errorf("fail to parse bucket name or object name")
 	}
 	return bucketName, objectName, nil
-}
-
-func getObjectActObion(action string) (permTypes.ActionType, error) {
-	switch action {
-	case "create":
-		return permTypes.ACTION_CREATE_OBJECT, nil
-	case "delete":
-		return permTypes.ACTION_DELETE_OBJECT, nil
-	case "copy":
-		return permTypes.ACTION_COPY_OBJECT, nil
-	case "get":
-		return permTypes.ACTION_GET_OBJECT, nil
-	case "execute":
-		return permTypes.ACTION_EXECUTE_OBJECT, nil
-	default:
-		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action")
-	}
 }

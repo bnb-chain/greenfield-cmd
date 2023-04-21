@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	"github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	spType "github.com/bnb-chain/greenfield/x/sp/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
@@ -113,6 +115,54 @@ $ gnfd-cmd -c config.toml ls-bucket `,
 				Value: "",
 				Usage: "indicate which user's buckets to be list, you" +
 					" don't need to specify this if you want to list your own bucket ",
+			},
+		},
+	}
+}
+
+func cmdPutBucketPolicy() *cli.Command {
+	return &cli.Command{
+		Name:      "put-bucket-policy",
+		Action:    putBucketPolicy,
+		Usage:     "put bucket policy to group or account",
+		ArgsUsage: " BUCKET-URL",
+		Description: `
+The command is used to set the bucket policy of the granted account or group-id.
+It required to set granted account or group-id by --groupId or --granter.
+
+Examples:
+$ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  groupIDFlagName,
+				Value: 0,
+				Usage: "the group id of the group",
+			},
+			&cli.StringFlag{
+				Name:  granterFlagName,
+				Value: "",
+				Usage: "the account address to set the policy",
+			},
+			&cli.StringFlag{
+				Name:  actionsFlagName,
+				Value: "",
+				Usage: "set the actions of the policy," +
+					"actions can be the following: delete, update." +
+					" multi actions like \"delete,update\" is supported",
+				Required: true,
+			},
+			&cli.GenericFlag{
+				Name: effectFlagName,
+				Value: &CmdEnumValue{
+					Enum:    []string{effectDeny, effectAllow},
+					Default: effectAllow,
+				},
+				Usage: "set the effect of the policy",
+			},
+			&cli.Uint64Flag{
+				Name:  expireTimeFlagName,
+				Value: 0,
+				Usage: "set the expire unix time stamp of the policy",
 			},
 		},
 	}
@@ -309,4 +359,78 @@ func listBuckets(ctx *cli.Context) error {
 	}
 	return nil
 
+}
+
+func putBucketPolicy(ctx *cli.Context) error {
+	bucketName, err := getBucketNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupId := ctx.Uint64(groupIDFlagName)
+	granter := ctx.String(granterFlagName)
+	principal, err := parsePrincipal(ctx, granter, groupId)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	actions, err := parseActions(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	effect := permTypes.EFFECT_ALLOW
+	effectStr := ctx.String(effectFlagName)
+	if effectStr != "" {
+		if effectStr == effectDeny {
+			effect = permTypes.EFFECT_DENY
+		}
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	expireTime := ctx.Uint64(expireTimeFlagName)
+	var statement permTypes.Statement
+	if expireTime > 0 {
+		tm := time.Unix(int64(expireTime), 0)
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+	} else {
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txOpts := &types.TxOption{Mode: &broadcastMode}
+
+	statements := []*permTypes.Statement{&statement}
+	policyTx, err := client.PutBucketPolicy(bucketName, principal, statements,
+		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
+
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
+	if groupId > 0 {
+		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
+		if err == nil {
+			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
+		}
+	} else {
+		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		if err == nil {
+			policyInfo, err := client.GetBucketPolicy(c, bucketName, granterAddr)
+			if err == nil {
+				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			}
+		}
+	}
+
+	return nil
 }

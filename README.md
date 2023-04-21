@@ -35,6 +35,7 @@ COMMANDS:
    put                     upload payload of object to SP
    get                     download an object
    put-obj-policy          put object policy to group or account
+   put-bucket-policy       put bucket policy to group or account
    create-obj              create an object on chain
    cancel-create-obj       cancel the created object
    get-hash                compute the integrity hash of file
@@ -184,10 +185,16 @@ gnfd-cmd -c config.toml head-group gnfd://groupname
 // The object policy effect can set to be allow or deny by --effect
 
 // grant object operation permissions to a group
-gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://group-name/object-name
+gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
 
 // grant object operation permissions to an account
-gnfd-cmd -c config.toml put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://group-name/object-name
+gnfd-cmd -c config.toml put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
+
+// grant bucket operation permissions to a group
+gnfd-cmd -c config.toml put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
+
+// grant bucket operation permissions to an account
+gnfd-cmd -c config.toml put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
 
 ```
 
