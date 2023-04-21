@@ -36,7 +36,7 @@ COMMANDS:
    get                     download an object
    put-obj-policy          put object policy to group or account
    create-obj              create an object on chain
-   cancel                  cancel creating object
+   cancel-create-obj       cancel the created object
    get-hash                compute the integrity hash of file
    del-obj                 delete an existed object
    del-bucket              delete an existed bucket

@@ -23,7 +23,7 @@ func cmdCreateGroup() *cli.Command {
 Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
 
 Examples:
-$ gnfd-cmd -c config.toml mg gnfd://group-name`,
+$ gnfd-cmd -c config.toml make-group gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlagName,

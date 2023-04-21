@@ -29,7 +29,7 @@ The command need to set the primary SP address with --primarySP.
 
 Examples:
 # Create a new bucket called gnfdBucket, visibility is public-read
-$ gnfd-cmd -c config.toml mb  --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
+$ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlagName,
