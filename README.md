@@ -30,20 +30,20 @@ privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 
 ```
 COMMANDS:
-   mb                      create bucket
+   make-bucket             create a new bucket
    update-bucket           update bucket meta on chain
    put                     upload payload of object to SP
    get                     download an object
    put-obj-policy          put object policy to group or account
    create-obj              create an object on chain
-   cancel                  send cancel create object txn
+   cancel                  cancel creating object
    get-hash                compute the integrity hash of file
    del-obj                 delete an existed object
    del-bucket              delete an existed bucket
    head-obj                query object info
    head-bucket             query bucket info
    ls-sp                   list storage providers info
-   mg                      create group
+   make-group              create a new group
    update-group            update group member
    head-group              query group info
    head-member             check if a group member exists
@@ -58,7 +58,7 @@ COMMANDS:
    create-payment-account  create a payment account
    payment-deposit         deposit into stream(payment) account
    payment-withdraw        withdraw from stream(payment) account
-   ls-payment-account     list payment accounts of the owner
+   ls-payment-account      list payment accounts of the owner
    balance                 query a account's balance
    mirror                  mirror resource to bsc
 ```
@@ -106,7 +106,7 @@ gnfd-cmd -c config.toml payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2d
 
 ```
 // create bucket
-gnfd-cmd -c config.toml mb gnfd://bucketname
+gnfd-cmd -c config.toml make-bucket gnfd://bucketname
 
 // update bucket visibility, charged quota or payment address
 (1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
@@ -123,7 +123,7 @@ gnfd-cmd -c config.toml  create-obj --contentType "text/xml" --visibility privat
 ```
 gnfd-cmd -c config.toml put --txnHash xxx  file-path  gnfd://bucketname/objectname
 ```
-required param:  --txnhash
+required param:  --txnHash
 
 (3) download object
 
@@ -134,7 +134,7 @@ gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path
 
 ```
 // create group
-gnfd-cmd -c config.toml mg gnfd://groupname
+gnfd-cmd -c config.toml make-group gnfd://groupname
 
 // update group member
 gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
