@@ -85,8 +85,14 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelBuyQuota := context.WithCancel(globalContext)
+	defer cancelBuyQuota()
+
+	// if bucket not exist, no need to buy quota
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
 
 	targetQuota := ctx.Uint64(chargeQuotaFlagName)
 	if targetQuota == 0 {

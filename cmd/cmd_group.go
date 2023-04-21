@@ -1,26 +1,29 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
 // cmdCreateBucket create a new Bucket
 func cmdCreateGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "mg",
+		Name:      "make-group",
 		Action:    createGroup,
-		Usage:     "create group",
+		Usage:     "create a new group",
 		ArgsUsage: "GROUP-URL",
 		Description: `
 Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
 
 Examples:
-$ gnfd-cmd -c config.toml mg gnfd://group-name`,
+$ gnfd-cmd -c config.toml make-group gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlagName,
@@ -89,12 +92,27 @@ func createGroup(ctx *cli.Context) error {
 		opts.InitGroupMember = addrList
 	}
 
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
+
 	txnHash, err := client.CreateGroup(groupName, opts)
 	if err != nil {
 		return toCmdErr(err)
 	}
+	c, cancelGroup := context.WithCancel(globalContext)
+	defer cancelGroup()
+
+	groupOwner, err := getGroupOwner(ctx, client)
+	if err == nil {
+		info, err := client.HeadGroup(c, groupName, groupOwner)
+		if err == nil {
+			fmt.Printf("create group: %s succ, txn hash:%s, group id: %s \n", groupName, txnHash, info.Id.String())
+			return nil
+		}
+	}
 
 	fmt.Printf("create group: %s succ, txn hash:%s \n", groupName, txnHash)
+
 	return nil
 }
 
@@ -137,6 +155,14 @@ func updateGroupMember(ctx *cli.Context) error {
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err != nil {
 		return toCmdErr(err)
+	}
+
+	c, cancelUpdateGroup := context.WithCancel(globalContext)
+	defer cancelUpdateGroup()
+
+	_, err = client.HeadGroup(c, groupName, groupOwner)
+	if err != nil {
+		return toCmdErr(ErrGroupNotExist)
 	}
 
 	txnHash, err := client.UpdateGroupMember(groupName, groupOwner, addGroupMembers, removeGroupMembers, gnfdclient.UpdateGroupMemberOption{})

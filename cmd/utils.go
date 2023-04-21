@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
+	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
@@ -19,6 +22,8 @@ const (
 	publicReadType       = "public-read"
 	privateType          = "private"
 	inheritType          = "inherit"
+	effectAllow          = "allow"
+	effectDeny           = "deny"
 	primarySPFlagName    = "primarySP"
 	chargeQuotaFlagName  = "chargedQuota"
 	visibilityFlagName   = "visibility"
@@ -34,10 +39,28 @@ const (
 	groupOwnerFlagName   = "groupOwner"
 	headMemberFlagName   = "headMember"
 	spAddressFlagName    = "spAddress"
-	objectIDFlagName     = "objectId"
-	pieceIndexFlagName   = "pieceIndex"
-	spIndexFlagName      = "spIndex"
+	groupIDFlagName      = "groupId"
+	granterFlagName      = "granter"
+	actionsFlagName      = "actions"
+	effectFlagName       = "effect"
 	userAddressFlagName  = "user"
+	expireTimeFlagName   = "expire"
+
+	ownerAddressFlagName = "owner"
+	addressFlagName      = "address"
+	toAddressFlagName    = "toAddress"
+	fromAddressFlagName  = "fromAddress"
+	amountFlagName       = "amount"
+	resourceFlagName     = "resource"
+	IdFlagName           = "id"
+)
+
+var (
+	ErrBucketNotExist   = errors.New("bucket not exist")
+	ErrObjectNotExist   = errors.New("object not exist")
+	ErrObjectNotCreated = errors.New("object not created on chain")
+	ErrObjectSeal       = errors.New("object not sealed before downloading")
+	ErrGroupNotExist    = errors.New("group not exist")
 )
 
 type CmdEnumValue struct {
@@ -145,4 +168,93 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 		}
 	}
 	return addrList, nil
+}
+
+func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclient.Principal, error) {
+	if granter == "" && groupId == 0 {
+		return "", errors.New("group id or account need to be set")
+	}
+
+	if granter != "" && groupId > 0 {
+		return "", errors.New("not support setting group id and account at the same time")
+	}
+
+	var principal gnfdclient.Principal
+	var granterAddr sdk.AccAddress
+	var err error
+	if groupId > 0 {
+		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
+		principalBytes, err := p.Marshal()
+		if err != nil {
+			return "", err
+		}
+		principal = gnfdclient.Principal(principalBytes)
+	} else {
+		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
+		if err != nil {
+			return "", err
+		}
+		p := permTypes.NewPrincipalWithAccount(granterAddr)
+		principalBytes, err := p.Marshal()
+		if err != nil {
+			return "", err
+		}
+		principal = gnfdclient.Principal(principalBytes)
+	}
+
+	return principal, nil
+}
+
+func getBucketAction(action string) (permTypes.ActionType, error) {
+	switch action {
+	case "update":
+		return permTypes.ACTION_UPDATE_BUCKET_INFO, nil
+	case "delete":
+		return permTypes.ACTION_DELETE_BUCKET, nil
+	default:
+		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action of bucket policy")
+	}
+}
+
+func getObjectAction(action string) (permTypes.ActionType, error) {
+	switch action {
+	case "create":
+		return permTypes.ACTION_CREATE_OBJECT, nil
+	case "delete":
+		return permTypes.ACTION_DELETE_OBJECT, nil
+	case "copy":
+		return permTypes.ACTION_COPY_OBJECT, nil
+	case "get":
+		return permTypes.ACTION_GET_OBJECT, nil
+	case "execute":
+		return permTypes.ACTION_EXECUTE_OBJECT, nil
+	default:
+		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action of object policy")
+	}
+}
+
+func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType, error) {
+	actions := make([]permTypes.ActionType, 0)
+	actionListStr := ctx.String(actionsFlagName)
+	if actionListStr == "" {
+		return nil, errors.New("fail to parse actions")
+	}
+
+	actionList := strings.Split(actionListStr, ",")
+	for _, v := range actionList {
+		var action permTypes.ActionType
+		var err error
+		if isObjectPolicy {
+			action, err = getObjectAction(v)
+		} else {
+			action, err = getBucketAction(v)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		actions = append(actions, action)
+	}
+
+	return actions, nil
 }

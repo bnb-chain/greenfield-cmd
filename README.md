@@ -17,9 +17,12 @@ The command should run with "-c filePath" to load the config file and the config
 
 Config file example:
 ```
-endpoint = "sp.gnfd.cc"
-grpcAddr = "greenfield.bnbchain.world:9090"
-chainId = "greenfield_9000-1741"
+# the primary storage provider endpoint
+endpoint = "https://gnfd-testnet-sp-1.nodereal.io"
+# the grpc address of greenfield
+grpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
+# the chain id info of greenfield
+chainId = "greenfield_5600-1"
 privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 ```
 
@@ -27,28 +30,37 @@ privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 
 ```
 COMMANDS:
-   mb             create bucket
-   update-bucket  update bucket meta on chain
-   put            upload an object
-   get            download an object
-   create-obj     create an object
-   get-hash       compute hash roots of object
-   del-obj        delete an existed object
-   del-bucket     delete an existed bucket
-   head-obj       query object info
-   head-bucket    query bucket info
-   challenge      Send challenge request
-   list-sp        list sp info
-   mg             create group
-   update-group   update group member
-   head-group     query group info
-   head-member    check group member if it exists
-   del-group      delete an existed group
-   buy-quota      update bucket meta on chain
-   get-price      get the quota price of sp
-   quota-info     get quota info of the bucket
-   ls-bucket      list bucket info of the provided user
-   ls             list object info of the bucket
+   make-bucket             create a new bucket
+   update-bucket           update bucket meta on chain
+   put                     create object on chain and upload payload of object to SP
+   get                     download an object
+   put-obj-policy          put object policy to group or account
+   put-bucket-policy       put bucket policy to group or account
+   cancel-create-obj       cancel the created object
+   get-hash                compute the integrity hash of file
+   del-obj                 delete an existed object
+   del-bucket              delete an existed bucket
+   head-obj                query object info
+   head-bucket             query bucket info
+   ls-sp                   list storage providers info
+   make-group              create a new group
+   update-group            update group member
+   head-group              query group info
+   head-member             check if a group member exists
+   del-group               delete an existed group
+   buy-quota               update bucket quota info
+   get-price               get the quota price of the SP
+   quota-info              get quota info of the bucket
+   ls-bucket               list buckets of the user
+   ls                      list objects of the bucket
+   transfer                transfer from your account to a dest account
+   transfer-out            transfer from greenfield to a BSC account
+   create-payment-account  create a payment account
+   payment-deposit         deposit into stream(payment) account
+   payment-withdraw        withdraw from stream(payment) account
+   ls-payment-account      list payment accounts of the owner
+   balance                 query a account's balance
+   mirror                  mirror resource to bsc
 ```
 
 #### Get help
@@ -63,17 +75,38 @@ gnfd-cmd command-name -h
 
 ### Precautions
 
-1.If the private key has not been configured, the tool will generate one and the operator address
+1. The private key of the account has to be configured in config file
 
-2.The operator account should have balance before testing
+2. The operator account should have enough balance before sending request to greenfield
 
 ### Examples
+
+#### Account Operations
+```
+// transfer to an account in Greenfield
+gnfd-cmd -c config.toml transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
+// query the balance of account
+gnfd-cmd -c config.toml balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
+
+// create a payment account
+gnfd-cmd -c config.toml create-payment-account
+
+// query payments account under owner or a address with optional flag --user 
+gnfd-cmd -c config.toml ls-payment-account --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
+
+// deposit from owner's account to the payment account 
+gnfd-cmd -c config.toml payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
+// witharaw from a payment account to owner's account
+gnfd-cmd -c config.toml payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+```
 
 #### Bucket Operations
 
 ```
 // create bucket
-gnfd-cmd -c config.toml mb gnfd://bucketname
+gnfd-cmd -c config.toml make-bucket gnfd://bucketname
 
 // update bucket visibility, charged quota or payment address
 (1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
@@ -81,18 +114,13 @@ gnfd-cmd -c config.toml mb gnfd://bucketname
 ```
 #### Upload/Download Operations
 
-(1) first stage of uploading: create a new object on greenfield chain
+(1) put Object
 ```
-gnfd-cmd -c config.toml  create-obj --contenType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
-```
-(2) second stage of uploading : upload payload to greenfield storage provide
+gnfd-cmd -c config.toml  put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 
 ```
-gnfd-cmd -c config.toml put --txnhash xxx  file-path  gnfd://bucketname/objectname
-```
-required param:  --txnhash
 
-(3) download object
+(2) download object
 
 ```
 gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
@@ -101,7 +129,7 @@ gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path
 
 ```
 // create group
-gnfd-cmd -c config.toml mg gnfd://groupname
+gnfd-cmd -c config.toml make-group gnfd://groupname
 
 // update group member
 gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
@@ -134,15 +162,37 @@ gnfd-cmd -c config.toml del-group gnfd://group-name
 #### Head Operations
 
 ```
-// head bucekt:
+// head bucekt
 gnfd-cmd -c config.toml head-bucket gnfd://bucket-name
 
-// head object:
+// head object
 gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name
 
 // head Group
 gnfd-cmd -c config.toml head-group gnfd://groupname
 ```
+
+#### Policy Operations
+```
+// The object policy actions can be "create", “delete”, "copy", "get" or "execute"
+// The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
+// The actions info can be set with combined string like "create,delete" by --actions
+// The policy effect can set to be allow or deny by --effect
+
+// grant object operation permissions to a group
+gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
+
+// grant object operation permissions to an account
+gnfd-cmd -c config.toml put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
+
+// grant bucket operation permissions to a group
+gnfd-cmd -c config.toml put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
+
+// grant bucket operation permissions to an account
+gnfd-cmd -c config.toml put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
+
+```
+
 #### Storage Provider Operations
 
 ```
@@ -167,6 +217,19 @@ gnfd-cmd -c config.toml buy-quota --chargedQuota 1000000 gnfd://bucket-name
 // compute integrity hash
 gnfd-cmd  -c config.toml get-hash filepath
 
-// get challenge result
-gnfd-cmd -c config.toml challenge --objectId "test" --pieceIndex 2  --spIndex -1
+```
+
+#### Crosschain Operations
+```
+// crosschain transfer some tokens to an account in BSC
+gnfd-cmd -c config.toml transfer-out --toAddress "0x2eDD53b48726a887c98aDAb97e0a8600f855570d" --amount 12345
+
+// mirror a group to BSC
+gnfd-cmd -c config.toml mirror --resource group --id 1
+
+// mirror a bucket to BSC
+gnfd-cmd -c config.toml mirror --resource bucket --id 1
+
+// mirror a object to BSC
+gnfd-cmd -c config.toml mirror --resource object --id 1
 ```

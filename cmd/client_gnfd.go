@@ -10,7 +10,6 @@ import (
 	"github.com/bnb-chain/greenfield/sdk/client"
 	"github.com/bnb-chain/greenfield/sdk/keys"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -26,9 +25,9 @@ const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 	endpoint := ctx.String("endpoint")
 	if endpoint == "" {
-		return nil, fmt.Errorf("failed to parse endpoint")
+		return nil, fmt.Errorf("failed to parse endpoint, please set it in the config file")
 	}
-	
+
 	if strings.Contains(endpoint, "http") {
 		s := strings.Split(endpoint, "//")
 		endpoint = s[1]
@@ -36,12 +35,12 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 
 	grpcAddr := ctx.String("grpcAddr")
 	if grpcAddr == "" {
-		return nil, fmt.Errorf("failed to parse grpc address")
+		return nil, fmt.Errorf("failed to parse grpc address, please set it in the config file")
 	}
 
 	chainId := ctx.String("chainId")
 	if chainId == "" {
-		return nil, fmt.Errorf("failed to parse chain id")
+		return nil, fmt.Errorf("failed to parse chain id, please set it in the config file")
 	}
 
 	privateKeyStr := ctx.String("privateKey")
@@ -53,14 +52,14 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 
 	keyManager, err := keys.NewPrivateKeyManager(privateKeyStr)
 	if err != nil {
-		log.Error().Msg("fail to new key manager" + err.Error())
+		return nil, err
 	}
 
 	client, err := gnfdclient.NewGnfdClient(grpcAddr, chainId, endpoint, keyManager, false,
 		WithKeyManager(keyManager),
 		WithGrpcDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
 	if err != nil {
-		fmt.Println("failed to create client" + err.Error())
+		return nil, err
 	}
 
 	host := ctx.String("host")
@@ -68,7 +67,7 @@ func NewClient(ctx *cli.Context) (*gnfdclient.GnfdClient, error) {
 		client.SPClient.SetHost(host)
 	}
 
-	return client, err
+	return client, nil
 }
 
 // ParseBucketAndObject parse the bucket-name and object-name from url
