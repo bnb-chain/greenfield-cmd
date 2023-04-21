@@ -122,8 +122,8 @@ func cmdCancelObjects() *cli.Command {
 	return &cli.Command{
 		Name:      "cancel",
 		Action:    cancelCreateObject,
-		Usage:     "send cancel create object txn",
-		ArgsUsage: "BUCKET-URL",
+		Usage:     "cancel creating object",
+		ArgsUsage: "OBJECT-URL",
 		Description: `
 Cancel the created object 
 

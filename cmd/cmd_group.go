@@ -15,9 +15,9 @@ import (
 // cmdCreateBucket create a new Bucket
 func cmdCreateGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "mg",
+		Name:      "make-group",
 		Action:    createGroup,
-		Usage:     "create group",
+		Usage:     "create a new group",
 		ArgsUsage: "GROUP-URL",
 		Description: `
 Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
