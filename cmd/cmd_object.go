@@ -18,21 +18,20 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// cmdCreateObj send the request get approval of uploading
-func cmdCreateObj() *cli.Command {
+// cmdPutObj return the command to finish uploading payload of the object
+func cmdPutObj() *cli.Command {
 	return &cli.Command{
-		Name:      "create-obj",
-		Action:    createObject,
-		Usage:     "create an object on chain",
+		Name:      "put",
+		Action:    putObject,
+		Usage:     "create object on chain and upload payload of object to SP",
 		ArgsUsage: "[filePath] OBJECT-URL",
 		Description: `
-Get approval from storage provider and send createObject txn to chain.
+Send createObject txn to chain and upload the payload of object to the storage provider.
 The command need to pass the file path inorder to compute hash roots on client
-This is the first phase of uploading object.
 
 Examples:
-# create an object called gnfdObject on the bucket called gnfdBucket
-$ gnfd-cmd -c config.toml create-obj test.file gnfd://gnfdBucket/gnfdObject`,
+# create object and upload file to storage provider, the corresponding object is gnfdObject
+$ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlagName,
@@ -51,37 +50,6 @@ $ gnfd-cmd -c config.toml create-obj test.file gnfd://gnfdBucket/gnfdObject`,
 					Default: inheritType,
 				},
 				Usage: "set visibility of the object",
-			},
-		},
-	}
-}
-
-// cmdPutObj return the command to finish uploading payload of the object
-func cmdPutObj() *cli.Command {
-	return &cli.Command{
-		Name:      "put",
-		Action:    uploadObject,
-		Usage:     "upload payload of object to SP",
-		ArgsUsage: "[filePath] OBJECT-URL",
-		Description: `
-Upload the payload of object to the storage provider.
-The command need to set the txn hash value of creating object txn with --txnHash.
-This is the second phase of uploading object.
-
-Examples:
-# upload file to storage provider, the corresponding object is gnfdObject
-$ gnfd-cmd -c config.toml put --txnHash xx  file.txt gnfd://gnfdBucket/gnfdObject`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     txnHashFlagName,
-				Value:    "",
-				Usage:    "the txn hash of transaction of createObjectMsg",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:  contentTypeFlagName,
-				Value: "",
-				Usage: "indicate object content-type",
 			},
 		},
 	}
@@ -202,16 +170,21 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 	}
 }
 
-// createObject get approval of uploading from sp
-func createObject(ctx *cli.Context) error {
+// putObject upload the payload of file, finish the third stage of putObject
+func putObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
-		return toCmdErr(fmt.Errorf("args number should be two"))
+		return toCmdErr(fmt.Errorf("args number should be 2"))
 	}
 
 	urlInfo := ctx.Args().Get(1)
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
 	if err != nil {
-		return nil
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return err
 	}
 
 	// read the local file payload
@@ -249,13 +222,13 @@ func createObject(ctx *cli.Context) error {
 		opts.ContentType = contentType
 	}
 
-	visibity := ctx.Generic(visibilityFlagName)
-	if visibity != "" {
-		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
+	visibility := ctx.Generic(visibilityFlagName)
+	if visibility != "" {
+		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
 		if typeErr != nil {
 			return typeErr
 		}
-		opts.Visibility = visibityTypeVal
+		opts.Visibility = visibilityTypeVal
 	}
 
 	// set second sp address if provided by user
@@ -277,69 +250,35 @@ func createObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("create object successfully, txn hash:", txnHash)
-	return nil
-}
-
-// uploadObject upload the payload of file, finish the third stage of putObject
-func uploadObject(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return toCmdErr(fmt.Errorf("args number more than one"))
-	}
-
-	urlInfo := ctx.Args().Get(1)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return nil
-	}
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	txnhash := ctx.String(txnHashFlagName)
-	// read the local file payload to be uploaded
-	filePath := ctx.Args().Get(0)
-
-	exists, objectSize, err := pathExists(filePath)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("upload file not exists")
-	} else if objectSize > int64(5*1024*1024*1024) {
-		return fmt.Errorf("upload file larger than 5G")
-	}
-
-	// Open the referenced file.
-	fileReader, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer fileReader.Close()
-
-	c, cancelUpload := context.WithCancel(globalContext)
-	defer cancelUpload()
-
 	_, err = client.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		return toCmdErr(ErrObjectNotCreated)
+		time.Sleep(5 * time.Second)
+		_, err = client.HeadObject(c, bucketName, objectName)
+		if err != nil {
+			return toCmdErr(ErrObjectNotCreated)
+		}
 	}
 
+	fmt.Printf("create object %s on chain finish \n", objectName)
+
 	opt := spClient.PutObjectOption{}
-	contentType := ctx.String(contentTypeFlagName)
 	if contentType != "" {
 		opt.ContentType = contentType
 	}
-
-	if err = client.PutObject(c, bucketName, objectName,
-		txnhash, objectSize, fileReader, opt); err != nil {
-		fmt.Println("upload object fail:", err.Error())
+	// Open the referenced file.
+	reader, err := os.Open(filePath)
+	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
-	fmt.Printf("upload object: %s successfully \n", objectName)
+	if err = client.PutObject(c, bucketName, objectName,
+		txnHash, objectSize, reader, opt); err != nil {
+		fmt.Println("put object fail:", err.Error())
+		return nil
+	}
+
+	fmt.Printf("put object: %s successfully \n", objectName)
 	return nil
 }
 
