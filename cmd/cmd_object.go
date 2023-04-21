@@ -546,7 +546,9 @@ func listObjects(ctx *cli.Context) error {
 			return nil
 		}
 		info := object.ObjectInfo
-		fmt.Printf("object name: %s , object id:%s, object status:%s \n", info.ObjectName, info.Id, info.ObjectStatus)
+		if !object.Removed {
+			fmt.Printf("object name: %s , object id:%s, object status:%s \n", info.ObjectName, info.Id, info.ObjectStatus)
+		}
 	}
 
 	return nil
