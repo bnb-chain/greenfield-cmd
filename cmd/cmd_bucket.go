@@ -412,7 +412,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
+	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
 
 	c, cancelPutPolicy := context.WithCancel(globalContext)
 	defer cancelPutPolicy()
