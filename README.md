@@ -32,11 +32,10 @@ privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
 COMMANDS:
    make-bucket             create a new bucket
    update-bucket           update bucket meta on chain
-   put                     upload payload of object to SP
+   put                     create object on chain and upload payload of object to SP
    get                     download an object
    put-obj-policy          put object policy to group or account
    put-bucket-policy       put bucket policy to group or account
-   create-obj              create an object on chain
    cancel-create-obj       cancel the created object
    get-hash                compute the integrity hash of file
    del-obj                 delete an existed object
@@ -115,18 +114,13 @@ gnfd-cmd -c config.toml make-bucket gnfd://bucketname
 ```
 #### Upload/Download Operations
 
-(1) first stage of uploading: create a new object on greenfield chain
+(1) put Object
 ```
-gnfd-cmd -c config.toml  create-obj --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
-```
-(2) second stage of uploading : upload payload to greenfield storage provide
+gnfd-cmd -c config.toml  put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 
 ```
-gnfd-cmd -c config.toml put --txnHash xxx  file-path  gnfd://bucketname/objectname
-```
-required param:  --txnHash
 
-(3) download object
+(2) download object
 
 ```
 gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
