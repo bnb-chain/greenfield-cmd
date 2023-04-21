@@ -181,8 +181,9 @@ gnfd-cmd -c config.toml head-group gnfd://groupname
 #### Policy Operations
 ```
 // The object policy actions can be "create", “delete”, "copy", "get" or "execute"
-// It can be set with combined string like "create,delete" by --actions
-// The object policy effect can set to be allow or deny by --effect
+// The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
+// The actions info can be set with combined string like "create,delete" by --actions
+// The policy effect can set to be allow or deny by --effect
 
 // grant object operation permissions to a group
 gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
