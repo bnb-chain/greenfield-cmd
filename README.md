@@ -167,10 +167,10 @@ gnfd-cmd -c config.toml del-group gnfd://group-name
 #### Head Operations
 
 ```
-// head bucekt:
+// head bucekt
 gnfd-cmd -c config.toml head-bucket gnfd://bucket-name
 
-// head object:
+// head object
 gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name
 
 // head Group
@@ -179,14 +179,14 @@ gnfd-cmd -c config.toml head-group gnfd://groupname
 
 #### Policy Operations
 ```
-// The object policy actions can be create, delete, copy, get or execute
+// The object policy actions can be "create", “delete”, "copy", "get" or "execute"
 // It can be set with combined string like "create,delete" by --actions
 // The object policy effect can set to be allow or deny by --effect
 
-// Put object policy to group:
+// grant object operation permissions to a group
 gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://group-name/object-name
 
-// put object policy to account 
+// grant object operation permissions to an account
 gnfd-cmd -c config.toml put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://group-name/object-name
 
 ```
@@ -219,7 +219,7 @@ gnfd-cmd  -c config.toml get-hash filepath
 
 #### Crosschain Operations
 ```
-// crosschain transfer to an account in BSC
+// crosschain transfer some tokens to an account in BSC
 gnfd-cmd -c config.toml transfer-out --toAddress "0x2eDD53b48726a887c98aDAb97e0a8600f855570d" --amount 12345
 
 // mirror a group to BSC

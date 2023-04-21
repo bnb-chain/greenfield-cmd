@@ -164,7 +164,8 @@ func cmdPutObjPolicy() *cli.Command {
 		ArgsUsage: " OBJECT-URL",
 		Description: `
 Set Object Policy 
-The command need to set granted account or group-id to which the policy will be applied 
+The command is used to set the object policy of the granted account or group-id.
+It required to set granted account or group-id by --groupId or --granter
 
 Examples:
 $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
