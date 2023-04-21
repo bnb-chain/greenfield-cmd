@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	"github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
+	spType "github.com/bnb-chain/greenfield/x/sp/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
@@ -15,24 +20,23 @@ import (
 // cmdCreateBucket create a new Bucket
 func cmdCreateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "mb",
+		Name:      "make-bucket",
 		Action:    createBucket,
-		Usage:     "create bucket",
+		Usage:     "create a new bucket",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
 Create a new bucket and set a createBucketMsg to storage provider.
 The bucket name should unique and the default visibility is private.
-The command need to set the primary SP address with --primarySP
+The command need to set the primary SP address with --primarySP.
 
 Examples:
 # Create a new bucket called gnfdBucket, visibility is public-read
-$ gnfd-cmd -c config.toml mb  --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
+$ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     primarySPFlagName,
-				Value:    "",
-				Usage:    "indicate the primarySP address, using the string type",
-				Required: true,
+				Name:  primarySPFlagName,
+				Value: "",
+				Usage: "indicate the primarySP address, using the string type",
 			},
 			&cli.StringFlag{
 				Name:  paymentFlagName,
@@ -116,6 +120,54 @@ $ gnfd-cmd -c config.toml ls-bucket `,
 	}
 }
 
+func cmdPutBucketPolicy() *cli.Command {
+	return &cli.Command{
+		Name:      "put-bucket-policy",
+		Action:    putBucketPolicy,
+		Usage:     "put bucket policy to group or account",
+		ArgsUsage: " BUCKET-URL",
+		Description: `
+The command is used to set the bucket policy of the granted account or group-id.
+It required to set granted account or group-id by --groupId or --granter.
+
+Examples:
+$ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  groupIDFlagName,
+				Value: 0,
+				Usage: "the group id of the group",
+			},
+			&cli.StringFlag{
+				Name:  granterFlagName,
+				Value: "",
+				Usage: "the account address to set the policy",
+			},
+			&cli.StringFlag{
+				Name:  actionsFlagName,
+				Value: "",
+				Usage: "set the actions of the policy," +
+					"actions can be the following: delete, update." +
+					" multi actions like \"delete,update\" is supported",
+				Required: true,
+			},
+			&cli.GenericFlag{
+				Name: effectFlagName,
+				Value: &CmdEnumValue{
+					Enum:    []string{effectDeny, effectAllow},
+					Default: effectAllow,
+				},
+				Usage: "set the effect of the policy",
+			},
+			&cli.Uint64Flag{
+				Name:  expireTimeFlagName,
+				Value: 0,
+				Usage: "set the expire unix time stamp of the policy",
+			},
+		},
+	}
+}
+
 // createBucket send the create bucket request to storage provider
 func createBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketNameByUrl(ctx)
@@ -132,7 +184,41 @@ func createBucket(ctx *cli.Context) error {
 	defer cancelCreateBucket()
 
 	primarySpAddrStr := ctx.String(primarySPFlagName)
-	primarySpAddr := sdk.MustAccAddressFromHex(primarySpAddrStr)
+
+	if primarySpAddrStr == "" {
+		request := &spType.QueryStorageProvidersRequest{}
+		chainCtx := context.Background()
+		gnfdRep, err := client.ChainClient.StorageProviders(chainCtx, request)
+		if err != nil {
+			fmt.Println("fail to fetch sp info on chain", err.Error())
+			return nil
+		}
+		spList := gnfdRep.GetSps()
+		findPrimarySp := false
+		for _, sp := range spList {
+			endpoint := sp.GetEndpoint()
+			if strings.Contains(endpoint, "http") {
+				s := strings.Split(endpoint, "//")
+				endpoint = s[1]
+			}
+			if endpoint == client.SPClient.GetURL().Hostname() {
+				findPrimarySp = true
+				primarySpAddrStr = sp.GetOperatorAddress()
+				if sp.Status.String() != "STATUS_IN_SERVICE" {
+					return errors.New("primary sp not in service")
+				}
+				break
+			}
+		}
+		if !findPrimarySp {
+			return errors.New("can not find the right primary sp, please set it using --primarySP")
+		}
+	}
+
+	primarySpAddr, err := sdk.AccAddressFromHexUnsafe(primarySpAddrStr)
+	if err != nil {
+		return err
+	}
 
 	paymentAddrStr := ctx.String(paymentFlagName)
 	opts := gnfdclient.CreateBucketOptions{}
@@ -153,6 +239,9 @@ func createBucket(ctx *cli.Context) error {
 	if chargedQuota > 0 {
 		opts.ChargedQuota = chargedQuota
 	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddr, opts)
 	if err != nil {
@@ -177,6 +266,12 @@ func updateBucket(ctx *cli.Context) error {
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
+
+	// if bucket not exist, no need to update it
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
 
 	opts := gnfdclient.UpdateBucketOption{}
 	paymentAddrStr := ctx.String(paymentFlagName)
@@ -264,4 +359,78 @@ func listBuckets(ctx *cli.Context) error {
 	}
 	return nil
 
+}
+
+func putBucketPolicy(ctx *cli.Context) error {
+	bucketName, err := getBucketNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupId := ctx.Uint64(groupIDFlagName)
+	granter := ctx.String(granterFlagName)
+	principal, err := parsePrincipal(ctx, granter, groupId)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	actions, err := parseActions(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	effect := permTypes.EFFECT_ALLOW
+	effectStr := ctx.String(effectFlagName)
+	if effectStr != "" {
+		if effectStr == effectDeny {
+			effect = permTypes.EFFECT_DENY
+		}
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	expireTime := ctx.Uint64(expireTimeFlagName)
+	var statement permTypes.Statement
+	if expireTime > 0 {
+		tm := time.Unix(int64(expireTime), 0)
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+	} else {
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txOpts := &types.TxOption{Mode: &broadcastMode}
+
+	statements := []*permTypes.Statement{&statement}
+	policyTx, err := client.PutBucketPolicy(bucketName, principal, statements,
+		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
+
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
+	if groupId > 0 {
+		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
+		if err == nil {
+			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
+		}
+	} else {
+		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		if err == nil {
+			policyInfo, err := client.GetBucketPolicy(c, bucketName, granterAddr)
+			if err == nil {
+				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			}
+		}
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
@@ -72,6 +73,14 @@ func deleteBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	c, cancelDelBucket := context.WithCancel(globalContext)
+	defer cancelDelBucket()
+
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
+
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.DeleteBucket(bucketName, gnfdclient.DeleteBucketOption{TxOpts: &txnOpt})
@@ -99,6 +108,14 @@ func deleteObject(ctx *cli.Context) error {
 	client, err := NewClient(ctx)
 	if err != nil {
 		return toCmdErr(err)
+	}
+
+	c, cancelDelObject := context.WithCancel(globalContext)
+	defer cancelDelObject()
+
+	_, err = client.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrObjectNotExist)
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK

@@ -60,6 +60,8 @@ func main() {
 			cmdUpdateBucket(),
 			cmdPutObj(),
 			cmdGetObj(),
+			cmdPutObjPolicy(),
+			cmdPutBucketPolicy(),
 			cmdCreateObj(),
 			cmdCancelObjects(),
 			cmdCalHash(),
@@ -78,6 +80,14 @@ func main() {
 			cmdGetQuotaInfo(),
 			cmdListBuckets(),
 			cmdListObjects(),
+			cmdTransfer(),
+			cmdTransferOut(),
+			cmdCreatePaymentAccount(),
+			cmdPaymentDeposit(),
+			cmdPaymentWithdraw(),
+			cmdListPaymentAccounts(),
+			cmdGetAccountBalance(),
+			cmdMirrorResource(),
 		},
 	}
 	app.Before = func(ctx *cli.Context) error {

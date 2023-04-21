@@ -35,8 +35,8 @@ func computeHashRoot(ctx *cli.Context) error {
 
 	if !exists {
 		return errors.New("upload file not exists")
-	} else if objectSize > int64(2*1024*1024*1024) {
-		return errors.New("upload file larger than 2G ")
+	} else if objectSize > int64(5*1024*1024*1024) {
+		return errors.New("file size should less than 5G")
 	}
 
 	gnfdClient, err := NewClient(ctx)

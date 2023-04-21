@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
 	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -116,15 +118,15 @@ $ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
 // cmdCancelObjects cancel the object which has been created
 func cmdCancelObjects() *cli.Command {
 	return &cli.Command{
-		Name:      "cancel",
+		Name:      "cancel-create-obj",
 		Action:    cancelCreateObject,
-		Usage:     "send cancel create object txn",
-		ArgsUsage: "BUCKET-URL",
+		Usage:     "cancel the created object",
+		ArgsUsage: "OBJECT-URL",
 		Description: `
 Cancel the created object 
 
 Examples:
-$ gnfd  cancel gnfd://gnfdBucket/gnfdObject`,
+$ gnfd  cancel-create-obj gnfd://gnfdBucket/gnfdObject`,
 	}
 }
 
@@ -146,6 +148,55 @@ $ gnfd  ls  gnfd://gnfdBucket`,
 				Value: "",
 				Usage: "indicate which user's buckets to be list, you" +
 					" don't need to specify this if you want to list your own bucket ",
+			},
+		},
+	}
+}
+
+// cmdPutObjPolicy
+func cmdPutObjPolicy() *cli.Command {
+	return &cli.Command{
+		Name:      "put-obj-policy",
+		Action:    putObjectPolicy,
+		Usage:     "put object policy to group or account",
+		ArgsUsage: " OBJECT-URL",
+		Description: `
+The command is used to set the object policy of the granted account or group-id.
+It required to set granted account or group-id by --groupId or --granter.
+
+Examples:
+$ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  groupIDFlagName,
+				Value: 0,
+				Usage: "the group id of the group",
+			},
+			&cli.StringFlag{
+				Name:  granterFlagName,
+				Value: "",
+				Usage: "the account address to set the policy",
+			},
+			&cli.StringFlag{
+				Name:  actionsFlagName,
+				Value: "",
+				Usage: "set the actions of the policy," +
+					"actions can be the following: create, delete, copy, get or execute." +
+					" multi actions like \"delete,copy\" is supported",
+				Required: true,
+			},
+			&cli.GenericFlag{
+				Name: effectFlagName,
+				Value: &CmdEnumValue{
+					Enum:    []string{effectDeny, effectAllow},
+					Default: effectAllow,
+				},
+				Usage: "set the effect of the policy",
+			},
+			&cli.Uint64Flag{
+				Name:  expireTimeFlagName,
+				Value: 0,
+				Usage: "set the expire unix time stamp of the policy",
 			},
 		},
 	}
@@ -268,8 +319,13 @@ func uploadObject(ctx *cli.Context) error {
 	}
 	defer fileReader.Close()
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelUpload := context.WithCancel(globalContext)
+	defer cancelUpload()
+
+	_, err = client.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrObjectNotCreated)
+	}
 
 	opt := spClient.PutObjectOption{}
 	contentType := ctx.String(contentTypeFlagName)
@@ -283,7 +339,86 @@ func uploadObject(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("upload object: %s successfully ", objectName)
+	fmt.Printf("upload object: %s successfully \n", objectName)
+	return nil
+}
+
+func putObjectPolicy(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+	urlInfo := ctx.Args().Get(0)
+
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupId := ctx.Uint64(groupIDFlagName)
+	granter := ctx.String(granterFlagName)
+	principal, err := parsePrincipal(ctx, granter, groupId)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	actions, err := parseActions(ctx, true)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	effect := permTypes.EFFECT_ALLOW
+	effectStr := ctx.String(effectFlagName)
+	if effectStr != "" {
+		if effectStr == effectDeny {
+			effect = permTypes.EFFECT_DENY
+		}
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	expireTime := ctx.Uint64(expireTimeFlagName)
+	var statement permTypes.Statement
+	if expireTime > 0 {
+		tm := time.Unix(int64(expireTime), 0)
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+	} else {
+		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+	}
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txOpts := &types.TxOption{Mode: &broadcastMode}
+
+	statements := []*permTypes.Statement{&statement}
+	policyTx, err := client.PutObjectPolicy(bucketName, objectName, principal, statements,
+		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
+
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
+	// get the latest policy from chain
+	if groupId > 0 {
+		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
+		if err == nil {
+			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
+		}
+	} else {
+		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		if err == nil {
+			policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granterAddr)
+			if err == nil {
+				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -304,8 +439,13 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelGetObject := context.WithCancel(globalContext)
+	defer cancelGetObject()
+
+	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrObjectNotExist)
+	}
 
 	filePath := ctx.Args().Get(1)
 
