@@ -5,7 +5,7 @@ go 1.18
 require (
 	cosmossdk.io/math v1.0.0-beta.3
 	github.com/bnb-chain/greenfield v0.1.2
-	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230423123241-bbd9fb6b5f6e
+	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230424062338-79ea3f5b0a81
 	github.com/cosmos/cosmos-sdk v0.46.4
 	github.com/urfave/cli/v2 v2.3.0
 )

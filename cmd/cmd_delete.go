@@ -115,7 +115,7 @@ func deleteObject(ctx *cli.Context) error {
 
 	_, err = client.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		return toCmdErr(ErrObjeccmd / cmd_delete.gotNotExist)
+		return toCmdErr(ErrObjectNotExist)
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK

@@ -301,7 +301,9 @@ func listBuckets(ctx *cli.Context) error {
 	fmt.Println("bucket list:")
 	for _, bucket := range bucketListRes.Buckets {
 		info := bucket.BucketInfo
-		fmt.Printf("bucket name: %s, bucket id: %s \n", info.BucketName, info.Id)
+		if !bucket.Removed {
+			fmt.Printf("bucket name: %s, bucket id: %s \n", info.BucketName, info.Id)
+		}
 	}
 	return nil
 
