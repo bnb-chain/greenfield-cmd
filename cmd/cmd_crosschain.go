@@ -27,13 +27,13 @@ Examples:
 $ gnfd-cmd -c config.toml transfer-out --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     toAddressFlagName,
+				Name:     toAddressFlag,
 				Value:    "",
 				Usage:    "the receiver address in BSC",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:     amountFlagName,
+				Name:     amountFlag,
 				Value:    "",
 				Usage:    "the amount of BNB to be sent",
 				Required: true,
@@ -48,8 +48,8 @@ func TransferOut(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	toAddr := ctx.String(toAddressFlagName)
-	amountStr := ctx.String(amountFlagName)
+	toAddr := ctx.String(toAddressFlag)
+	amountStr := ctx.String(amountFlag)
 	amount, _ := math.NewIntFromString(amountStr)
 
 	km, err := client.ChainClient.GetKeyManager()
@@ -90,13 +90,13 @@ Examples:
 $ gnfd-cmd -c config.toml mirror --resource bucket --id 1`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     resourceFlagName,
+				Name:     resourceFlag,
 				Value:    "",
 				Usage:    "resource type(group, bucket, object)",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:     IdFlagName,
+				Name:     IdFlag,
 				Value:    "",
 				Usage:    "resource id",
 				Required: true,
@@ -117,8 +117,8 @@ func Mirror(ctx *cli.Context) error {
 	}
 	addr := km.GetAddr()
 
-	resource := ctx.String(resourceFlagName)
-	id := math.NewUintFromString(ctx.String(IdFlagName))
+	resource := ctx.String(resourceFlag)
+	id := math.NewUintFromString(ctx.String(IdFlag))
 	var msg sdk.Msg
 
 	if resource == "group" {

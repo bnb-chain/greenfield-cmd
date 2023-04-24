@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
-	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -136,17 +136,17 @@ Examples:
 $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
-				Name:  groupIDFlagName,
+				Name:  groupIDFlag,
 				Value: 0,
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlagName,
+				Name:  granterFlag,
 				Value: "",
 				Usage: "the account address to set the policy",
 			},
 			&cli.StringFlag{
-				Name:  actionsFlagName,
+				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: create, delete, copy, get or execute." +
@@ -154,7 +154,7 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 				Required: true,
 			},
 			&cli.GenericFlag{
-				Name: effectFlagName,
+				Name: effectFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{effectDeny, effectAllow},
 					Default: effectAllow,
@@ -162,7 +162,7 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 				Usage: "set the effect of the policy",
 			},
 			&cli.Uint64Flag{
-				Name:  expireTimeFlagName,
+				Name:  expireTimeFlag,
 				Value: 0,
 				Usage: "set the expire unix time stamp of the policy",
 			},
@@ -217,7 +217,7 @@ func putObject(ctx *cli.Context) error {
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 
-	opts := sdkTypes.CreateObjectOptions{}
+	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
 	}
@@ -228,7 +228,7 @@ func putObject(ctx *cli.Context) error {
 		if typeErr != nil {
 			return typeErr
 		}
-		opts.Visibility = visibilityTypeVal
+		opts.Visibility = visibityTypeVal
 	}
 
 	// set second sp address if provided by user
@@ -261,10 +261,12 @@ func putObject(ctx *cli.Context) error {
 
 	fmt.Printf("create object %s on chain finish \n", objectName)
 
-	opt := spClient.PutObjectOption{}
+	opt := sdktypes.PutObjectOptions{}
 	if contentType != "" {
 		opt.ContentType = contentType
 	}
+	opt.TxnHash = txnHash
+
 	// Open the referenced file.
 	reader, err := os.Open(filePath)
 	if err != nil {
@@ -273,7 +275,7 @@ func putObject(ctx *cli.Context) error {
 	defer reader.Close()
 
 	if err = client.PutObject(c, bucketName, objectName,
-		txnHash, objectSize, reader, opt); err != nil {
+		objectSize, reader, opt); err != nil {
 		fmt.Println("put object fail:", err.Error())
 		return nil
 	}
@@ -293,9 +295,9 @@ func putObjectPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	groupId := ctx.Uint64(groupIDFlagName)
-	granter := ctx.String(granterFlagName)
-	principal, err := parsePrincipal(ctx, granter, groupId)
+	groupId := ctx.Uint64(groupIDFlag)
+	granter := ctx.String(granterFlag)
+	principal, err := parsePrincipal(granter, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -306,7 +308,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 	}
 
 	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlagName)
+	effectStr := ctx.String(effectFlag)
 	if effectStr != "" {
 		if effectStr == effectDeny {
 			effect = permTypes.EFFECT_DENY
@@ -318,29 +320,30 @@ func putObjectPolicy(ctx *cli.Context) error {
 		return err
 	}
 
-	expireTime := ctx.Uint64(expireTimeFlagName)
+	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 
 	statements := []*permTypes.Statement{&statement}
-	policyTx, err := client.PutObjectPolicy(bucketName, objectName, principal, statements,
-		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
+	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
+		sdktypes.PutPolicyOption{TxOpts: txOpts})
 
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
-
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
 
 	// get the latest policy from chain
 	if groupId > 0 {
@@ -349,12 +352,9 @@ func putObjectPolicy(ctx *cli.Context) error {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granter)
 		if err == nil {
-			policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granterAddr)
-			if err == nil {
-				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-			}
+			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}
 	}
 
@@ -395,7 +395,7 @@ func getObject(ctx *cli.Context) error {
 	}
 	defer fd.Close()
 
-	opt := sdkTypes.GetObjectOption{}
+	opt := sdktypes.GetObjectOption{}
 	startOffset := ctx.Int64(endOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
 
@@ -449,7 +449,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 
-	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdkTypes.CancelCreateOption{TxOpts: &txnOpt})
+	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -480,7 +480,7 @@ func listObjects(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	listObjectsRes, err := client.ListObjects(c, bucketName, sdkTypes.ListObjectsOptions{})
+	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
 
 	if err != nil {
 		return toCmdErr(err)

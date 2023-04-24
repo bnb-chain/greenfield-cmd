@@ -9,7 +9,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -169,7 +169,7 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 	return addrList, nil
 }
 
-func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclient.Principal, error) {
+func parsePrincipal(granter string, groupId uint64) (sdktypes.Principal, error) {
 	if granter == "" && groupId == 0 {
 		return "", errors.New("group id or account need to be set")
 	}
@@ -178,7 +178,7 @@ func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclien
 		return "", errors.New("not support setting group id and account at the same time")
 	}
 
-	var principal gnfdclient.Principal
+	var principal sdktypes.Principal
 	var granterAddr sdk.AccAddress
 	var err error
 	if groupId > 0 {
@@ -187,7 +187,7 @@ func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclien
 		if err != nil {
 			return "", err
 		}
-		principal = gnfdclient.Principal(principalBytes)
+		principal = sdktypes.Principal(principalBytes)
 	} else {
 		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
 		if err != nil {
@@ -198,7 +198,7 @@ func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclien
 		if err != nil {
 			return "", err
 		}
-		principal = gnfdclient.Principal(principalBytes)
+		principal = sdktypes.Principal(principalBytes)
 	}
 
 	return principal, nil
@@ -234,7 +234,7 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 
 func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType, error) {
 	actions := make([]permTypes.ActionType, 0)
-	actionListStr := ctx.String(actionsFlagName)
+	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
 		return nil, errors.New("fail to parse actions")
 	}

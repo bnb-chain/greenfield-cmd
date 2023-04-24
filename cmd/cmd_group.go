@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
-	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
@@ -81,7 +81,7 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	opts := sdkTypes.CreateGroupOptions{}
+	opts := sdktypes.CreateGroupOptions{}
 
 	initMembersInfo := ctx.String(initMemberFlag)
 	// set group init members if provided by user
@@ -99,8 +99,6 @@ func createGroup(ctx *cli.Context) error {
 	c, cancelCreateGroup := context.WithCancel(globalContext)
 	defer cancelCreateGroup()
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.CreateGroup(c, groupName, opts)
 	if err != nil {
 		return toCmdErr(err)
@@ -159,7 +157,7 @@ func updateGroupMember(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
-		sdkTypes.UpdateGroupMemberOption{TxOpts: txOpts})
+		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
 		return toCmdErr(err)
 	}

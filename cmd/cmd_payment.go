@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
@@ -101,7 +101,7 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 
-	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdkTypes.BuyQuotaOption{TxOpts: &txnOpt})
+	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdktypes.BuyQuotaOption{TxOpts: &txnOpt})
 
 	if err != nil {
 		fmt.Println("buy quota error:", err.Error())

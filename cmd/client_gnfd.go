@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
-	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -14,24 +14,14 @@ const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (client.Client, error) {
-<<<<<<< HEAD
-	grpcAddr := ctx.String("rpcAddr")
-	if grpcAddr == "" {
-		return nil, fmt.Errorf("failed to parse grpc address, please set it in the config file")
-=======
 	rpcAddr := ctx.String("rpcAddr")
 	if rpcAddr == "" {
-		return nil, fmt.Errorf("failed to parse grpc address, please config it in the config file")
->>>>>>> 621eb11 (fix: fix comment)
+		return nil, fmt.Errorf("failed to parse rpc address, please set it in the config file")
 	}
 
 	chainId := ctx.String("chainId")
 	if chainId == "" {
-<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to parse chain id, please set it in the config file")
-=======
-		return nil, fmt.Errorf("failed to parse chain id, please config it in the config file")
->>>>>>> 621eb11 (fix: fix comment)
 	}
 
 	privateKeyStr := ctx.String("privateKey")
@@ -39,7 +29,7 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 		return nil, fmt.Errorf("missing private key, please config it in the config file")
 	}
 
-	account, err := sdkTypes.NewAccountFromPrivateKey("gnfd-account", privateKeyStr)
+	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKeyStr)
 	if err != nil {
 		return nil, err
 	}

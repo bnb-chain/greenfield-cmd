@@ -70,13 +70,13 @@ Examples:
 $ gnfd-cmd -c config.toml payment-deposit --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     toAddressFlagName,
+				Name:     toAddressFlag,
 				Value:    "",
 				Usage:    "the stream account",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:  amountFlagName,
+				Name:  amountFlag,
 				Value: "",
 				Usage: "the amount to be deposited",
 			},
@@ -90,8 +90,8 @@ func Deposit(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	toAddr := ctx.String(toAddressFlagName)
-	amountStr := ctx.String(amountFlagName)
+	toAddr := ctx.String(toAddressFlag)
+	amountStr := ctx.String(amountFlag)
 
 	km, err := client.ChainClient.GetKeyManager()
 	if err != nil {
@@ -134,13 +134,13 @@ Examples:
 $ gnfd-cmd -c config.toml payment-withdraw --fromAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     fromAddressFlagName,
+				Name:     fromAddressFlag,
 				Value:    "",
 				Usage:    "the stream account",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:  amountFlagName,
+				Name:  amountFlag,
 				Value: "",
 				Usage: "the amount to be withdrew",
 			},
@@ -154,8 +154,8 @@ func Withdraw(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fromAddr := ctx.String(fromAddressFlagName)
-	amountStr := ctx.String(amountFlagName)
+	fromAddr := ctx.String(fromAddressFlag)
+	amountStr := ctx.String(amountFlag)
 
 	km, err := client.ChainClient.GetKeyManager()
 	if err != nil {
@@ -198,7 +198,7 @@ Examples:
 $ gnfd-cmd -c config.toml ls-payment-account `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  ownerAddressFlagName,
+				Name:  ownerAddressFlag,
 				Value: "",
 				Usage: "indicate a owner's payment accounts to be list, account address can be omitted for current user's accounts listing",
 			},
@@ -216,7 +216,7 @@ func listPaymentAccounts(ctx *cli.Context) error {
 	defer cancelCreateBucket()
 
 	var ownerAddr string
-	ownerAddrStr := ctx.String(ownerAddressFlagName)
+	ownerAddrStr := ctx.String(ownerAddressFlag)
 	if ownerAddrStr != "" {
 		ownerAddr = ownerAddrStr
 	} else {
@@ -263,7 +263,7 @@ Examples:
 $ gnfd-cmd -c config.toml balance --address 0x... `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  addressFlagName,
+				Name:  addressFlag,
 				Value: "",
 				Usage: "indicate the address's balance to be retrieved",
 			},
@@ -281,7 +281,7 @@ func getAccountBalance(ctx *cli.Context) error {
 	defer cancelCreateBucket()
 
 	var addr string
-	flagAddr := ctx.String(addressFlagName)
+	flagAddr := ctx.String(addressFlag)
 	if flagAddr != "" {
 		addr = flagAddr
 	} else {
@@ -317,13 +317,13 @@ Examples:
 $ gnfd-cmd -c config.toml transfer --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     toAddressFlagName,
+				Name:     toAddressFlag,
 				Value:    "",
 				Usage:    "the receiver address in BSC",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:  amountFlagName,
+				Name:  amountFlag,
 				Value: "",
 				Usage: "the amount to be sent",
 			},
@@ -337,8 +337,8 @@ func Transfer(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	toAddr := ctx.String(toAddressFlagName)
-	amountStr := ctx.String(amountFlagName)
+	toAddr := ctx.String(toAddressFlag)
+	amountStr := ctx.String(amountFlag)
 	amount, ok := math.NewIntFromString(amountStr)
 	if !ok {
 		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))

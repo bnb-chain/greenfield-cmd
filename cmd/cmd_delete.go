@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
@@ -83,7 +83,7 @@ func deleteBucket(ctx *cli.Context) error {
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.DeleteBucket(c, bucketName, sdkTypes.DeleteBucketOption{TxOpts: &txnOpt})
+	txnHash, err := client.DeleteBucket(c, bucketName, sdktypes.DeleteBucketOption{TxOpts: &txnOpt})
 	if err != nil {
 		fmt.Println("delete bucket error:", err.Error())
 		return nil
@@ -115,12 +115,12 @@ func deleteObject(ctx *cli.Context) error {
 
 	_, err = client.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		return toCmdErr(ErrObjectNotExist)
+		return toCmdErr(ErrObjeccmd / cmd_delete.gotNotExist)
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.DeleteObject(c, bucketName, objectName, sdkTypes.DeleteObjectOption{TxOpts: &txnOpt})
+	txnHash, err := client.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &txnOpt})
 	if err != nil {
 		fmt.Println("delete object error:", err.Error())
 		return err
@@ -151,7 +151,7 @@ func deleteGroup(ctx *cli.Context) error {
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.DeleteGroup(c, groupName, sdkTypes.DeleteGroupOption{TxOpts: &txnOpt})
+	txnHash, err := client.DeleteGroup(c, groupName, sdktypes.DeleteGroupOption{TxOpts: &txnOpt})
 	if err != nil {
 		return toCmdErr(err)
 	}

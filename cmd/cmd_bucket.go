@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
-	sdkTypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -125,17 +125,17 @@ Examples:
 $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
-				Name:  groupIDFlagName,
+				Name:  groupIDFlag,
 				Value: 0,
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlagName,
+				Name:  granterFlag,
 				Value: "",
 				Usage: "the account address to set the policy",
 			},
 			&cli.StringFlag{
-				Name:  actionsFlagName,
+				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: delete, update." +
@@ -143,7 +143,7 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 				Required: true,
 			},
 			&cli.GenericFlag{
-				Name: effectFlagName,
+				Name: effectFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{effectDeny, effectAllow},
 					Default: effectAllow,
@@ -151,7 +151,7 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 				Usage: "set the effect of the policy",
 			},
 			&cli.Uint64Flag{
-				Name:  expireTimeFlagName,
+				Name:  expireTimeFlag,
 				Value: 0,
 				Usage: "set the expire unix time stamp of the policy",
 			},
@@ -179,7 +179,7 @@ func createBucket(ctx *cli.Context) error {
 		return toCmdErr(errors.New("primary sp address must be set"))
 	}
 
-	opts := sdkTypes.CreateBucketOptions{}
+	opts := sdktypes.CreateBucketOptions{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		opts.PaymentAddress = sdk.MustAccAddressFromHex(paymentAddrStr)
@@ -232,7 +232,7 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	opts := sdkTypes.UpdateBucketOption{}
+	opts := sdktypes.UpdateBucketOption{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		paymentAddress, err := sdk.AccAddressFromHexUnsafe(paymentAddrStr)
@@ -313,9 +313,9 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	groupId := ctx.Uint64(groupIDFlagName)
-	granter := ctx.String(granterFlagName)
-	principal, err := parsePrincipal(ctx, granter, groupId)
+	groupId := ctx.Uint64(groupIDFlag)
+	granter := ctx.String(granterFlag)
+	principal, err := parsePrincipal(granter, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -326,7 +326,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 	}
 
 	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlagName)
+	effectStr := ctx.String(effectFlag)
 	if effectStr != "" {
 		if effectStr == effectDeny {
 			effect = permTypes.EFFECT_DENY
@@ -338,21 +338,24 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return err
 	}
 
-	expireTime := ctx.Uint64(expireTimeFlagName)
+	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
 	statements := []*permTypes.Statement{&statement}
-	policyTx, err := client.PutBucketPolicy(bucketName, principal, statements,
-		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
+		sdktypes.PutPolicyOption{TxOpts: txOpts})
 
 	if err != nil {
 		return toCmdErr(err)
@@ -360,21 +363,15 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
 
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
-
 	if groupId > 0 {
 		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
 		if err == nil {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		policyInfo, err := client.GetBucketPolicy(c, bucketName, granter)
 		if err == nil {
-			policyInfo, err := client.GetBucketPolicy(c, bucketName, granterAddr)
-			if err == nil {
-				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-			}
+			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}
 	}
 
