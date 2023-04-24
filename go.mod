@@ -3,9 +3,8 @@ module github.com/bnb-chain/greenfield-sdk-go
 go 1.18
 
 require (
-	cosmossdk.io/math v1.0.0-beta.3
-	github.com/bnb-chain/greenfield v0.0.11
-	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230419091620-ffcc30f2d8bf
+	github.com/bnb-chain/greenfield v0.1.2
+	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230423123241-bbd9fb6b5f6e
 	github.com/cosmos/cosmos-sdk v0.46.4
 	github.com/urfave/cli/v2 v2.3.0
 )
@@ -124,13 +123,13 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923 // indirect
-	google.golang.org/grpc v1.53.0 // indirect
-	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8 // indirect
+	google.golang.org/grpc v1.54.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -139,7 +138,6 @@ require (
 
 replace (
 	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20230228075616-68ac309b432c
-	github.com/bnb-chain/greenfield => github.com/bnb-chain/greenfield v0.0.12-0.20230417120203-7b2a32d58918
 	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.0.13
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/tendermint/tendermint => github.com/bnb-chain/greenfield-tendermint v0.0.3
