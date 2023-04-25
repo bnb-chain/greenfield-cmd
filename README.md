@@ -75,8 +75,9 @@ gnfd-cmd command-name -h
 
 2. The operator account should have enough balance before sending request to greenfield
 
-3.The cmd tool has ability to intelligently select the correct SP
+3. The cmd tool has ability to intelligently select the correct SP
 
+4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
 ### Examples
 
@@ -120,12 +121,16 @@ gnfd-cmd -c config.toml mb --primarySP 0xxxxx..  gnfd://bucketname
 gnfd-cmd -c config.toml  put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 
 ```
+the file-path should replace by the file path of local system
 
 (2) download object
 
 ```
 gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
 ```
+
+the file-path should replace by the file path of local system
+
 #### Group Operations
 
 ```
