@@ -6,10 +6,8 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
-	paymenttypes "github.com/bnb-chain/greenfield/x/payment/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -35,24 +33,21 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	km, err := client.ChainClient.GetKeyManager()
+	c, createPaymentAccount := context.WithCancel(globalContext)
+	defer createPaymentAccount()
+	acc, err := client.GetDefaultAccount()
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	creator := km.GetAddr().String()
-	msg := paymenttypes.NewMsgCreatePaymentAccount(creator)
-
-	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msg}, nil)
+	txHash, err := client.CreatePaymentAccount(c, acc.GetAddress().String(), types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
-	txHash := resp.TxResponse.TxHash
-	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("create-payment-account for %s failed, txHash=%s\n", creator, txHash))
+	_, err = client.WaitForTx(c, txHash)
+	if err != nil {
+		return toCmdErr(err)
 	}
-	fmt.Printf("create-payment-account for %s succ, txHash: %s\n", creator, txHash)
+	fmt.Printf("create-payment-account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
 	return nil
 }
 
@@ -91,32 +86,27 @@ func Deposit(ctx *cli.Context) error {
 	}
 
 	toAddr := ctx.String(toAddressFlag)
-	amountStr := ctx.String(amountFlag)
-
-	km, err := client.ChainClient.GetKeyManager()
+	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
 	if err != nil {
 		return toCmdErr(err)
 	}
-
+	amountStr := ctx.String(amountFlag)
 	amount, ok := math.NewIntFromString(amountStr)
 	if !ok {
 		return toCmdErr(fmt.Errorf("invalid amount %s", amountStr))
 	}
-	msg := paymenttypes.NewMsgDeposit(
-		km.GetAddr().String(),
-		toAddr,
-		amount,
-	)
-	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msg}, nil)
+	c, deposit := context.WithCancel(globalContext)
+	defer deposit()
+
+	txHash, err := client.Deposit(c, toAddr, amount, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	txHash := resp.TxResponse.TxHash
-	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("Deposit %s BNB to %s failed, txHash=%s\n", amount.String(), toAddr, txHash))
+	_, err = client.WaitForTx(c, txHash)
+	if err != nil {
+		return toCmdErr(err)
 	}
-	fmt.Printf("Deposit %s BNB to %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
+	fmt.Printf("Deposit %s BNB to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
 	return nil
 }
 
@@ -155,30 +145,25 @@ func Withdraw(ctx *cli.Context) error {
 	}
 
 	fromAddr := ctx.String(fromAddressFlag)
-	amountStr := ctx.String(amountFlag)
-
-	km, err := client.ChainClient.GetKeyManager()
+	_, err = sdk.AccAddressFromHexUnsafe(fromAddr)
 	if err != nil {
 		return toCmdErr(err)
 	}
-
+	amountStr := ctx.String(amountFlag)
 	amount, ok := math.NewIntFromString(amountStr)
 	if !ok {
 		return toCmdErr(fmt.Errorf("invalid amount %s", amountStr))
 	}
-	msg := paymenttypes.NewMsgWithdraw(
-		km.GetAddr().String(),
-		fromAddr,
-		amount,
-	)
-	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msg}, nil)
+	c, deposit := context.WithCancel(globalContext)
+	defer deposit()
+
+	txHash, err := client.Withdraw(c, fromAddr, amount, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	txHash := resp.TxResponse.TxHash
-	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("Withdraw %s from %s failed, txHash=%s\n", amount.String(), fromAddr, txHash))
+	_, err = client.WaitForTx(c, txHash)
+	if err != nil {
+		return toCmdErr(err)
 	}
 	fmt.Printf("Withdraw %s from %s succ, txHash=%s\n", amount.String(), fromAddr, txHash)
 	return nil
@@ -218,18 +203,19 @@ func listPaymentAccounts(ctx *cli.Context) error {
 	var ownerAddr string
 	ownerAddrStr := ctx.String(ownerAddressFlag)
 	if ownerAddrStr != "" {
-		ownerAddr = ownerAddrStr
-	} else {
-		km, err := client.ChainClient.GetKeyManager()
+		_, err = sdk.AccAddressFromHexUnsafe(ownerAddrStr)
 		if err != nil {
 			return toCmdErr(err)
 		}
-		ownerAddr = km.GetAddr().String()
+		ownerAddr = ownerAddrStr
+	} else {
+		acct, err := client.GetDefaultAccount()
+		if err != nil {
+			return toCmdErr(err)
+		}
+		ownerAddr = acct.GetAddress().String()
 	}
-
-	req := paymenttypes.QueryGetPaymentAccountsByOwnerRequest{Owner: ownerAddr}
-
-	accounts, err := client.ChainClient.PaymentQueryClient.GetPaymentAccountsByOwner(c, &req)
+	accounts, err := client.GetPaymentAccountsByOwner(c, ownerAddr)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			fmt.Println("Accounts not exist")
@@ -237,14 +223,12 @@ func listPaymentAccounts(ctx *cli.Context) error {
 		}
 		return toCmdErr(err)
 	}
-
-	if len(accounts.PaymentAccounts) == 0 {
+	if len(accounts) == 0 {
 		fmt.Println("Accounts not exist")
 		return nil
 	}
-
 	fmt.Println("payment accounts list:")
-	for i, a := range accounts.PaymentAccounts {
+	for i, a := range accounts {
 		fmt.Printf("%d: %s \n", i+1, a)
 	}
 	return nil
@@ -283,23 +267,24 @@ func getAccountBalance(ctx *cli.Context) error {
 	var addr string
 	flagAddr := ctx.String(addressFlag)
 	if flagAddr != "" {
-		addr = flagAddr
-	} else {
-		km, err := client.ChainClient.GetKeyManager()
+		_, err = sdk.AccAddressFromHexUnsafe(flagAddr)
 		if err != nil {
 			return toCmdErr(err)
 		}
-		addr = km.GetAddr().String()
+		addr = flagAddr
+	} else {
+		acct, err := client.GetDefaultAccount()
+		if err != nil {
+			return toCmdErr(err)
+		}
+		addr = acct.GetAddress().String()
 	}
 
-	req := banktypes.QueryBalanceRequest{Address: addr,
-		Denom: gnfdsdktypes.Denom}
-
-	resp, err := client.ChainClient.BankQueryClient.Balance(c, &req)
+	resp, err := client.GetAccountBalance(c, addr)
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("balance: %s%s\n", resp.Balance.Amount.String(), gnfdsdktypes.Denom)
+	fmt.Printf("balance: %s%s\n", resp.Amount.String(), gnfdsdktypes.Denom)
 	return nil
 }
 
@@ -337,37 +322,27 @@ func Transfer(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	c, transfer := context.WithCancel(globalContext)
+	defer transfer()
+
 	toAddr := ctx.String(toAddressFlag)
+	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
+	if err != nil {
+		return toCmdErr(err)
+	}
 	amountStr := ctx.String(amountFlag)
 	amount, ok := math.NewIntFromString(amountStr)
 	if !ok {
 		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
 	}
-
-	km, err := client.ChainClient.GetKeyManager()
+	txHash, err := client.Transfer(c, toAddr, amount, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
-	to, err := sdk.AccAddressFromHexUnsafe(toAddr)
+	_, err = client.WaitForTx(c, txHash)
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	msg := banktypes.NewMsgSend(
-		km.GetAddr(),
-		to,
-		sdk.NewCoins(sdk.NewCoin(gnfdsdktypes.Denom, amount)),
-	)
-
-	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msg}, nil)
-	if err != nil {
-		return toCmdErr(err)
-	}
-	txHash := resp.TxResponse.TxHash
-	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("transfer %s BNB to %s failed, txHash=%s\n", amountStr, toAddr, txHash))
-
-	}
-	fmt.Printf("transfer %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	fmt.Printf("transfer %s BNB to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
 	return nil
 }

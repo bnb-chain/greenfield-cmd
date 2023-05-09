@@ -1,13 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"cosmossdk.io/math"
 	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
-	bridgetypes "github.com/bnb-chain/greenfield/x/bridge/types"
-	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -48,31 +46,28 @@ func TransferOut(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	c, transfer := context.WithCancel(globalContext)
+	defer transfer()
+
 	toAddr := ctx.String(toAddressFlag)
+	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
+	if err != nil {
+		return toCmdErr(err)
+	}
 	amountStr := ctx.String(amountFlag)
-	amount, _ := math.NewIntFromString(amountStr)
-
-	km, err := client.ChainClient.GetKeyManager()
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
+	}
+	txResp, err := client.TransferOut(c, toAddr, amount, gnfdsdktypes.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	msgTransferOut := bridgetypes.NewMsgTransferOut(
-		km.GetAddr().String(),
-		toAddr,
-		&sdk.Coin{Denom: gnfdsdktypes.Denom, Amount: amount},
-	)
-
-	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msgTransferOut}, nil)
+	_, err = client.WaitForTx(c, txResp.TxHash)
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	txHash := resp.TxResponse.TxHash
-	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("transfer out %s BNB to %s failed, txHash=%s\n", amountStr, toAddr, txHash))
-	}
-	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
 	return nil
 }
 
@@ -110,35 +105,25 @@ func Mirror(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	km, err := client.ChainClient.GetKeyManager()
-	if err != nil {
-		return toCmdErr(err)
-	}
-	addr := km.GetAddr()
-
 	resource := ctx.String(resourceFlag)
 	id := math.NewUintFromString(ctx.String(IdFlag))
-	var msg sdk.Msg
 
+	c, cancelContext := context.WithCancel(globalContext)
+	defer cancelContext()
+
+	var txResp *sdk.TxResponse
 	if resource == "group" {
-		msg = storagetypes.NewMsgMirrorGroup(addr, id)
+		txResp, err = client.MirrorGroup(c, id, gnfdsdktypes.TxOption{})
 	} else if resource == "bucket" {
-		msg = storagetypes.NewMsgMirrorBucket(addr, id)
+		txResp, err = client.MirrorBucket(c, id, gnfdsdktypes.TxOption{})
 	} else if resource == "object" {
-		msg = storagetypes.NewMsgMirrorObject(addr, id)
+		txResp, err = client.MirrorObject(c, id, gnfdsdktypes.TxOption{})
 	} else {
 		return toCmdErr(fmt.Errorf("wrong resource type %s, expect one of (group, bucket, object)", resource))
 	}
-
-	resp, err := client.ChainClient.BroadcastTx([]sdk.Msg{msg}, nil)
 	if err != nil {
 		return toCmdErr(err)
 	}
-	txHash := resp.TxResponse.TxHash
-	if resp.TxResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("mirror %s with id %s failed, txHash=%s\n", resource, id.String(), txHash))
-	}
-	fmt.Printf("mirror %s with id %s succ, txHash: %s\n", resource, id.String(), txHash)
+	fmt.Printf("mirror %s with id %s succ, txHash: %s\n", resource, id.String(), txResp.TxHash)
 	return nil
 }
