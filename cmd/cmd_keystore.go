@@ -18,13 +18,18 @@ func cmdGenerateKey() *cli.Command {
 		Description: `
 send headObject txn to chain and fetch object info on greenfield chain
 Examples:
-$ gnfd-cmd -c config.toml gen-key /home/key  --privKeyFile key.txt`,
+$ gnfd-cmd gen-key --privKeyFile key.txt  key.json `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     privKeyFileFlag,
 				Value:    "",
-				Usage:    "the private key file path",
+				Usage:    "the private key file path which contain the origin private hex string",
 				Required: true,
+			},
+			&cli.StringFlag{
+				Name:  passwordFlag,
+				Value: "",
+				Usage: "the password file path",
 			},
 		},
 	}
@@ -64,12 +69,14 @@ func generateKey(ctx *cli.Context) error {
 
 	configFile := ctx.String("config")
 	var config *cmdConfig
+
 	if configFile != "" {
 		config, err = parseConfigFile(configFile)
 		if err != nil {
 			return err
 		}
 	}
+
 	// fetch password content
 	password, err := getPassword(ctx, config)
 	if err != nil {

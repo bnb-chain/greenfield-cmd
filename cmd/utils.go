@@ -63,6 +63,7 @@ const (
 	defaultPasswordfile = "password"
 	privKeyFileFlag     = "privKeyFile"
 	passwordFileFlag    = "passwordfile"
+	passwordFlag        = "password"
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
 )
