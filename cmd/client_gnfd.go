@@ -51,7 +51,7 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 	// fetch private key from keystore
 	keyjson, err := os.ReadFile(keyfilepath)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to read the keyfile at '%s': %v \n", keyfilepath, err))
+		return nil, fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
 	}
 
 	password, err := getPassword(ctx, config)
@@ -61,7 +61,7 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 
 	privateKey, err := DecryptKey(keyjson, password)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to decrypting key: %v \n", err))
+		return nil, fmt.Errorf("failed to decrypting key: %v \n", err)
 	}
 
 	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKey)

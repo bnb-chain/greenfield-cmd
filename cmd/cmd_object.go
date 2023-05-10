@@ -287,8 +287,7 @@ func putObject(ctx *cli.Context) error {
 			}
 		}
 	}
-
-	return nil
+	
 }
 
 func putObjectPolicy(ctx *cli.Context) error {
