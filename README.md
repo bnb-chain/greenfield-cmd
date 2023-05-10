@@ -11,6 +11,16 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 
 ## Cmd usage
 
+### installation
+
+```
+git clone https://github.com/bnb-chain/greenfield-cmd.git
+cd greenfield-cmd
+make build
+cd build
+./gnfd-cmd -h
+```
+
 ### basic config 
 
 The command should run with "-c filePath" to load the config file and the config should be toml format
