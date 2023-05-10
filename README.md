@@ -102,7 +102,15 @@ for example : gnfd-cmd stroage create-bucket -h
 
 4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
+5. gnfd-cmd need run with --keystore if the keystore is not the default file path
+
 ### Examples
+
+#### Generate Keystore
+```
+// generate keystore key.json
+gnfd-cmd gen-key --privKeyFile key.txt --password password.txt  key.json
+```
 
 #### Account Operations
 ```
