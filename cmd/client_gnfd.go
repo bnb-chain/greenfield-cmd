@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
@@ -24,13 +25,32 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 		return nil, fmt.Errorf("failed to parse chain id, please set it in the config file")
 	}
 
-	privateKeyStr := ctx.String("privateKey")
-	if privateKeyStr == "" {
-		return nil, fmt.Errorf("missing private key, please config it in the config file")
+	keyfilepath := ctx.String("keystore")
+	if keyfilepath == "" {
+		keyfilepath = defaultKeyfile
 	}
 
-	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKeyStr)
+	// fetch private key from keystore
+	keyjson, err := os.ReadFile(keyfilepath)
 	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to read the keyfile at '%s': %v \n", keyfilepath, err))
+	}
+
+	password, err := getPassword(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	privateKey, err := DecryptKey(keyjson, password)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to decrypting key: %v \n", err))
+	}
+
+	fmt.Println("decrypt key:", privateKey)
+
+	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKey)
+	if err != nil {
+		fmt.Println("new account err", err.Error())
 		return nil, err
 	}
 
@@ -47,6 +67,7 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 		return nil, err
 	}
 
+	cli.EnableTrace(nil, false)
 	return cli, nil
 }
 

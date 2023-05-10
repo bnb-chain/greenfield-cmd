@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +16,8 @@ import (
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+	ethHd "github.com/evmos/ethermint/crypto/hd"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,6 +57,13 @@ const (
 	amountFlag       = "amount"
 	resourceFlag     = "resource"
 	IdFlag           = "id"
+
+	defaultKeyfile      = "key.json"
+	defaultPasswordfile = "password"
+	privKeyFileFlag     = "privKeyFile"
+	passwordFileFlag    = "passwordfile"
+	EncryptScryptN      = 1 << 18
+	EncryptScryptP      = 1
 )
 
 var (
@@ -101,6 +113,11 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 
 func toCmdErr(err error) error {
 	fmt.Printf("run command error: %s\n", err.Error())
+	return nil
+}
+
+func genCmdErr(msg string) error {
+	fmt.Printf("run command error: %s\n", msg)
 	return nil
 }
 
@@ -256,4 +273,57 @@ func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType
 	}
 
 	return actions, nil
+}
+
+func getPassword(ctx *cli.Context) (string, error) {
+	var readContent []byte
+	var err error
+	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
+		readContent, err = os.ReadFile(passwordFile)
+	} else {
+		readContent, err = os.ReadFile(defaultPasswordfile)
+	}
+	if err != nil {
+		return "", errors.New("failed to read password file" + err.Error())
+	}
+
+	return strings.TrimRight(string(readContent), "\r\n"), nil
+}
+
+// loadKey loads a secp256k1 private key from the given file.
+func loadKey(file string) (string, sdk.AccAddress, error) {
+	fd, err := os.Open(file)
+	if err != nil {
+		return "", nil, err
+	}
+
+	r := bufio.NewReader(fd)
+	buf := make([]byte, 64)
+	var n int
+	for ; n < len(buf); n++ {
+		buf[n], err = r.ReadByte()
+		switch {
+		case err == io.EOF || buf[n] < '!':
+			break
+		case err != nil:
+			return "", nil, err
+		}
+	}
+	if n != len(buf) {
+		return "", nil, fmt.Errorf("key file too short, want 42 hex characters")
+	}
+
+	priBytes, err := hex.DecodeString(string(buf))
+	if err != nil {
+		return "", nil, err
+	}
+
+	if len(priBytes) != 32 {
+		return "", nil, fmt.Errorf("Len of Keybytes is not equal to 32 ")
+	}
+	var keyBytesArray [32]byte
+	copy(keyBytesArray[:], priBytes[:32])
+	priKey := ethHd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
+
+	return string(buf), sdk.AccAddress(priKey.PubKey().Address()), nil
 }

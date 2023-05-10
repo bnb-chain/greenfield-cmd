@@ -33,8 +33,8 @@ func main() {
 		),
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
-				Name:     "privateKey",
-				Usage:    "hex encoding private key string",
+				Name:     passwordFileFlag,
+				Usage:    "password file for encrypting and decoding the private key",
 				Required: false,
 			},
 		),
@@ -42,6 +42,12 @@ func main() {
 			Name:    "config",
 			Aliases: []string{"c"},
 			Usage:   "Load configuration from `FILE`",
+		},
+		&cli.StringFlag{
+			Name:        "keystore",
+			Aliases:     []string{"k"},
+			DefaultText: defaultKeyfile,
+			Usage:       "key file path",
 		},
 	}
 
@@ -81,6 +87,7 @@ func main() {
 			cmdListPaymentAccounts(),
 			cmdGetAccountBalance(),
 			cmdMirrorResource(),
+			cmdGenerateKey(),
 		},
 	}
 	app.Before = func(ctx *cli.Context) error {

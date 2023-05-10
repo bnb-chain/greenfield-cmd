@@ -10,7 +10,6 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
@@ -182,7 +181,7 @@ func createBucket(ctx *cli.Context) error {
 	opts := sdktypes.CreateBucketOptions{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
-		opts.PaymentAddress = sdk.MustAccAddressFromHex(paymentAddrStr)
+		opts.PaymentAddress = paymentAddrStr
 	}
 
 	visibility := ctx.Generic(visibilityFlag)
@@ -235,11 +234,7 @@ func updateBucket(ctx *cli.Context) error {
 	opts := sdktypes.UpdateBucketOption{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
-		paymentAddress, err := sdk.AccAddressFromHexUnsafe(paymentAddrStr)
-		if err != nil {
-			return err
-		}
-		opts.PaymentAddress = paymentAddress
+		opts.PaymentAddress = paymentAddrStr
 	}
 
 	visibility := ctx.Generic(visibilityFlag)

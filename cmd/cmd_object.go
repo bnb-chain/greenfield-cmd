@@ -181,12 +181,6 @@ func putObject(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
 	// read the local file payload
 	filePath := ctx.Args().Get(0)
 	exists, objectSize, err := pathExists(filePath)
@@ -250,10 +244,10 @@ func putObject(ctx *cli.Context) error {
 		return err
 	}
 
-	_, err = client.HeadObject(c, bucketName, objectName)
+	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		time.Sleep(5 * time.Second)
-		_, err = client.HeadObject(c, bucketName, objectName)
+		_, err = gnfdClient.HeadObject(c, bucketName, objectName)
 		if err != nil {
 			return toCmdErr(ErrObjectNotCreated)
 		}
@@ -274,7 +268,7 @@ func putObject(ctx *cli.Context) error {
 	}
 	defer reader.Close()
 
-	if err = client.PutObject(c, bucketName, objectName,
+	if err = gnfdClient.PutObject(c, bucketName, objectName,
 		objectSize, reader, opt); err != nil {
 		fmt.Println("put object fail:", err.Error())
 		return nil
@@ -406,7 +400,7 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-	body, _, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
+	body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -416,7 +410,7 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("download object %s successfully, the file path is %s,", objectName, filePath)
+	fmt.Printf("download object %s successfully, the file path is %s, content length:%d, \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }
