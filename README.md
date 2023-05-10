@@ -138,7 +138,8 @@ gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604A
 ```
 // create bucket. 
 // The primary SP address which the bucket will be created at need to be set by --primarySP
-gnfd-cmd storage create-bucekt --primarySP  gnfd://bucketname
+// If the primary SP has not been not set, the cmd will choose sp0 as the primary sp
+gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 
 
 // update bucket visibility, charged quota or payment address

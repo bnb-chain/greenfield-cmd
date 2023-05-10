@@ -236,10 +236,6 @@ func putObject(ctx *cli.Context) error {
 		opts.SecondarySPAccs = addrList
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	opts.TxOpts = &txnOpt
-
 	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if err != nil {
 		return err

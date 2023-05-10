@@ -31,10 +31,9 @@ Examples:
 $ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     primarySPFlag,
-				Value:    "",
-				Usage:    "indicate the primarySP address, using the string type",
-				Required: true,
+				Name:  primarySPFlag,
+				Value: "",
+				Usage: "indicate the primarySP address, using the string type",
 			},
 			&cli.StringFlag{
 				Name:  paymentFlag,
@@ -175,7 +174,13 @@ func createBucket(ctx *cli.Context) error {
 
 	primarySpAddrStr := ctx.String(primarySPFlag)
 	if primarySpAddrStr == "" {
-		return toCmdErr(errors.New("primary sp address must be set"))
+		// if primarySP not set, choose sp0 as the primary sp
+		spInfo, err := client.ListStorageProviders(c, false)
+		if err != nil {
+			return toCmdErr(errors.New("fail to get primary sp address"))
+		}
+		primarySpAddrStr = spInfo[0].GetOperatorAddress()
+		fmt.Println("choose primary sp:", spInfo[0].GetEndpoint())
 	}
 
 	opts := sdktypes.CreateBucketOptions{}
