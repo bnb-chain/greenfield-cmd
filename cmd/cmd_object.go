@@ -279,7 +279,7 @@ func putObject(ctx *cli.Context) error {
 		case <-timeout:
 			return toCmdErr(errors.New("object not sealed after 15 seconds"))
 		case <-ticker.C:
-			headObjOutput, err := client.HeadObject(c, bucketName, objectName)
+			headObjOutput, err := gnfdClient.HeadObject(c, bucketName, objectName)
 			if err != nil {
 				return err
 			}

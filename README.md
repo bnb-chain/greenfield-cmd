@@ -59,16 +59,38 @@ COMMANDS:
    mirror                  mirror resource to bsc
 ```
 
+
+
 #### Get help
 
+the commands support different categories, including storage,group,bridge,bank,permission and payment 
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
 
-// get help of specific commands
-gnfd-cmd command-name -h 
+   storage     support the storage functions, including create/put/get/list resource
+   group       support the group operation functions
+   bridge      support the bridge functions, including transfer and mirror
+   bank        support the bank functions, including transfer and get balance
+   permission  support object policy and bucket policy operation functions
+   payment     support the payment operation functions
+   ls-sp       list storage providers info
+   gen-key     generate new keystore file
 ```
 
+get help of specific category commands
+```
+gnfd-cmd [category-name] -h
+
+for example : gnfd-cmd stroage -h
+```
+
+get help of specific commands 
+```
+gnfd-cmd [category-name][command-name] -h
+
+for example : gnfd-cmd stroage create-bucket -h
+```
 ### Precautions
 
 1. The private key of the account has to be configured in config file
