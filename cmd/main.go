@@ -41,6 +41,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"c"},
+			Value:   "config.toml",
 			Usage:   "Load configuration from `FILE`",
 		},
 		&cli.StringFlag{
@@ -90,11 +91,7 @@ func main() {
 			cmdGenerateKey(),
 		},
 	}
-	app.Before = func(ctx *cli.Context) error {
-		BeforeFunc := altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))
-		_ = BeforeFunc(ctx)
-		return nil
-	}
+	app.Before = altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))
 
 	err := app.Run(os.Args)
 	if err != nil {

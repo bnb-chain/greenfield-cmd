@@ -12,6 +12,7 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/BurntSushi/toml"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
@@ -275,14 +276,19 @@ func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType
 	return actions, nil
 }
 
-func getPassword(ctx *cli.Context) (string, error) {
-	var readContent []byte
-	var err error
+// getPassword return the password content
+func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
+	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
-		readContent, err = os.ReadFile(passwordFile)
+		filepath = passwordFile
+
+	} else if config.PasswordFile != "" {
+		filepath = config.PasswordFile
 	} else {
-		readContent, err = os.ReadFile(defaultPasswordfile)
+		filepath = defaultPasswordfile
 	}
+
+	readContent, err := os.ReadFile(filepath)
 	if err != nil {
 		return "", errors.New("failed to read password file" + err.Error())
 	}
@@ -326,4 +332,19 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 	priKey := ethHd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
 
 	return string(buf), sdk.AccAddress(priKey.PubKey().Address()), nil
+}
+
+type cmdConfig struct {
+	RpcAddr      string `toml:"rpcAddr"`
+	ChainId      string `toml:"chainId"`
+	PasswordFile string `toml:"passwordFile"`
+	Host         string `toml:"host"`
+}
+
+func parseConfigFile(filePath string) (*cmdConfig, error) {
+	var config cmdConfig
+	if _, err := toml.DecodeFile(filePath, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }

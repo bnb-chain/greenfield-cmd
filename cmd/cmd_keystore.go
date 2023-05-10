@@ -62,16 +62,27 @@ func generateKey(ctx *cli.Context) error {
 		PrivateKey: privateKey,
 	}
 
-	password, err := getPassword(ctx)
+	configFile := ctx.String("config")
+	var config *cmdConfig
+	if configFile != "" {
+		config, err = parseConfigFile(configFile)
+		if err != nil {
+			return err
+		}
+	}
+	// fetch password content
+	password, err := getPassword(ctx, config)
 	if err != nil {
 		return err
 	}
 
+	// encrypt the private key
 	encryptContent, err := EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
 	if err != nil {
 		return genCmdErr("failed to encrypting key: " + err.Error())
 	}
 
+	// store the keystore file
 	if err := os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
 		return genCmdErr(fmt.Sprintf("failed to write keyfile to the path%s: %v", keyFilePath, err))
 	}
