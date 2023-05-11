@@ -18,7 +18,7 @@ The default config file is "config.toml"
 
 Config file example:
 ```
-rpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
+rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
 passwordFile = "password.txt"
 ```
