@@ -98,8 +98,7 @@ for example : gnfd-cmd stroage create-bucket -h
 
 2. The operator account should have enough balance before sending request to greenfield
 
-3. The cmd tool has ability to intelligently select the correct SP. The User only need to set the object name and bucket name and the
-command is able to choose the right SP.
+3. The cmd tool has ability to intelligently select the correct SP with the info of bucket name and object name in command.
 
 4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
