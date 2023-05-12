@@ -94,7 +94,7 @@ for example : gnfd-cmd stroage create-bucket -h
 ```
 ### Precautions
 
-1. The user need to use "gen-key" command to generate a keystore file first. The command need run with --keystore if the keystore is not the default file path(key.json). 
+1. The user need to use "gen-key" command to generate a keystore file first. The other commands need run with -k if the keystore is not the default file path(key.json). 
 
 2. The operator account should have enough balance before sending request to greenfield.
 
@@ -114,7 +114,7 @@ the following command can be used to generate a keystore file called key.json:
 gnfd-cmd gen-key --privKeyFile key.txt --password password.txt  key.json
 ```
 
-After the keystore file is generated, other commands need to be run with the addition of "--keystore keystore-path".
+After the keystore file is generated, other commands need to be run with the addition of "-k keystore-path".
 The default keystore file is "key.json".
 
 #### Account Operations
@@ -148,7 +148,6 @@ and then select which SP to create the bucket in.
 // The primary SP address which the bucket will be created at need to be set by --primarySP
 // If the primary SP has not been not set, the cmd will choose SP0 in the SP list as the primary sp
 gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
-
 
 // update bucket visibility, charged quota or payment address
 (1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://cmdbucket78
