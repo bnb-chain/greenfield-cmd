@@ -94,21 +94,20 @@ for example : gnfd-cmd stroage create-bucket -h
 ```
 ### Precautions
 
-1. The private key of the account has to be configured in config file
+1. The user need to use "gen-key" command to generate a keystore file first. The command need run with --keystore if the keystore is not the default file path(key.json). 
 
-2. The operator account should have enough balance before sending request to greenfield
+2. The operator account should have enough balance before sending request to greenfield.
 
 3. The cmd tool has ability to intelligently select the correct SP with the info of bucket name and object name in command.
 
 4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
-5. The command need run with --keystore if the keystore is not the default file path(key.json). The content of the keystore file is the encrypted private key information.
 
 ### Examples
 
 #### Generate Keystore
 
-Assuming that the current private key hex string  is written in clear text in the file key.txt and the password is stored in the file password.txt,
+The content of the keystore file is the encrypted private key information. Assuming that the current private key hex string  is written in clear text in the file key.txt and the password is stored in the file password.txt,
 the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
@@ -141,6 +140,9 @@ gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604A
 
 #### Bucket Operations
 
+Before creating bucket, It is recommended to first run the "ls-sp" command to obtain the SP list information of Greenfield,
+and then select which SP to create the bucket in.
+
 ```
 // create bucket. 
 // The primary SP address which the bucket will be created at need to be set by --primarySP
@@ -154,20 +156,22 @@ gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 ```
 #### Upload/Download Operations
 
+
 (1) put Object
+
+The put command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced by the real name.
+The file-path should replace by the file path of local system
 ```
 gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 
 ```
-the file-path should replace by the file path of local system
 
 (2) download object
 
+The get command is used to download an object to local path, the file-path should replace by the file path of local system.
 ```
 gnfd-cmd storage get gnfd://bucketname/objectname  file-path 
 ```
-
-the file-path should replace by the file path of local system
 
 #### Group Operations
 
@@ -181,6 +185,28 @@ gnfd-cmd group update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc8
 // head group member
 gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 ```
+
+#### Permission  Operations
+```
+// The object policy actions can be "create", “delete”, "copy", "get" or "execute"
+// The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
+// The actions info can be set with combined string like "create,delete" by --actions
+// The policy effect can set to be allow or deny by --effect
+
+// grant object operation permissions to a group
+gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
+
+// grant object operation permissions to an account
+gnfd-cmd permission put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
+
+// grant bucket operation permissions to a group
+gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
+
+// grant bucket operation permissions to an account
+gnfd-cmd permission put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
+
+```
+
 #### List Operations
 
 ```
@@ -216,26 +242,6 @@ gnfd-cmd storage head-obj gnfd://bucket-name/object-name
 gnfd-cmd group head-group gnfd://groupname
 ```
 
-#### Permission  Operations
-```
-// The object policy actions can be "create", “delete”, "copy", "get" or "execute"
-// The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
-// The actions info can be set with combined string like "create,delete" by --actions
-// The policy effect can set to be allow or deny by --effect
-
-// grant object operation permissions to a group
-gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
-
-// grant object operation permissions to an account
-gnfd-cmd permission put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
-
-// grant bucket operation permissions to a group
-gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
-
-// grant bucket operation permissions to an account
-gnfd-cmd permission put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
-
-```
 
 #### Storage Provider Operations
 
