@@ -14,7 +14,7 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 ### basic config 
 
 The command should run with "-c filePath" to load the config file and the config should be toml format.
-The default config file is "config.toml"
+The default config file is "config.toml".
 
 Config file example:
 ```
@@ -98,19 +98,26 @@ for example : gnfd-cmd stroage create-bucket -h
 
 2. The operator account should have enough balance before sending request to greenfield
 
-3. The cmd tool has ability to intelligently select the correct SP
+3. The cmd tool has ability to intelligently select the correct SP. The User only need to set the object name and bucket name and the
+command is able to choose the right SP.
 
 4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
-5. gnfd-cmd need run with --keystore if the keystore is not the default file path
+5. The command need run with --keystore if the keystore is not the default file path(key.json). The content of the keystore file is the encrypted private key information.
 
 ### Examples
 
 #### Generate Keystore
+
+Assuming that the current private key hex string  is written in clear text in the file key.txt and the password is stored in the file password.txt,
+the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
 gnfd-cmd gen-key --privKeyFile key.txt --password password.txt  key.json
 ```
+
+After the keystore file is generated, other commands need to be run with the addition of "--keystore keystore-path".
+The default keystore file is "key.json".
 
 #### Account Operations
 ```
@@ -138,7 +145,7 @@ gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604A
 ```
 // create bucket. 
 // The primary SP address which the bucket will be created at need to be set by --primarySP
-// If the primary SP has not been not set, the cmd will choose sp0 as the primary sp
+// If the primary SP has not been not set, the cmd will choose SP0 in the SP list as the primary sp
 gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 
 
