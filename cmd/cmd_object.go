@@ -287,7 +287,7 @@ func putObject(ctx *cli.Context) error {
 			}
 		}
 	}
-	
+
 }
 
 func putObjectPolicy(ctx *cli.Context) error {
@@ -402,7 +402,7 @@ func getObject(ctx *cli.Context) error {
 	defer fd.Close()
 
 	opt := sdktypes.GetObjectOption{}
-	startOffset := ctx.Int64(endOffsetFlag)
+	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
 
 	// flag has been set
