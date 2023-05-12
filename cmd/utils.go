@@ -1,58 +1,71 @@
 package main
 
 import (
+	"bufio"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	"github.com/BurntSushi/toml"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/evmos/ethermint/crypto/ethsecp256k1"
+	ethHd "github.com/evmos/ethermint/crypto/hd"
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	maxFileSize          = 5 * 1024 * 1024 * 1024
-	maxListObjects       = 100
-	publicReadType       = "public-read"
-	privateType          = "private"
-	inheritType          = "inherit"
-	effectAllow          = "allow"
-	effectDeny           = "deny"
-	primarySPFlagName    = "primarySP"
-	chargeQuotaFlagName  = "chargedQuota"
-	visibilityFlagName   = "visibility"
-	paymentFlagName      = "paymentAddress"
-	secondarySPFlagName  = "secondarySPs"
-	contentTypeFlagName  = "contentType"
-	txnHashFlagName      = "txnHash"
-	startOffsetFlagName  = "start"
-	endOffsetFlagName    = "end"
-	initMemberFlagName   = "initMembers"
-	addMemberFlagName    = "addMembers"
-	removeMemberFlagName = "removeMembers"
-	groupOwnerFlagName   = "groupOwner"
-	headMemberFlagName   = "headMember"
-	spAddressFlagName    = "spAddress"
-	groupIDFlagName      = "groupId"
-	granterFlagName      = "granter"
-	actionsFlagName      = "actions"
-	effectFlagName       = "effect"
-	userAddressFlagName  = "user"
-	expireTimeFlagName   = "expire"
+	maxFileSize      = 5 * 1024 * 1024 * 1024
+	maxListObjects   = 100
+	publicReadType   = "public-read"
+	privateType      = "private"
+	inheritType      = "inherit"
+	effectAllow      = "allow"
+	effectDeny       = "deny"
+	primarySPFlag    = "primarySP"
+	chargeQuotaFlag  = "chargedQuota"
+	visibilityFlag   = "visibility"
+	paymentFlag      = "paymentAddress"
+	secondarySPFlag  = "secondarySPs"
+	contentTypeFlag  = "contentType"
+	startOffsetFlag  = "start"
+	endOffsetFlag    = "end"
+	initMemberFlag   = "initMembers"
+	addMemberFlag    = "addMembers"
+	removeMemberFlag = "removeMembers"
+	groupOwnerFlag   = "groupOwner"
+	headMemberFlag   = "headMember"
+	spAddressFlag    = "spAddress"
+	groupIDFlag      = "groupId"
+	granterFlag      = "granter"
+	actionsFlag      = "actions"
+	effectFlag       = "effect"
+	userAddressFlag  = "user"
+	expireTimeFlag   = "expire"
 
-	ownerAddressFlagName = "owner"
-	addressFlagName      = "address"
-	toAddressFlagName    = "toAddress"
-	fromAddressFlagName  = "fromAddress"
-	amountFlagName       = "amount"
-	resourceFlagName     = "resource"
-	IdFlagName           = "id"
+	ownerAddressFlag = "owner"
+	addressFlag      = "address"
+	toAddressFlag    = "toAddress"
+	fromAddressFlag  = "fromAddress"
+	amountFlag       = "amount"
+	resourceFlag     = "resource"
+	IdFlag           = "id"
+
+	defaultKeyfile      = "key.json"
+	defaultPasswordfile = "password"
+	privKeyFileFlag     = "privKeyFile"
+	passwordFileFlag    = "passwordfile"
+	passwordFlag        = "password"
+	EncryptScryptN      = 1 << 18
+	EncryptScryptP      = 1
 )
 
 var (
@@ -102,6 +115,11 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 
 func toCmdErr(err error) error {
 	fmt.Printf("run command error: %s\n", err.Error())
+	return nil
+}
+
+func genCmdErr(msg string) error {
+	fmt.Printf("run command error: %s\n", msg)
 	return nil
 }
 
@@ -170,7 +188,7 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 	return addrList, nil
 }
 
-func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclient.Principal, error) {
+func parsePrincipal(granter string, groupId uint64) (sdktypes.Principal, error) {
 	if granter == "" && groupId == 0 {
 		return "", errors.New("group id or account need to be set")
 	}
@@ -179,7 +197,7 @@ func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclien
 		return "", errors.New("not support setting group id and account at the same time")
 	}
 
-	var principal gnfdclient.Principal
+	var principal sdktypes.Principal
 	var granterAddr sdk.AccAddress
 	var err error
 	if groupId > 0 {
@@ -188,7 +206,7 @@ func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclien
 		if err != nil {
 			return "", err
 		}
-		principal = gnfdclient.Principal(principalBytes)
+		principal = sdktypes.Principal(principalBytes)
 	} else {
 		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
 		if err != nil {
@@ -199,7 +217,7 @@ func parsePrincipal(ctx *cli.Context, granter string, groupId uint64) (gnfdclien
 		if err != nil {
 			return "", err
 		}
-		principal = gnfdclient.Principal(principalBytes)
+		principal = sdktypes.Principal(principalBytes)
 	}
 
 	return principal, nil
@@ -235,7 +253,7 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 
 func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType, error) {
 	actions := make([]permTypes.ActionType, 0)
-	actionListStr := ctx.String(actionsFlagName)
+	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
 		return nil, errors.New("fail to parse actions")
 	}
@@ -257,4 +275,77 @@ func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType
 	}
 
 	return actions, nil
+}
+
+// getPassword return the password content
+func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
+	var filepath string
+	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
+		filepath = passwordFile
+
+	} else if config.PasswordFile != "" {
+		filepath = config.PasswordFile
+	} else {
+		filepath = defaultPasswordfile
+	}
+
+	readContent, err := os.ReadFile(filepath)
+	if err != nil {
+		return "", errors.New("failed to read password file" + err.Error())
+	}
+
+	return strings.TrimRight(string(readContent), "\r\n"), nil
+}
+
+// loadKey loads a secp256k1 private key from the given file.
+func loadKey(file string) (string, sdk.AccAddress, error) {
+	fd, err := os.Open(file)
+	if err != nil {
+		return "", nil, err
+	}
+
+	r := bufio.NewReader(fd)
+	buf := make([]byte, 64)
+	var n int
+	for ; n < len(buf); n++ {
+		buf[n], err = r.ReadByte()
+		switch {
+		case err == io.EOF || buf[n] < '!':
+			break
+		case err != nil:
+			return "", nil, err
+		}
+	}
+	if n != len(buf) {
+		return "", nil, fmt.Errorf("key file too short, want 42 hex characters")
+	}
+
+	priBytes, err := hex.DecodeString(string(buf))
+	if err != nil {
+		return "", nil, err
+	}
+
+	if len(priBytes) != 32 {
+		return "", nil, fmt.Errorf("Len of Keybytes is not equal to 32 ")
+	}
+	var keyBytesArray [32]byte
+	copy(keyBytesArray[:], priBytes[:32])
+	priKey := ethHd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
+
+	return string(buf), sdk.AccAddress(priKey.PubKey().Address()), nil
+}
+
+type cmdConfig struct {
+	RpcAddr      string `toml:"rpcAddr"`
+	ChainId      string `toml:"chainId"`
+	PasswordFile string `toml:"passwordFile"`
+	Host         string `toml:"host"`
+}
+
+func parseConfigFile(filePath string) (*cmdConfig, error) {
+	var config cmdConfig
+	if _, err := toml.DecodeFile(filePath, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }

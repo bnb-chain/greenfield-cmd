@@ -23,17 +23,14 @@ cd build
 
 ### basic config 
 
-The command should run with "-c filePath" to load the config file and the config should be toml format
+The command should run with "-c filePath" to load the config file and the config should be toml format.
+The default config file is "config.toml".
 
 Config file example:
 ```
-# the primary storage provider endpoint
-endpoint = "https://gnfd-testnet-sp-1.nodereal.io"
-# the grpc address of greenfield
-grpcAddr = "gnfd-testnet-fullnode-cosmos-us.bnbchain.org:9090"
-# the chain id info of greenfield
+rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
-privateKey = "ec9577ceafbfa462d510e505df63aba8f8b23886fefxxxxxxxxxxxxx"
+passwordFile = "password.txt"
 ```
 
 ### support commands
@@ -73,116 +70,131 @@ COMMANDS:
    mirror                  mirror resource to bsc
 ```
 
+
+
 #### Get help
 
+the commands support different categories, including storage,group,bridge,bank,permission and payment 
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
 
-// get help of specific commands
-gnfd-cmd command-name -h 
+   storage     support the storage functions, including create/put/get/list resource
+   group       support the group operation functions
+   bridge      support the bridge functions, including transfer and mirror
+   bank        support the bank functions, including transfer and get balance
+   permission  support object policy and bucket policy operation functions
+   payment     support the payment operation functions
+   ls-sp       list storage providers info
+   gen-key     generate new keystore file
 ```
 
+get help of specific category commands
+```
+gnfd-cmd [category-name] -h
+
+for example : gnfd-cmd stroage -h
+```
+
+get help of specific commands 
+```
+gnfd-cmd [category-name][command-name] -h
+
+for example : gnfd-cmd stroage create-bucket -h
+```
 ### Precautions
 
-1. The private key of the account has to be configured in config file
+1. The user need to use "gen-key" command to generate a keystore file first. The other commands need run with -k if the keystore is not the default file path(key.json). 
 
-2. The operator account should have enough balance before sending request to greenfield
+2. The operator account should have enough balance before sending request to greenfield.
+
+3. The cmd tool has ability to intelligently select the correct SP with the info of bucket name and object name in command.
+
+4. The "gnfd://" is a fixed prefix which representing the greenfield resources
+
 
 ### Examples
+
+#### Generate Keystore
+
+The content of the keystore file is the encrypted private key information. Assuming that the current private key hex string  is written in clear text in the file key.txt and the password is stored in the file password.txt,
+the following command can be used to generate a keystore file called key.json:
+```
+// generate keystore key.json
+gnfd-cmd gen-key --privKeyFile key.txt --password password.txt  key.json
+```
+
+After the keystore file is generated, other commands need to be run with the addition of "-k keystore-path".
+The default keystore file is "key.json".
 
 #### Account Operations
 ```
 // transfer to an account in Greenfield
-gnfd-cmd -c config.toml transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+gnfd-cmd bank transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 
 // query the balance of account
-gnfd-cmd -c config.toml balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
+gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
 // create a payment account
-gnfd-cmd -c config.toml create-payment-account
+gnfd-cmd payment create-payment-account
 
 // query payments account under owner or a address with optional flag --user 
-gnfd-cmd -c config.toml ls-payment-account --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
+gnfd-cmd payment ls-payment-account --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 
 // deposit from owner's account to the payment account 
-gnfd-cmd -c config.toml payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+gnfd-cmd payment  payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 
 // witharaw from a payment account to owner's account
-gnfd-cmd -c config.toml payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
 
 #### Bucket Operations
 
+Before creating bucket, It is recommended to first run the "ls-sp" command to obtain the SP list information of Greenfield,
+and then select which SP to create the bucket in.
+
 ```
-// create bucket
-gnfd-cmd -c config.toml make-bucket gnfd://bucketname
+// create bucket. 
+// The primary SP address which the bucket will be created at need to be set by --primarySP
+// If the primary SP has not been not set, the cmd will choose SP0 in the SP list as the primary sp
+gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 
 // update bucket visibility, charged quota or payment address
-(1) gnfd-cmd -c config.toml update-bucket  --visibility=public-read  gnfd://cmdbucket78
-(2) gnfd-cmd -c config.toml update-bucket  --chargedQuota 50000 gnfd://cmdbucket78
+(1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://cmdbucket78
+(2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://cmdbucket78
 ```
 #### Upload/Download Operations
 
-(1) put Object
-```
-gnfd-cmd -c config.toml  put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 
+(1) put Object
+
+The put command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
+the file-path should replace by the file path of local system.
+```
+gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 ```
 
 (2) download object
 
+The get command is used to download an object to local path, the file-path should replace by the file path of local system.
 ```
-gnfd-cmd -c config.toml get gnfd://bucketname/objectname  file-path 
+gnfd-cmd storage get gnfd://bucketname/objectname  file-path 
 ```
+
 #### Group Operations
 
 ```
 // create group
-gnfd-cmd -c config.toml make-group gnfd://groupname
+gnfd-cmd group make-group gnfd://groupname
 
 // update group member
-gnfd-cmd -c config.toml update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+gnfd-cmd group update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // head group member
-gnfd-cmd -c config.toml head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
-```
-#### List Operations
-
-```
-// list buckets
-gnfd-cmd -c config.toml ls-bucket 
-
-// list objects
-gnfd-cmd -c config.toml ls gnfd://bucketname
-
-```
-#### Delete Operations
-
-```
-// delete bucekt
-gnfd-cmd -c config.toml del-bucket gnfd://bucketname
-
-//delete object
-gnfd-cmd -c config.toml del-obj gnfd://bucketname/objectname
-
-// delete group
-gnfd-cmd -c config.toml del-group gnfd://group-name
-```
-#### Head Operations
-
-```
-// head bucekt
-gnfd-cmd -c config.toml head-bucket gnfd://bucket-name
-
-// head object
-gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name
-
-// head Group
-gnfd-cmd -c config.toml head-group gnfd://groupname
+gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 ```
 
-#### Policy Operations
+#### Permission  Operations
 ```
 // The object policy actions can be "create", “delete”, "copy", "get" or "execute"
 // The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
@@ -190,18 +202,54 @@ gnfd-cmd -c config.toml head-group gnfd://groupname
 // The policy effect can set to be allow or deny by --effect
 
 // grant object operation permissions to a group
-gnfd-cmd -c config.toml put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
+gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
 
 // grant object operation permissions to an account
-gnfd-cmd -c config.toml put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
+gnfd-cmd permission put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
 
 // grant bucket operation permissions to a group
-gnfd-cmd -c config.toml put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
+gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
 
 // grant bucket operation permissions to an account
-gnfd-cmd -c config.toml put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
+gnfd-cmd permission put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
 
 ```
+
+#### List Operations
+
+```
+// list buckets
+gnfd-cmd storage ls-bucket 
+
+// list objects
+gnfd-cmd storage ls gnfd://bucketname
+
+```
+#### Delete Operations
+
+```
+// delete bucekt
+gnfd-cmd storage del-bucket gnfd://bucketname
+
+//delete object
+gnfd-cmd storage del-obj gnfd://bucketname/objectname
+
+// delete group
+gnfd-cmd storage del-group gnfd://group-name
+```
+#### Head Operations
+
+```
+// head bucekt
+gnfd-cmd storage head-bucket gnfd://bucket-name
+
+// head object
+gnfd-cmd storage head-obj gnfd://bucket-name/object-name
+
+// head Group
+gnfd-cmd group head-group gnfd://groupname
+```
+
 
 #### Storage Provider Operations
 
@@ -210,36 +258,36 @@ gnfd-cmd -c config.toml put-bucket-policy  --granter 0x169321fC04A12c16...  --ac
 gnfd-cmd -c config.toml ls-sp
 
 // get quota price of storage provider:
-gnfd-cmd -c config.toml get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
+gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
 ```
 #### Payment Operations
 
 ```
 // get quota info
-gnfd-cmd -c config.toml quota-info gnfd://bucketname
+gnfd-cmd payment quota-info gnfd://bucketname
 
 // buy quota
-gnfd-cmd -c config.toml buy-quota --chargedQuota 1000000 gnfd://bucket-name
+gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://bucket-name
 ```
 #### Hash Operations
 
 ```
 // compute integrity hash
-gnfd-cmd  -c config.toml get-hash filepath
+gnfd-cmd storage get-hash filepath
 
 ```
 
 #### Crosschain Operations
 ```
 // crosschain transfer some tokens to an account in BSC
-gnfd-cmd -c config.toml transfer-out --toAddress "0x2eDD53b48726a887c98aDAb97e0a8600f855570d" --amount 12345
+gnfd-cmd crosschain transfer-out --toAddress "0x2eDD53b48726a887c98aDAb97e0a8600f855570d" --amount 12345
 
 // mirror a group to BSC
-gnfd-cmd -c config.toml mirror --resource group --id 1
+gnfd-cmd crosschain mirror --resource group --id 1
 
 // mirror a bucket to BSC
-gnfd-cmd -c config.toml mirror --resource bucket --id 1
+gnfd-cmd crosschain mirror --resource bucket --id 1
 
 // mirror a object to BSC
-gnfd-cmd -c config.toml mirror --resource object --id 1
+gnfd-cmd crosschain mirror --resource object --id 1
 ```
