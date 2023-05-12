@@ -159,11 +159,10 @@ gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 
 (1) put Object
 
-The put command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced by the real name.
-The file-path should replace by the file path of local system
+The put command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
+the file-path should replace by the file path of local system.
 ```
 gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
-
 ```
 
 (2) download object
