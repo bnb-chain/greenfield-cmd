@@ -4,15 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
-	"github.com/bnb-chain/greenfield-go-sdk/client/sp"
+	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
-	spType "github.com/bnb-chain/greenfield/x/sp/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
@@ -34,22 +31,22 @@ Examples:
 $ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  primarySPFlagName,
+				Name:  primarySPFlag,
 				Value: "",
 				Usage: "indicate the primarySP address, using the string type",
 			},
 			&cli.StringFlag{
-				Name:  paymentFlagName,
+				Name:  paymentFlag,
 				Value: "",
 				Usage: "indicate the PaymentAddress info, using the string type",
 			},
 			&cli.Uint64Flag{
-				Name:  chargeQuotaFlagName,
+				Name:  chargeQuotaFlag,
 				Value: 0,
 				Usage: "indicate the read quota info of the bucket",
 			},
 			&cli.GenericFlag{
-				Name: visibilityFlagName,
+				Name: visibilityFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{publicReadType, privateType, inheritType},
 					Default: privateType,
@@ -77,16 +74,16 @@ update visibility and the payment address of the gnfdBucket
 $ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  paymentFlagName,
+				Name:  paymentFlag,
 				Value: "",
 				Usage: "indicate the PaymentAddress info, using the string type",
 			},
 			&cli.Uint64Flag{
-				Name:  chargeQuotaFlagName,
+				Name:  chargeQuotaFlag,
 				Usage: "indicate the read quota info of the bucket",
 			},
 			&cli.GenericFlag{
-				Name: visibilityFlagName,
+				Name: visibilityFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{publicReadType, privateType, inheritType},
 					Default: privateType,
@@ -109,14 +106,6 @@ List the bucket names and bucket ids of the user.
 
 Examples:
 $ gnfd-cmd -c config.toml ls-bucket `,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  userAddressFlagName,
-				Value: "",
-				Usage: "indicate which user's buckets to be list, you" +
-					" don't need to specify this if you want to list your own bucket ",
-			},
-		},
 	}
 }
 
@@ -134,17 +123,17 @@ Examples:
 $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
-				Name:  groupIDFlagName,
+				Name:  groupIDFlag,
 				Value: 0,
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlagName,
+				Name:  granterFlag,
 				Value: "",
 				Usage: "the account address to set the policy",
 			},
 			&cli.StringFlag{
-				Name:  actionsFlagName,
+				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: delete, update." +
@@ -152,7 +141,7 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 				Required: true,
 			},
 			&cli.GenericFlag{
-				Name: effectFlagName,
+				Name: effectFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{effectDeny, effectAllow},
 					Default: effectAllow,
@@ -160,7 +149,7 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 				Usage: "set the effect of the policy",
 			},
 			&cli.Uint64Flag{
-				Name:  expireTimeFlagName,
+				Name:  expireTimeFlag,
 				Value: 0,
 				Usage: "set the expire unix time stamp of the policy",
 			},
@@ -183,50 +172,24 @@ func createBucket(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	primarySpAddrStr := ctx.String(primarySPFlagName)
-
+	primarySpAddrStr := ctx.String(primarySPFlag)
 	if primarySpAddrStr == "" {
-		request := &spType.QueryStorageProvidersRequest{}
-		chainCtx := context.Background()
-		gnfdRep, err := client.ChainClient.StorageProviders(chainCtx, request)
+		// if primarySP not set, choose sp0 as the primary sp
+		spInfo, err := client.ListStorageProviders(c, false)
 		if err != nil {
-			fmt.Println("fail to fetch sp info on chain", err.Error())
-			return nil
+			return toCmdErr(errors.New("fail to get primary sp address"))
 		}
-		spList := gnfdRep.GetSps()
-		findPrimarySp := false
-		for _, sp := range spList {
-			endpoint := sp.GetEndpoint()
-			if strings.Contains(endpoint, "http") {
-				s := strings.Split(endpoint, "//")
-				endpoint = s[1]
-			}
-			if endpoint == client.SPClient.GetURL().Hostname() {
-				findPrimarySp = true
-				primarySpAddrStr = sp.GetOperatorAddress()
-				if sp.Status.String() != "STATUS_IN_SERVICE" {
-					return errors.New("primary sp not in service")
-				}
-				break
-			}
-		}
-		if !findPrimarySp {
-			return errors.New("can not find the right primary sp, please set it using --primarySP")
-		}
+		primarySpAddrStr = spInfo[0].GetOperatorAddress()
+		fmt.Println("choose primary sp:", spInfo[0].GetEndpoint())
 	}
 
-	primarySpAddr, err := sdk.AccAddressFromHexUnsafe(primarySpAddrStr)
-	if err != nil {
-		return err
-	}
-
-	paymentAddrStr := ctx.String(paymentFlagName)
-	opts := gnfdclient.CreateBucketOptions{}
+	opts := sdktypes.CreateBucketOptions{}
+	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
-		opts.PaymentAddress = sdk.MustAccAddressFromHex(paymentAddrStr)
+		opts.PaymentAddress = paymentAddrStr
 	}
 
-	visibility := ctx.Generic(visibilityFlagName)
+	visibility := ctx.Generic(visibilityFlag)
 	if visibility != "" {
 		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
 		if typeErr != nil {
@@ -235,7 +198,7 @@ func createBucket(ctx *cli.Context) error {
 		opts.Visibility = visibilityTypeVal
 	}
 
-	chargedQuota := ctx.Uint64(chargeQuotaFlagName)
+	chargedQuota := ctx.Uint64(chargeQuotaFlag)
 	if chargedQuota > 0 {
 		opts.ChargedQuota = chargedQuota
 	}
@@ -243,7 +206,7 @@ func createBucket(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 
-	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddr, opts)
+	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddrStr, opts)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -264,8 +227,8 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelUpdateBucket := context.WithCancel(globalContext)
+	defer cancelUpdateBucket()
 
 	// if bucket not exist, no need to update it
 	_, err = client.HeadBucket(c, bucketName)
@@ -273,17 +236,13 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	opts := gnfdclient.UpdateBucketOption{}
-	paymentAddrStr := ctx.String(paymentFlagName)
+	opts := sdktypes.UpdateBucketOption{}
+	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
-		paymentAddress, err := sdk.AccAddressFromHexUnsafe(paymentAddrStr)
-		if err != nil {
-			return err
-		}
-		opts.PaymentAddress = paymentAddress
+		opts.PaymentAddress = paymentAddrStr
 	}
 
-	visibility := ctx.Generic(visibilityFlagName)
+	visibility := ctx.Generic(visibilityFlag)
 	if visibility != "" {
 		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
 		if typeErr != nil {
@@ -292,7 +251,7 @@ func updateBucket(ctx *cli.Context) error {
 		opts.Visibility = visibilityTypeVal
 	}
 
-	chargedQuota := ctx.Uint64(chargeQuotaFlagName)
+	chargedQuota := ctx.Uint64(chargeQuotaFlag)
 	if chargedQuota > 0 {
 		opts.ChargedQuota = &chargedQuota
 	}
@@ -328,20 +287,7 @@ func listBuckets(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	var userAddr string
-	userAddrStr := ctx.String(userAddressFlagName)
-	if userAddrStr != "" {
-		userAddr = userAddrStr
-	} else {
-		km, err := client.ChainClient.GetKeyManager()
-		if err != nil {
-			return toCmdErr(err)
-		}
-		userAddr = km.GetAddr().String()
-	}
-
-	bucketListRes, err := client.SPClient.ListBuckets(c, sp.UserInfo{Address: userAddr},
-		sp.NewAuthInfo(false, ""))
+	bucketListRes, err := client.ListBuckets(c)
 
 	if err != nil {
 		return toCmdErr(err)
@@ -355,7 +301,9 @@ func listBuckets(ctx *cli.Context) error {
 	fmt.Println("bucket list:")
 	for _, bucket := range bucketListRes.Buckets {
 		info := bucket.BucketInfo
-		fmt.Printf("bucket name: %s, bucket id: %s \n", info.BucketName, info.Id)
+		if !bucket.Removed {
+			fmt.Printf("bucket name: %s, bucket id: %s \n", info.BucketName, info.Id)
+		}
 	}
 	return nil
 
@@ -367,9 +315,9 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	groupId := ctx.Uint64(groupIDFlagName)
-	granter := ctx.String(granterFlagName)
-	principal, err := parsePrincipal(ctx, granter, groupId)
+	groupId := ctx.Uint64(groupIDFlag)
+	granter := ctx.String(granterFlag)
+	principal, err := parsePrincipal(granter, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -380,7 +328,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 	}
 
 	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlagName)
+	effectStr := ctx.String(effectFlag)
 	if effectStr != "" {
 		if effectStr == effectDeny {
 			effect = permTypes.EFFECT_DENY
@@ -392,21 +340,24 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return err
 	}
 
-	expireTime := ctx.Uint64(expireTimeFlagName)
+	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
 	statements := []*permTypes.Statement{&statement}
-	policyTx, err := client.PutBucketPolicy(bucketName, principal, statements,
-		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
+		sdktypes.PutPolicyOption{TxOpts: txOpts})
 
 	if err != nil {
 		return toCmdErr(err)
@@ -414,21 +365,15 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
 
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
-
 	if groupId > 0 {
 		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
 		if err == nil {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		policyInfo, err := client.GetBucketPolicy(c, bucketName, granter)
 		if err == nil {
-			policyInfo, err := client.GetBucketPolicy(c, bucketName, granterAddr)
-			if err == nil {
-				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-			}
+			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}
 	}
 

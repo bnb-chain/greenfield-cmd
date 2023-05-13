@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
@@ -27,7 +26,7 @@ Examples:
 $ gnfd-cmd -c config.toml get-price --spAddress "0x.."`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     spAddressFlagName,
+				Name:     spAddressFlag,
 				Value:    "",
 				Usage:    "indicate the storage provider chain address string",
 				Required: true,
@@ -51,7 +50,7 @@ Examples:
 $ gnfd-cmd -c config.toml buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
-				Name:     chargeQuotaFlagName,
+				Name:     chargeQuotaFlag,
 				Usage:    "indicate the target quota to be set for the bucket",
 				Required: true,
 			},
@@ -94,14 +93,15 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	targetQuota := ctx.Uint64(chargeQuotaFlagName)
+	targetQuota := ctx.Uint64(chargeQuotaFlag)
 	if targetQuota == 0 {
 		return toCmdErr(errors.New("target quota not set"))
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, gnfdclient.BuyQuotaOption{TxOpts: &txnOpt})
+
+	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdktypes.BuyQuotaOption{TxOpts: &txnOpt})
 
 	if err != nil {
 		fmt.Println("buy quota error:", err.Error())
@@ -122,22 +122,30 @@ func getQuotaPrice(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	spAddressStr := ctx.String(spAddressFlagName)
+	spAddressStr := ctx.String(spAddressFlag)
 	if spAddressStr == "" {
 		return toCmdErr(errors.New("fail to fetch sp address"))
 	}
 
-	spAddr, err := sdk.AccAddressFromHexUnsafe(spAddressStr)
+	price, err := client.GetStoragePrice(c, spAddressStr)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	price, err := client.GetQuotaPrice(c, spAddr)
+	quotaPrice, err := price.ReadPrice.Float64()
 	if err != nil {
-		return toCmdErr(err)
+		fmt.Println("get quota price error:", err.Error())
+		return err
 	}
 
-	fmt.Println("get bucket read quota price:", price, " wei/byte")
+	storagePrice, err := price.StorePrice.Float64()
+	if err != nil {
+		fmt.Println("get storage price error:", err.Error())
+		return err
+	}
+
+	fmt.Println("get bucket read quota price:", quotaPrice, " wei/byte")
+	fmt.Println("get bucket storage price:", storagePrice, " wei/byte")
 	return nil
 }
 
@@ -153,8 +161,14 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelGetQuota := context.WithCancel(globalContext)
+	defer cancelGetQuota()
+
+	// if bucket not exist, no need to get info of quota
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
 
 	quotaInfo, err := client.GetBucketReadQuota(c, bucketName)
 	if err != nil {

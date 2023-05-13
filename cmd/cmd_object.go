@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
-	spClient "github.com/bnb-chain/greenfield-go-sdk/client/sp"
+	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,17 +35,17 @@ Examples:
 $ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  secondarySPFlagName,
+				Name:  secondarySPFlag,
 				Value: "",
 				Usage: "indicate the Secondary SP addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  contentTypeFlagName,
+				Name:  contentTypeFlag,
 				Value: "",
 				Usage: "indicate object content-type",
 			},
 			&cli.GenericFlag{
-				Name: visibilityFlagName,
+				Name: visibilityFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{publicReadType, privateType, inheritType},
 					Default: inheritType,
@@ -70,12 +71,12 @@ Examples:
 $ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
-				Name:  startOffsetFlagName,
+				Name:  startOffsetFlag,
 				Value: 0,
 				Usage: "start offset info of the download body",
 			},
 			&cli.Int64Flag{
-				Name:  endOffsetFlagName,
+				Name:  endOffsetFlag,
 				Value: 0,
 				Usage: "end offset info of the download body",
 			},
@@ -112,7 +113,7 @@ Examples:
 $ gnfd  ls  gnfd://gnfdBucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  userAddressFlagName,
+				Name:  userAddressFlag,
 				Value: "",
 				Usage: "indicate which user's buckets to be list, you" +
 					" don't need to specify this if you want to list your own bucket ",
@@ -136,17 +137,17 @@ Examples:
 $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
-				Name:  groupIDFlagName,
+				Name:  groupIDFlag,
 				Value: 0,
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlagName,
+				Name:  granterFlag,
 				Value: "",
 				Usage: "the account address to set the policy",
 			},
 			&cli.StringFlag{
-				Name:  actionsFlagName,
+				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: create, delete, copy, get or execute." +
@@ -154,7 +155,7 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 				Required: true,
 			},
 			&cli.GenericFlag{
-				Name: effectFlagName,
+				Name: effectFlag,
 				Value: &CmdEnumValue{
 					Enum:    []string{effectDeny, effectAllow},
 					Default: effectAllow,
@@ -162,7 +163,7 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 				Usage: "set the effect of the policy",
 			},
 			&cli.Uint64Flag{
-				Name:  expireTimeFlagName,
+				Name:  expireTimeFlag,
 				Value: 0,
 				Usage: "set the expire unix time stamp of the policy",
 			},
@@ -181,12 +182,6 @@ func putObject(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
 	// read the local file payload
 	filePath := ctx.Args().Get(0)
 	exists, objectSize, err := pathExists(filePath)
@@ -214,21 +209,21 @@ func putObject(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	contentType := ctx.String(contentTypeFlagName)
-	secondarySPAccs := ctx.String(secondarySPFlagName)
+	contentType := ctx.String(contentTypeFlag)
+	secondarySPAccs := ctx.String(secondarySPFlag)
 
-	opts := gnfdclient.CreateObjectOptions{}
+	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
 	}
 
-	visibility := ctx.Generic(visibilityFlagName)
-	if visibility != "" {
-		visibilityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
+	visibity := ctx.Generic(visibilityFlag)
+	if visibity != "" {
+		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
 		if typeErr != nil {
 			return typeErr
 		}
-		opts.Visibility = visibilityTypeVal
+		opts.Visibility = visibityTypeVal
 	}
 
 	// set second sp address if provided by user
@@ -241,30 +236,23 @@ func putObject(ctx *cli.Context) error {
 		opts.SecondarySPAccs = addrList
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	opts.TxOpts = &txnOpt
-
 	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.HeadObject(c, bucketName, objectName)
-	if err != nil {
-		time.Sleep(5 * time.Second)
-		_, err = client.HeadObject(c, bucketName, objectName)
-		if err != nil {
-			return toCmdErr(ErrObjectNotCreated)
-		}
+	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
+
+	if objectSize == 0 {
+		return nil
 	}
 
-	fmt.Printf("create object %s on chain finish \n", objectName)
-
-	opt := spClient.PutObjectOption{}
+	opt := sdktypes.PutObjectOptions{}
 	if contentType != "" {
 		opt.ContentType = contentType
 	}
+	opt.TxnHash = txnHash
+
 	// Open the referenced file.
 	reader, err := os.Open(filePath)
 	if err != nil {
@@ -272,14 +260,34 @@ func putObject(ctx *cli.Context) error {
 	}
 	defer reader.Close()
 
-	if err = client.PutObject(c, bucketName, objectName,
-		txnHash, objectSize, reader, opt); err != nil {
+	if err = gnfdClient.PutObject(c, bucketName, objectName,
+		objectSize, reader, opt); err != nil {
 		fmt.Println("put object fail:", err.Error())
 		return nil
 	}
 
-	fmt.Printf("put object: %s successfully \n", objectName)
-	return nil
+	// Check if object is sealed
+	timeout := time.After(15 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			return toCmdErr(errors.New("object not sealed after 15 seconds"))
+		case <-ticker.C:
+			headObjOutput, err := gnfdClient.HeadObject(c, bucketName, objectName)
+			if err != nil {
+				return err
+			}
+
+			if headObjOutput.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
+				ticker.Stop()
+				fmt.Printf("put object %s successfully \n", objectName)
+				return nil
+			}
+		}
+	}
+
 }
 
 func putObjectPolicy(ctx *cli.Context) error {
@@ -293,9 +301,9 @@ func putObjectPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	groupId := ctx.Uint64(groupIDFlagName)
-	granter := ctx.String(granterFlagName)
-	principal, err := parsePrincipal(ctx, granter, groupId)
+	groupId := ctx.Uint64(groupIDFlag)
+	granter := ctx.String(granterFlag)
+	principal, err := parsePrincipal(granter, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -306,7 +314,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 	}
 
 	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlagName)
+	effectStr := ctx.String(effectFlag)
 	if effectStr != "" {
 		if effectStr == effectDeny {
 			effect = permTypes.EFFECT_DENY
@@ -318,29 +326,30 @@ func putObjectPolicy(ctx *cli.Context) error {
 		return err
 	}
 
-	expireTime := ctx.Uint64(expireTimeFlagName)
+	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = gnfdclient.NewStatement(actions, effect, nil, gnfdclient.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 
 	statements := []*permTypes.Statement{&statement}
-	policyTx, err := client.PutObjectPolicy(bucketName, objectName, principal, statements,
-		gnfdclient.PutPolicyOption{TxOpts: txOpts})
+
+	c, cancelPutPolicy := context.WithCancel(globalContext)
+	defer cancelPutPolicy()
+
+	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
+		sdktypes.PutPolicyOption{TxOpts: txOpts})
 
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
-
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
 
 	// get the latest policy from chain
 	if groupId > 0 {
@@ -349,12 +358,9 @@ func putObjectPolicy(ctx *cli.Context) error {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		granterAddr, err := sdk.AccAddressFromHexUnsafe(granter)
+		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granter)
 		if err == nil {
-			policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granterAddr)
-			if err == nil {
-				fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-			}
+			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}
 	}
 
@@ -395,9 +401,9 @@ func getObject(ctx *cli.Context) error {
 	}
 	defer fd.Close()
 
-	opt := spClient.GetObjectOption{}
-	startOffset := ctx.Int64(endOffsetFlagName)
-	endOffset := ctx.Int64(endOffsetFlagName)
+	opt := sdktypes.GetObjectOption{}
+	startOffset := ctx.Int64(startOffsetFlag)
+	endOffset := ctx.Int64(endOffsetFlag)
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
@@ -406,7 +412,7 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-	body, _, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
+	body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -416,12 +422,12 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("download object %s successfully, the file path is %s,", objectName, filePath)
+	fmt.Printf("download object %s successfully, the file path is %s, content length:%d, \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }
 
-// cancelCreateObject
+// cancelCreateObject cancel the created object on chain
 func cancelCreateObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return toCmdErr(fmt.Errorf("args number should be one"))
@@ -438,10 +444,18 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	c, cancelCancelCreate := context.WithCancel(globalContext)
+	defer cancelCancelCreate()
+
+	_, err = cli.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrObjectNotCreated)
+	}
+
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 
-	_, err = cli.CancelCreateObject(bucketName, objectName, gnfdclient.CancelCreateOption{TxOpts: &txnOpt})
+	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -464,10 +478,15 @@ func listObjects(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelList := context.WithCancel(globalContext)
+	defer cancelList()
 
-	listObjectsRes, err := client.SPClient.ListObjects(c, bucketName, spClient.NewAuthInfo(false, ""))
+	_, err = client.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
+
+	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
 
 	if err != nil {
 		return toCmdErr(err)

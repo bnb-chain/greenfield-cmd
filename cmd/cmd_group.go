@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/bnb-chain/greenfield-go-sdk/client/gnfdclient"
+	"github.com/bnb-chain/greenfield-go-sdk/client"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
@@ -26,7 +27,7 @@ Examples:
 $ gnfd-cmd -c config.toml make-group gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  initMemberFlagName,
+				Name:  initMemberFlag,
 				Value: "",
 				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
 			},
@@ -50,17 +51,17 @@ Examples:
 $ gnfd-cmd -c config.toml update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  addMemberFlagName,
+				Name:  addMemberFlag,
 				Value: "",
 				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  removeMemberFlagName,
+				Name:  removeMemberFlag,
 				Value: "",
 				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
 			},
 			&cli.StringFlag{
-				Name:  groupOwnerFlagName,
+				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
 			},
@@ -80,9 +81,9 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	opts := gnfdclient.CreateGroupOptions{}
+	opts := sdktypes.CreateGroupOptions{}
 
-	initMembersInfo := ctx.String(initMemberFlagName)
+	initMembersInfo := ctx.String(initMemberFlag)
 	// set group init members if provided by user
 	if initMembersInfo != "" {
 		addrList, err := parseAddrList(initMembersInfo)
@@ -95,7 +96,10 @@ func createGroup(ctx *cli.Context) error {
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
 	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 
-	txnHash, err := client.CreateGroup(groupName, opts)
+	c, cancelCreateGroup := context.WithCancel(globalContext)
+	defer cancelCreateGroup()
+
+	txnHash, err := client.CreateGroup(c, groupName, opts)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -127,30 +131,15 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	addMembersInfo := ctx.String(addMemberFlagName)
-	removeMembersInfo := ctx.String(removeMemberFlagName)
+	addMembersInfo := ctx.String(addMemberFlag)
+	removeMembersInfo := ctx.String(removeMemberFlag)
 
 	if addMembersInfo == "" && removeMembersInfo == "" {
 		return toCmdErr(errors.New("fail to get members to update"))
 	}
 
-	var addGroupMembers []sdk.AccAddress
-	var removeGroupMembers []sdk.AccAddress
-	// set group add members if provided by user
-	if addMembersInfo != "" {
-		addGroupMembers, err = parseAddrList(addMembersInfo)
-		if err != nil {
-			return toCmdErr(err)
-		}
-	}
-
-	// set group remove members if provided by user
-	if removeMembersInfo != "" {
-		removeGroupMembers, err = parseAddrList(removeMembersInfo)
-		if err != nil {
-			return toCmdErr(err)
-		}
-	}
+	addGroupMembers := strings.Split(addMembersInfo, ",")
+	removeGroupMembers := strings.Split(removeMembersInfo, ",")
 
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err != nil {
@@ -165,7 +154,10 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	txnHash, err := client.UpdateGroupMember(groupName, groupOwner, addGroupMembers, removeGroupMembers, gnfdclient.UpdateGroupMemberOption{})
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txOpts := &types.TxOption{Mode: &broadcastMode}
+	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
+		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -174,22 +166,16 @@ func updateGroupMember(ctx *cli.Context) error {
 	return nil
 }
 
-func getGroupOwner(ctx *cli.Context, client *gnfdclient.GnfdClient) (sdk.AccAddress, error) {
-	var groupOwner sdk.AccAddress
-	var err error
-	groupOwnerAddrStr := ctx.String(groupOwnerFlagName)
+func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
+	groupOwnerAddrStr := ctx.String(groupOwnerFlag)
 
 	if groupOwnerAddrStr != "" {
-		groupOwner, err = sdk.AccAddressFromHexUnsafe(groupOwnerAddrStr)
-		if err != nil {
-			return nil, toCmdErr(err)
-		}
-	} else {
-		km, err := client.ChainClient.GetKeyManager()
-		if err != nil {
-			return nil, toCmdErr(err)
-		}
-		groupOwner = km.GetAddr()
+		return groupOwnerAddrStr, nil
 	}
-	return groupOwner, nil
+
+	acc, err := client.GetDefaultAccount()
+	if err != nil {
+		return "", toCmdErr(err)
+	}
+	return acc.GetAddress().String(), nil
 }
