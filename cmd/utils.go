@@ -16,9 +16,9 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	ethHd "github.com/evmos/ethermint/crypto/hd"
 	"github.com/urfave/cli/v2"
 )
 
@@ -352,7 +352,7 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 	}
 	var keyBytesArray [32]byte
 	copy(keyBytesArray[:], priBytes[:32])
-	priKey := ethHd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
+	priKey := hd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
 
 	return string(buf), sdk.AccAddress(priKey.PubKey().Address()), nil
 }
