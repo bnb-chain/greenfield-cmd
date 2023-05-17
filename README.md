@@ -122,8 +122,8 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 
 #### Generate Keystore
 
-Before generate keystore,  you should export your private key from MetaMask and write it into a local file as plaintext.
-and set your password file by the "passwordFile" field in the config file.
+Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext .
+You need also write your password on the password-file which set by the "passwordFile" field in the config file.
 
 Assuming that the current private key hex string is written as plaintext in the file key.txt，
 the following command can be used to generate a keystore file called key.json:
