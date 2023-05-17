@@ -31,8 +31,8 @@ Send createObject txn to chain and upload the payload of object to the storage p
 The command need to pass the file path inorder to compute hash roots on client
 
 Examples:
-# create object and upload file to storage provider, the corresponding object is gnfdObject
-$ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
+# create object and upload file to storage provider, the corresponding object is gnfd-object
+$ gnfd-cmd -c config.toml storage put file.txt gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -52,6 +52,43 @@ $ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
 				},
 				Usage: "set visibility of the object",
 			},
+			&cli.StringFlag{
+				Name:  folderFlag,
+				Value: "",
+				Usage: "indicate folder in bucket to which the object will be uploaded",
+			},
+		},
+	}
+}
+
+// cmdCreateFolder create a folder in bucket
+func cmdCreateFolder() *cli.Command {
+	return &cli.Command{
+		Name:      "make-folder",
+		Action:    createFolder,
+		Usage:     "create a folder in bucket",
+		ArgsUsage: " OBJECT-URL ",
+		Description: `
+Create a folder in bucket, you can set the prefix of folder by --prefix.
+Notice that folder is actually an special object.
+
+Examples:
+# create folder called gnfd-folder
+$ gnfd-cmd storage create-folder gnfd://gnfd-bucket/gnfd-folder`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name: visibilityFlag,
+				Value: &CmdEnumValue{
+					Enum:    []string{publicReadType, privateType, inheritType},
+					Default: inheritType,
+				},
+				Usage: "set visibility of the object",
+			},
+			&cli.StringFlag{
+				Name:  objectPrefix,
+				Value: "",
+				Usage: "The prefix of the folder to be created",
+			},
 		},
 	}
 }
@@ -68,7 +105,7 @@ Download a specific object from storage provider
 
 Examples:
 # download an object payload to file
-$ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
+$ gnfd-cmd -c config.toml storage get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
 				Name:  startOffsetFlag,
@@ -95,7 +132,7 @@ func cmdCancelObjects() *cli.Command {
 Cancel the created object 
 
 Examples:
-$ gnfd  cancel-create-obj gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd storage cancel-create-obj gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -110,7 +147,7 @@ func cmdListObjects() *cli.Command {
 List Objects of the bucket, including object name, object id, object status
 
 Examples:
-$ gnfd  ls  gnfd://gnfdBucket`,
+$ gnfd-cmd storage ls gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  userAddressFlag,
@@ -134,7 +171,7 @@ The command is used to set the object policy of the granted account or group-id.
 It required to set granted account or group-id by --groupId or --granter.
 
 Examples:
-$ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --action get,delete gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -224,6 +261,11 @@ func putObject(ctx *cli.Context) error {
 			return typeErr
 		}
 		opts.Visibility = visibityTypeVal
+	}
+
+	folderName := ctx.String(folderFlag)
+	if folderName != "" {
+		objectName = folderName + "/" + objectName
 	}
 
 	// set second sp address if provided by user
@@ -511,6 +553,50 @@ func listObjects(ctx *cli.Context) error {
 
 	return nil
 
+}
+
+func createFolder(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be 1"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	c, cancelList := context.WithCancel(globalContext)
+	defer cancelList()
+
+	opts := sdktypes.CreateObjectOptions{}
+
+	visibity := ctx.Generic(visibilityFlag)
+	if visibity != "" {
+		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
+		if typeErr != nil {
+			return typeErr
+		}
+		opts.Visibility = visibityTypeVal
+	}
+
+	objectName = objectName + "/"
+	prefix := ctx.String(objectPrefix)
+	if prefix != "" {
+		objectName = prefix + "/" + objectName
+	}
+
+	txnHash, err := client.CreateFolder(c, bucketName, objectName, opts)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
+
+	fmt.Printf("create folder: %s successfully, txnHash is %s \n", objectName, txnHash)
+	return nil
 }
 
 func pathExists(path string) (bool, int64, error) {

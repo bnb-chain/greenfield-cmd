@@ -58,6 +58,8 @@ const (
 	amountFlag       = "amount"
 	resourceFlag     = "resource"
 	IdFlag           = "id"
+	objectPrefix     = "prefix"
+	folderFlag       = "folder"
 
 	defaultKeyfile      = "key.json"
 	defaultPasswordfile = "password"

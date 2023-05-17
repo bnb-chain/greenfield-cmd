@@ -17,7 +17,7 @@ func cmdListSP() *cli.Command {
 List the storage provider info including the endpoint and the address on chain
 
 Examples:
-$ gnfd-cmd -c config.toml ls-sp `,
+$ gnfd-cmd ls-sp `,
 	}
 }
 

@@ -24,7 +24,7 @@ func cmdCreateGroup() *cli.Command {
 Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
 
 Examples:
-$ gnfd-cmd -c config.toml make-group gnfd://group-name`,
+$ gnfd-cmd group make-group gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlag,
@@ -48,7 +48,7 @@ and remove members list at the same time.
 You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
-$ gnfd-cmd -c config.toml update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
+$ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addMemberFlag,

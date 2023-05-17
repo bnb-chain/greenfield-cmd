@@ -24,7 +24,7 @@ Create a payment account
 
 Examples:
 # Create a payment account
-$ gnfd-cmd -c config.toml create-payment-account `,
+$ gnfd-cmd payment create-payment-account `,
 	}
 }
 
@@ -62,7 +62,7 @@ Make a deposit into stream(payment) account
 
 Examples:
 # deposit a stream account
-$ gnfd-cmd -c config.toml payment-deposit --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment payment-deposit --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,
@@ -121,7 +121,7 @@ Make a withdrawal from stream(payment) account
 
 Examples:
 # withdraw from a stream account back to the creator account
-$ gnfd-cmd -c config.toml payment-withdraw --fromAddress 0x.. --amount 12345`,
+$ gnfd-cmd  payment payment-withdraw --fromAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     fromAddressFlag,
@@ -180,7 +180,7 @@ func cmdListPaymentAccounts() *cli.Command {
 List payment accounts of the owner.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-payment-account `,
+$ gnfd-cmd payment ls-payment-account `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  ownerAddressFlag,
@@ -244,7 +244,7 @@ func cmdGetAccountBalance() *cli.Command {
 Get the account balance, if address not specified, default to cur user's account
 
 Examples:
-$ gnfd-cmd -c config.toml balance --address 0x... `,
+$ gnfd-cmd bank balance --address 0x... `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addressFlag,
@@ -299,7 +299,7 @@ Make a transfer from your account to a dest account
 
 Examples:
 # Create a transfer
-$ gnfd-cmd -c config.toml transfer --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd bank transfer --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,

@@ -27,8 +27,8 @@ The bucket name should unique and the default visibility is private.
 The command need to set the primary SP address with --primarySP.
 
 Examples:
-# Create a new bucket called gnfdBucket, visibility is public-read
-$ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
+# Create a new bucket called gnfd-bucket, visibility is public-read
+$ gnfd-cmd storage make-bucket  --visibility=public-read  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -70,8 +70,8 @@ The visibility value can be public-read, private or inherit.
 You can update only one item or multiple items at the same time.
 
 Examples:
-update visibility and the payment address of the gnfdBucket
-$ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfdBucket`,
+update visibility and the payment address of the gnfd-bucket
+$ gnfd-cmd storage update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  paymentFlag,
@@ -105,7 +105,7 @@ func cmdListBuckets() *cli.Command {
 List the bucket names and bucket ids of the user.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-bucket `,
+$ gnfd-cmd  storage ls-bucket `,
 	}
 }
 
@@ -120,7 +120,7 @@ The command is used to set the bucket policy of the granted account or group-id.
 It required to set granted account or group-id by --groupId or --granter.
 
 Examples:
-$ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd put-bucket-policy --groupId 111 --action delete,update gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,

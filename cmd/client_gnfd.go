@@ -101,6 +101,8 @@ func ParseBucketAndObject(urlPath string) (string, string, error) {
 		return "", "", errors.New("url not right, can not parse bucket name and object name")
 	}
 
+	fmt.Println("bucket name:", urlPath[:index])
+	fmt.Println("object name:", urlPath[index+1:])
 	return urlPath[:index], urlPath[index+1:], nil
 }
 
