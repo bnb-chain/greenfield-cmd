@@ -23,10 +23,14 @@ cd build
 
 ### basic config 
 
-The command should run with "-c filePath" to load the config file and the config should be toml format.
+The command should run with "-c filePath" to load the config file and the config should be TOML format.
 The default config file is "config.toml".
 
-Config file example:
+Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
+For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
+The rpcAddr indicates the Tendermint RPC address with the port info.
+The configuration for passwordFile is the path to the file containing the password required to generate the keystore.
+
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
@@ -104,11 +108,12 @@ for example : gnfd-cmd stroage create-bucket -h
 ```
 ### Precautions
 
-1. The user need to use "gen-key" command to generate a keystore file first. The other commands need run with -k if the keystore is not the default file path(key.json). 
+1. The user need to use "gen-key" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
+and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default file path(key.json).
 
 2. The operator account should have enough balance before sending request to greenfield.
 
-3. The cmd tool has ability to intelligently select the correct SP with the info of bucket name and object name in command.
+3. The cmd tool has ability to intelligently select the correct SP with the info of bucket name and object name in command without changing config.
 
 4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
@@ -117,15 +122,17 @@ for example : gnfd-cmd stroage create-bucket -h
 
 #### Generate Keystore
 
-The content of the keystore file is the encrypted private key information. Assuming that the current private key hex string  is written in clear text in the file key.txt and the password is stored in the file password.txt,
+Before generate keystore,  you should export your private key from MetaMask and write it into a local file as plaintext.
+and set your password file by the "passwordFile" field in the config file.
+
+Assuming that the current private key hex string is written as plaintext in the file key.txt，
 the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
-gnfd-cmd gen-key --privKeyFile key.txt --password password.txt  key.json
+gnfd-cmd gen-key --privKeyFile key.txt  key.json
 ```
 
-After the keystore file is generated, other commands need to be run with the addition of "-k keystore-path".
-The default keystore file is "key.json".
+After the keystore file has been generated, you can delete the private key file which contains the  plaintext of private key.
 
 #### Account Operations
 ```
@@ -255,7 +262,7 @@ gnfd-cmd group head-group gnfd://groupname
 
 ```
 // list storage providers
-gnfd-cmd -c config.toml ls-sp
+gnfd-cmd ls-sp
 
 // get quota price of storage provider:
 gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
