@@ -66,7 +66,6 @@ const (
 	defaultPasswordfile = "password"
 	privKeyFileFlag     = "privKeyFile"
 	passwordFileFlag    = "passwordfile"
-	passwordFlag        = "password"
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
 )
@@ -304,7 +303,6 @@ func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
 	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
 		filepath = passwordFile
-
 	} else if config.PasswordFile != "" {
 		filepath = config.PasswordFile
 	} else {

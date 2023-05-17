@@ -74,7 +74,7 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(errors.New("target quota not set"))
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 
 	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdktypes.BuyQuotaOption{TxOpts: &txnOpt})

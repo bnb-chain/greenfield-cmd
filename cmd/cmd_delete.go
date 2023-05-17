@@ -81,7 +81,7 @@ func deleteBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.DeleteBucket(c, bucketName, sdktypes.DeleteBucketOption{TxOpts: &txnOpt})
 	if err != nil {
@@ -118,7 +118,7 @@ func deleteObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &txnOpt})
 	if err != nil {
@@ -149,7 +149,7 @@ func deleteGroup(ctx *cli.Context) error {
 	c, cancelDelGroup := context.WithCancel(globalContext)
 	defer cancelDelGroup()
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.DeleteGroup(c, groupName, sdktypes.DeleteGroupOption{TxOpts: &txnOpt})
 	if err != nil {

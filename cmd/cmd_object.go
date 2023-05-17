@@ -376,7 +376,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 	} else {
 		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 
 	statements := []*permTypes.Statement{&statement}
@@ -514,7 +514,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotCreated)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 
 	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})

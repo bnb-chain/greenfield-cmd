@@ -93,7 +93,7 @@ func createGroup(ctx *cli.Context) error {
 		opts.InitGroupMember = addrList
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
 
 	c, cancelCreateGroup := context.WithCancel(globalContext)
@@ -154,7 +154,7 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txOpts := &types.TxOption{Mode: &broadcastMode}
 	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
 		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
