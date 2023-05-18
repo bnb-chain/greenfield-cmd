@@ -125,7 +125,7 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 #### Generate Keystore
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext .
-You need also write your password on the password-file which set by the "passwordFile" field in the config file.
+You need also write your password on the password file which set by the "passwordFile" field in the config file.
 
 Assuming that the current private key hex string is written as plaintext in the file key.txt，
 the following command can be used to generate a keystore file called key.json:
@@ -134,7 +134,7 @@ the following command can be used to generate a keystore file called key.json:
 gnfd-cmd gen-key --privKeyFile key.txt  key.json
 ```
 
-After the keystore file has been generated, you can delete the private key file which contains the  plaintext of private key.
+After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
 
 #### Account Operations
 ```
@@ -177,11 +177,11 @@ and then select the target SP to which the bucket will be created on.
 // create bucket. 
 // The primary SP address which the bucket will be created at need to be set by --primarySP
 // If the primary SP has not been not set, the cmd will choose SP0 in the SP list as the primary sp
-gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
+gnfd-cmd storage make-bucket --primarySP  gnfd://gnfd-bucket
 
 // update bucket visibility, charged quota or payment address
-(1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://test-bucket
-(2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://test-bucket
+(1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://gnfd-bucket
+(2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://gnfd-bucket
 ```
 #### Upload/Download Operations
 
@@ -191,12 +191,12 @@ gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
 the file-path should replace by the file path of local system.
 ```
-gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
+gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://gnfd-bucket/gnfd-object
 ```
 
 The tool also support create a folder on bucket by "storage make-folder" command.
 ```
-./gnfd-cmd storage make-folder  gnfd://test-bucket/test-folder
+./gnfd-cmd storage make-folder  gnfd://gnfd-bucket/test-folder
 ```
 
 If you need upload a file to the folder , you need to run "storage put" command with "-folder" flag
@@ -205,7 +205,7 @@ If you need upload a file to the folder , you need to run "storage put" command 
 
 The "storage get" command is used to download an object to local path, the file-path should replace by the file path of local system.
 ```
-gnfd-cmd storage get gnfd://bucketname/objectname  file-path 
+gnfd-cmd storage get gnfd://gnfd-bucket/gnfd-object  file-path 
 ```
 
 
@@ -234,16 +234,16 @@ gnfd-cmd storage del-group gnfd://group-name
 // The policy effect can set to be allow or deny by --effect
 
 // grant object operation permissions to a group
-gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
+gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://gnfd-bucket/gnfd-object
 
 // grant object operation permissions to an account
-gnfd-cmd permission put-obj-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
+gnfd-cmd permission put-obj-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
-gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
+gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://gnfd-bucket
 
 // grant bucket operation permissions to an account
-gnfd-cmd permission put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
+gnfd-cmd permission put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket
 
 ```
 
@@ -254,27 +254,27 @@ gnfd-cmd permission put-bucket-policy  --grantee 0x169321fC04A12c16...  --action
 gnfd-cmd storage ls-bucket 
 
 // list objects
-gnfd-cmd storage ls gnfd://bucketname
+gnfd-cmd storage ls gnfd://gnfd-bucket
 
 ```
 #### Delete Operations
 
 ```
 // delete bucekt
-gnfd-cmd storage del-bucket gnfd://bucketname
+gnfd-cmd storage del-bucket gnfd://gnfd-bucket
 
 //delete object
-gnfd-cmd storage del-obj gnfd://bucketname/objectname
+gnfd-cmd storage del-obj gnfd://gnfd-bucket/gnfd-object
 
 ```
 #### Head Operations
 
 ```
 // head bucekt
-gnfd-cmd storage head-bucket gnfd://bucket-name
+gnfd-cmd storage head-bucket gnfd://gnfd-bucket
 
 // head object
-gnfd-cmd storage head-obj gnfd://bucket-name/object-name
+gnfd-cmd storage head-obj gnfd://gnfd-bucket/gnfd-object
 
 // head Group
 gnfd-cmd group head-group gnfd://groupname
@@ -285,10 +285,10 @@ gnfd-cmd group head-group gnfd://groupname
 
 ```
 // get quota info
-gnfd-cmd payment quota-info gnfd://bucketname
+gnfd-cmd payment quota-info gnfd://gnfd-bucket
 
 // buy quota
-gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://bucket-name
+gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
 
 // get quota price of storage provider:
 gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
