@@ -193,10 +193,12 @@ the file-path should replace by the file path of local system.
 gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 ```
 
-The tool also support upload a folder by "storage make-folder" command
+The tool also support create a folder on bucket by "storage make-folder" command.
 ```
 ./gnfd-cmd storage make-folder  gnfd://test-bucket/test-folder
 ```
+
+If you need upload a file to the folder , you need to run "storage put" command with "-folder" flag
 
 (2) download object
 
