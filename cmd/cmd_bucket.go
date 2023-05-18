@@ -116,11 +116,11 @@ func cmdPutBucketPolicy() *cli.Command {
 		Usage:     "put bucket policy to group or account",
 		ArgsUsage: " BUCKET-URL",
 		Description: `
-The command is used to set the bucket policy of the granted account or group-id.
-It required to set granted account or group-id by --groupId or --grantee.
+The command is used to set the bucket policy of the grantee account or group-id.
+It required to set the grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd put-bucket-policy --groupId 111 --action delete,update gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -130,7 +130,7 @@ $ gnfd-cmd put-bucket-policy --groupId 111 --action delete,update gnfd://gnfd-bu
 			&cli.StringFlag{
 				Name:  granteeFlag,
 				Value: "",
-				Usage: "the account address to set the policy",
+				Usage: "the address hex string of the grantee",
 			},
 			&cli.StringFlag{
 				Name:  actionsFlag,
@@ -363,7 +363,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
+	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
 
 	if groupId > 0 {
 		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)

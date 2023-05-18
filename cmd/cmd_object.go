@@ -167,11 +167,11 @@ func cmdPutObjPolicy() *cli.Command {
 		Usage:     "put object policy to group or account",
 		ArgsUsage: " OBJECT-URL",
 		Description: `
-The command is used to set the object policy of the granted account or group-id.
-It required to set granted account or group-id by --groupId or --grantee.
+The command is used to set the object policy of the grantee or group-id.
+It required to set grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --action get,delete gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -181,7 +181,7 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --action get,d
 			&cli.StringFlag{
 				Name:  granteeFlag,
 				Value: "",
-				Usage: "the account address to set the policy",
+				Usage: "the address hex string of the grantee",
 			},
 			&cli.StringFlag{
 				Name:  actionsFlag,
@@ -391,7 +391,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
+	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
 	// get the latest policy from chain
 	if groupId > 0 {
