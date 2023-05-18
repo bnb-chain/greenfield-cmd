@@ -168,7 +168,7 @@ func cmdPutObjPolicy() *cli.Command {
 		ArgsUsage: " OBJECT-URL",
 		Description: `
 The command is used to set the object policy of the granted account or group-id.
-It required to set granted account or group-id by --groupId or --granter.
+It required to set granted account or group-id by --groupId or --grantee.
 
 Examples:
 $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --action get,delete gnfd://gnfd-bucket/gnfd-object`,
@@ -179,7 +179,7 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --action get,d
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlag,
+				Name:  granteeFlag,
 				Value: "",
 				Usage: "the account address to set the policy",
 			},
@@ -344,8 +344,8 @@ func putObjectPolicy(ctx *cli.Context) error {
 	}
 
 	groupId := ctx.Uint64(groupIDFlag)
-	granter := ctx.String(granterFlag)
-	principal, err := parsePrincipal(granter, groupId)
+	grantee := ctx.String(granteeFlag)
+	principal, err := parsePrincipal(grantee, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -400,7 +400,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granter)
+		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, grantee)
 		if err == nil {
 			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}

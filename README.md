@@ -236,13 +236,13 @@ gnfd-cmd storage del-group gnfd://group-name
 gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://bucket-name/object-name
 
 // grant object operation permissions to an account
-gnfd-cmd permission put-obj-policy --granter 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
+gnfd-cmd permission put-obj-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://bucket-name/object-name
 
 // grant bucket operation permissions to a group
 gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://bucket-name
 
 // grant bucket operation permissions to an account
-gnfd-cmd permission put-bucket-policy  --granter 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
+gnfd-cmd permission put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://bucket-name
 
 ```
 
