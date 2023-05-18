@@ -180,7 +180,6 @@ gnfd-cmd storage make-bucket gnfd://gnfd-bucket
 ```
 #### Upload/Download Operations
 
-
 (1) put Object
 
 The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
@@ -202,8 +201,6 @@ The "storage get" command is used to download an object to local path, the file-
 ```
 gnfd-cmd storage get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
-
-
 #### Group Operations
 
 The group commands is used to create group, update group members, delete group and query group info.
@@ -220,7 +217,6 @@ gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc81
 // delete group
 gnfd-cmd storage del-group gnfd://group-name
 ```
-
 #### Permission  Operations
 ```
 // The object policy actions can be "create", “delete”, "copy", "get" or "execute"
@@ -241,9 +237,7 @@ gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnf
 gnfd-cmd permission put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket
 
 ```
-
 #### List Operations
-
 ```
 // list buckets
 gnfd-cmd storage ls-bucket 
@@ -253,7 +247,6 @@ gnfd-cmd storage ls gnfd://gnfd-bucket
 
 ```
 #### Delete Operations
-
 ```
 // delete bucekt
 gnfd-cmd storage del-bucket gnfd://gnfd-bucket
@@ -274,10 +267,7 @@ gnfd-cmd storage head-obj gnfd://gnfd-bucket/gnfd-object
 // head Group
 gnfd-cmd group head-group gnfd://groupname
 ```
-
-
 #### Payment Operations
-
 ```
 // get quota info
 gnfd-cmd payment quota-info gnfd://gnfd-bucket
@@ -295,7 +285,6 @@ gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc57089081
 gnfd-cmd storage get-hash filepath
 
 ```
-
 #### Crosschain Operations
 ```
 // crosschain transfer some tokens to an account in BSC
@@ -310,3 +299,11 @@ gnfd-cmd crosschain mirror --resource bucket --id 1
 // mirror a object to BSC
 gnfd-cmd crosschain mirror --resource object --id 1
 ```
+
+## Reference
+
+- [Greenfield](https://github.com/bnb-chain/greenfield): the greenfield blockchain
+- [Greenfield-Contract](https://github.com/bnb-chain/greenfield-contracts): the cross chain contract for Greenfield that deployed on BSC network.
+- [Greenfield-Tendermint](https://github.com/bnb-chain/greenfield-tendermint): the consensus layer of Greenfield blockchain.
+- [Greenfield-Storage-Provider](https://github.com/bnb-chain/greenfield-storage-provider): the storage service infrastructures provided by either organizations or individuals.
+- [Greenfield-Relayer](https://github.com/bnb-chain/greenfield-relayer): the service that relay cross chain package to both chains.
