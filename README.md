@@ -170,12 +170,12 @@ and then select the target SP to which the bucket will be created on.
 
 ```
 // create bucket. 
-// The primary SP address which the bucket will be created at need to be set by --primarySP
-// If the primary SP has not been not set, the cmd will choose SP0 in the SP list as the primary sp
-gnfd-cmd storage make-bucket --primarySP  gnfd://gnfd-bucket
+// The targt primary SP address to which the bucket will be created on need to be set by --primarySP flag.
+// If the primary SP has not been not set, the cmd will choose first SP in the SP list which obtain from chain as the primary SP.
+gnfd-cmd storage make-bucket gnfd://gnfd-bucket
 
 // update bucket visibility, charged quota or payment address
-(1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://gnfd-bucket
+(1) gnfd-cmd storage update-bucket  --visibility=public-read gnfd://gnfd-bucket
 (2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://gnfd-bucket
 ```
 #### Upload/Download Operations
@@ -186,12 +186,12 @@ gnfd-cmd storage make-bucket --primarySP  gnfd://gnfd-bucket
 The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
 the file-path should replace by the file path of local system.
 ```
-gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd storage put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
 
 The tool also support create a folder on bucket by "storage make-folder" command.
 ```
-./gnfd-cmd storage make-folder  gnfd://gnfd-bucket/test-folder
+./gnfd-cmd storage make-folder gnfd://gnfd-bucket/test-folder
 ```
 
 If you need upload a file to the folder , you need to run "storage put" command with "-folder" flag
@@ -200,7 +200,7 @@ If you need upload a file to the folder , you need to run "storage put" command 
 
 The "storage get" command is used to download an object to local path, the file-path should replace by the file path of local system.
 ```
-gnfd-cmd storage get gnfd://gnfd-bucket/gnfd-object  file-path 
+gnfd-cmd storage get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
 
 
