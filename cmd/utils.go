@@ -44,8 +44,9 @@ const (
 	groupOwnerFlag   = "groupOwner"
 	headMemberFlag   = "headMember"
 	spAddressFlag    = "spAddress"
+	spEndpointFlag   = "spEndpoint"
 	groupIDFlag      = "groupId"
-	granterFlag      = "granter"
+	granteeFlag      = "grantee"
 	actionsFlag      = "actions"
 	effectFlag       = "effect"
 	userAddressFlag  = "user"
@@ -58,6 +59,8 @@ const (
 	amountFlag       = "amount"
 	resourceFlag     = "resource"
 	IdFlag           = "id"
+	objectPrefix     = "prefix"
+	folderFlag       = "folder"
 
 	defaultKeyfile      = "key.json"
 	defaultPasswordfile = "password"
@@ -188,17 +191,17 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 	return addrList, nil
 }
 
-func parsePrincipal(granter string, groupId uint64) (sdktypes.Principal, error) {
-	if granter == "" && groupId == 0 {
+func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) {
+	if grantee == "" && groupId == 0 {
 		return "", errors.New("group id or account need to be set")
 	}
 
-	if granter != "" && groupId > 0 {
+	if grantee != "" && groupId > 0 {
 		return "", errors.New("not support setting group id and account at the same time")
 	}
 
 	var principal sdktypes.Principal
-	var granterAddr sdk.AccAddress
+	var granteeAddr sdk.AccAddress
 	var err error
 	if groupId > 0 {
 		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
@@ -208,11 +211,11 @@ func parsePrincipal(granter string, groupId uint64) (sdktypes.Principal, error) 
 		}
 		principal = sdktypes.Principal(principalBytes)
 	} else {
-		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
+		granteeAddr, err = sdk.AccAddressFromHexUnsafe(grantee)
 		if err != nil {
 			return "", err
 		}
-		p := permTypes.NewPrincipalWithAccount(granterAddr)
+		p := permTypes.NewPrincipalWithAccount(granteeAddr)
 		principalBytes, err := p.Marshal()
 		if err != nil {
 			return "", err

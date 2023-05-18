@@ -27,8 +27,8 @@ The bucket name should unique and the default visibility is private.
 The command need to set the primary SP address with --primarySP.
 
 Examples:
-# Create a new bucket called gnfdBucket, visibility is public-read
-$ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
+# Create a new bucket called gnfd-bucket, visibility is public-read
+$ gnfd-cmd storage make-bucket  --visibility=public-read  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -70,8 +70,8 @@ The visibility value can be public-read, private or inherit.
 You can update only one item or multiple items at the same time.
 
 Examples:
-update visibility and the payment address of the gnfdBucket
-$ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfdBucket`,
+update visibility and the payment address of the gnfd-bucket
+$ gnfd-cmd storage update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  paymentFlag,
@@ -105,7 +105,7 @@ func cmdListBuckets() *cli.Command {
 List the bucket names and bucket ids of the user.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-bucket `,
+$ gnfd-cmd  storage ls-bucket `,
 	}
 }
 
@@ -116,11 +116,11 @@ func cmdPutBucketPolicy() *cli.Command {
 		Usage:     "put bucket policy to group or account",
 		ArgsUsage: " BUCKET-URL",
 		Description: `
-The command is used to set the bucket policy of the granted account or group-id.
-It required to set granted account or group-id by --groupId or --granter.
+The command is used to set the bucket policy of the grantee account or group-id.
+It required to set the grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -128,9 +128,9 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlag,
+				Name:  granteeFlag,
 				Value: "",
-				Usage: "the account address to set the policy",
+				Usage: "the address hex string of the grantee",
 			},
 			&cli.StringFlag{
 				Name:  actionsFlag,
@@ -316,8 +316,8 @@ func putBucketPolicy(ctx *cli.Context) error {
 	}
 
 	groupId := ctx.Uint64(groupIDFlag)
-	granter := ctx.String(granterFlag)
-	principal, err := parsePrincipal(granter, groupId)
+	grantee := ctx.String(granteeFlag)
+	principal, err := parsePrincipal(grantee, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -363,7 +363,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
+	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
 
 	if groupId > 0 {
 		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
@@ -371,7 +371,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		policyInfo, err := client.GetBucketPolicy(c, bucketName, granter)
+		policyInfo, err := client.GetBucketPolicy(c, bucketName, grantee)
 		if err == nil {
 			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}

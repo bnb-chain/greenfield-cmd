@@ -21,8 +21,8 @@ func cmdDelBucket() *cli.Command {
 Send a deleteBucket txn to greenfield chain, the bucket must be empty before deleting
 
 Examples:
-# Delete an existed bucket called gnfdBucket
-$ gnfd-cmd -c config.toml del-bucket gnfd://gnfdBucket/gnfdObject`,
+# Delete an existed bucket called gnfd-bucket
+$ gnfd-cmd storage del-bucket gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -37,8 +37,8 @@ func cmdDelObject() *cli.Command {
 Send a deleteObject txn to greenfield chain
 
 Examples:
-# Delete an existed object called gnfdObject
-$ gnfd-cmd -c config.toml del-obj gnfd://gnfdBucket/gnfdObject`,
+# Delete an existed object called gnfd-object
+$ gnfd-cmd storage del-obj gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -54,7 +54,7 @@ Send a deleteGroup txn to greenfield chain
 
 Examples:
 # Delete an existed group
-$ gnfd-cmd -c config.toml del-group gnfd://group-name`,
+$ gnfd-cmd group del-group gnfd://group-name`,
 	}
 }
 

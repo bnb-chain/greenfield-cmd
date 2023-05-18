@@ -23,7 +23,7 @@ Get the quota price of the specific sp, the command need to set the sp address w
 The command need to set the SP info with --spAddress.
 
 Examples:
-$ gnfd-cmd -c config.toml get-price --spAddress "0x.."`,
+$ gnfd-cmd payment get-price --spAddress "0x.."`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     spAddressFlag,
@@ -47,7 +47,7 @@ Update the read quota metadata of the bucket, indicating the target quota of the
 The command need to set the target quota with --chargedQuota 
 
 Examples:
-$ gnfd-cmd -c config.toml buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
+$ gnfd-cmd payment buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:     chargeQuotaFlag,
@@ -68,7 +68,7 @@ func cmdGetQuotaInfo() *cli.Command {
 Get charged quota, free quota and consumed quota info from storage provider 
 
 Examples:
-$ gnfd -c config.toml quota-info  gnfd://bucket-name`,
+$ gnfd -c config.toml payment quota-info  gnfd://bucket-name`,
 	}
 }
 

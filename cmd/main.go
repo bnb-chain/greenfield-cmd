@@ -73,6 +73,7 @@ func main() {
 					cmdListBuckets(),
 					cmdListObjects(),
 					cmdCalHash(),
+					cmdCreateFolder(),
 				},
 			},
 			{
@@ -125,6 +126,7 @@ func main() {
 				},
 			},
 			cmdListSP(),
+			cmdGetSP(),
 			cmdGenerateKey(),
 		},
 	}
