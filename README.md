@@ -155,10 +155,19 @@ gnfd-cmd payment  payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f
 gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
 
+#### Storage Provider Operations
+
+THis command is used for list the storage providers which are in service
+```
+// list storage providers
+gnfd-cmd ls-sp
+
+```
+
 #### Bucket Operations
 
 Before creating bucket, It is recommended to first run the "ls-sp" command to obtain the SP list information of Greenfield,
-and then select which SP to create the bucket in.
+and then select the target SP to which the bucket will be created on.
 
 ```
 // create bucket. 
@@ -167,29 +176,36 @@ and then select which SP to create the bucket in.
 gnfd-cmd storage make-bucket --primarySP  gnfd://bucketname
 
 // update bucket visibility, charged quota or payment address
-(1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://cmdbucket78
-(2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://cmdbucket78
+(1) gnfd-cmd storage update-bucket  --visibility=public-read  gnfd://test-bucket
+(2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://test-bucket
 ```
 #### Upload/Download Operations
 
 
 (1) put Object
 
-The put command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
+The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
 the file-path should replace by the file path of local system.
 ```
 gnfd-cmd storage put --contentType "text/xml" --visibility private file-path  gnfd://bucketname/objectname
 ```
 
+The tool also support upload a folder by "storage make-folder" command
+```
+./gnfd-cmd storage make-folder  gnfd://test-bucket/test-folder
+```
+
 (2) download object
 
-The get command is used to download an object to local path, the file-path should replace by the file path of local system.
+The "storage get" command is used to download an object to local path, the file-path should replace by the file path of local system.
 ```
 gnfd-cmd storage get gnfd://bucketname/objectname  file-path 
 ```
 
+
 #### Group Operations
 
+The group commands is used to create group, update group members, delete group and query group info.
 ```
 // create group
 gnfd-cmd group make-group gnfd://groupname
@@ -199,6 +215,9 @@ gnfd-cmd group update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc8
 
 // head group member
 gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+
+// delete group
+gnfd-cmd storage del-group gnfd://group-name
 ```
 
 #### Permission  Operations
@@ -241,8 +260,6 @@ gnfd-cmd storage del-bucket gnfd://bucketname
 //delete object
 gnfd-cmd storage del-obj gnfd://bucketname/objectname
 
-// delete group
-gnfd-cmd storage del-group gnfd://group-name
 ```
 #### Head Operations
 
@@ -258,15 +275,6 @@ gnfd-cmd group head-group gnfd://groupname
 ```
 
 
-#### Storage Provider Operations
-
-```
-// list storage providers
-gnfd-cmd ls-sp
-
-// get quota price of storage provider:
-gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
-```
 #### Payment Operations
 
 ```
@@ -275,6 +283,9 @@ gnfd-cmd payment quota-info gnfd://bucketname
 
 // buy quota
 gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://bucket-name
+
+// get quota price of storage provider:
+gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
 ```
 #### Hash Operations
 
