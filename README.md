@@ -79,11 +79,10 @@ COMMANDS:
 
 #### Get help
 
-the commands support different categories, including storage,group,bridge,bank,permission and payment 
+The commands support different categories, including storage,group,bridge,bank,permission and payment 
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
-
    storage     support the storage functions, including create/put/get/list resource
    group       support the group operation functions
    bridge      support the bridge functions, including transfer and mirror
@@ -95,14 +94,12 @@ gnfd-cmd -h
    gen-key     generate new keystore file
 ```
 
-get help of specific category commands
+The following command can be used to obtain help information for classified commands. For example, you can use "gnfd-cmd storage -h" to obtain the subcommand infos under the storage command.
 ```
 gnfd-cmd [category-name] -h
-
-for example : gnfd-cmd stroage -h
 ```
 
-get help of specific commands 
+The following command can be used to obtain help information for specific commands. For example, you can use "gnfd-cmd storage make-bucket -h" to obtain the help info of "make-bucket".
 ```
 gnfd-cmd [category-name][command-name] -h
 
