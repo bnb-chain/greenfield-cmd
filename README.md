@@ -99,11 +99,9 @@ The following command can be used to obtain help information for classified comm
 gnfd-cmd [category-name] -h
 ```
 
-The following command can be used to obtain help information for specific commands. For example, you can use "gnfd-cmd storage make-bucket -h" to obtain the help info of "make-bucket".
+The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd storage make-bucket -h" to obtain the help info of "make-bucket".
 ```
 gnfd-cmd [category-name][command-name] -h
-
-for example : gnfd-cmd stroage create-bucket -h
 ```
 ### Precautions
 
