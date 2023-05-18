@@ -91,6 +91,7 @@ gnfd-cmd -h
    permission  support object policy and bucket policy operation functions
    payment     support the payment operation functions
    ls-sp       list storage providers info
+   head-sp     get storage provider details
    gen-key     generate new keystore file
 ```
 
@@ -114,7 +115,7 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 
 2. The operator account should have enough balance before sending request to greenfield.
 
-3. The cmd tool has ability to intelligently select the correct SP with the info of bucket name and object name in command without changing config.
+3. The cmd tool has ability to intelligently select the correct SP by the info of bucket name and object name in command. Users do not need to specify the address of the SP in the command or config file.
 
 4. The "gnfd://" is a fixed prefix which representing the greenfield resources
 
