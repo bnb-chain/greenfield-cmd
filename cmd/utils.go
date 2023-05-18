@@ -44,6 +44,7 @@ const (
 	groupOwnerFlag   = "groupOwner"
 	headMemberFlag   = "headMember"
 	spAddressFlag    = "spAddress"
+	spEndpointFlag   = "spEndpoint"
 	groupIDFlag      = "groupId"
 	granterFlag      = "granter"
 	actionsFlag      = "actions"

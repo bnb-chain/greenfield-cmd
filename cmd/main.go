@@ -126,6 +126,7 @@ func main() {
 				},
 			},
 			cmdListSP(),
+			cmdGetSP(),
 			cmdGenerateKey(),
 		},
 	}

@@ -54,6 +54,7 @@ COMMANDS:
    head-obj                query object info
    head-bucket             query bucket info
    ls-sp                   list storage providers info
+   head-sp                 get storage provider details
    make-group              create a new group
    update-group            update group member
    head-group              query group info
@@ -157,11 +158,13 @@ gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604A
 
 #### Storage Provider Operations
 
-THis command is used for list the storage providers which are in service
+THis command is used to list the SP and query the information of SP.
 ```
 // list storage providers
 gnfd-cmd ls-sp
 
+// get storage provider info
+./gnfd-cmd head-sp --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
 ```
 
 #### Bucket Operations
