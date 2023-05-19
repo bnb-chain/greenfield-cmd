@@ -125,7 +125,7 @@ $ gnfd-cmd -c config.toml storage get gnfd://gnfd-bucket/gnfd-object  file.txt `
 // cmdCancelObjects cancel the object which has been created
 func cmdCancelObjects() *cli.Command {
 	return &cli.Command{
-		Name:      "cancel-create-obj",
+		Name:      "cancel",
 		Action:    cancelCreateObject,
 		Usage:     "cancel the created object",
 		ArgsUsage: "OBJECT-URL",

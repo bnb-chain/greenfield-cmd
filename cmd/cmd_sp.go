@@ -11,7 +11,7 @@ import (
 
 func cmdListSP() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-sp",
+		Name:      "ls",
 		Action:    ListSP,
 		Usage:     "list storage providers info",
 		ArgsUsage: "",
@@ -25,7 +25,7 @@ $ gnfd-cmd ls-sp `,
 
 func cmdGetSP() *cli.Command {
 	return &cli.Command{
-		Name:      "head-sp",
+		Name:      "head",
 		Action:    querySP,
 		Usage:     "get storage provider details",
 		ArgsUsage: "",

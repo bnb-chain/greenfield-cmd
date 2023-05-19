@@ -18,7 +18,7 @@ import (
 // cmdCreateBucket create a new Bucket
 func cmdCreateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "make-bucket",
+		Name:      "create",
 		Action:    createBucket,
 		Usage:     "create a new bucket",
 		ArgsUsage: "BUCKET-URL",
@@ -61,7 +61,7 @@ $ gnfd-cmd storage make-bucket  --visibility=public-read  gnfd://gnfd-bucket`,
 // cmdUpdateBucket create a new Bucket
 func cmdUpdateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "update-bucket",
+		Name:      "update",
 		Action:    updateBucket,
 		Usage:     "update bucket meta on chain",
 		ArgsUsage: "BUCKET-URL",
@@ -98,9 +98,9 @@ $ gnfd-cmd storage update-bucket --visibility=public-read --paymentAddress xx  g
 // cmdListBuckets list the bucket of the owner
 func cmdListBuckets() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-bucket",
+		Name:      "ls",
 		Action:    listBuckets,
-		Usage:     "list buckets of the user",
+		Usage:     "list buckets",
 		ArgsUsage: "",
 		Description: `
 List the bucket names and bucket ids of the user.

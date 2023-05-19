@@ -12,7 +12,7 @@ import (
 // cmdHeadObj query the object info and return
 func cmdHeadObj() *cli.Command {
 	return &cli.Command{
-		Name:      "head-obj",
+		Name:      "head",
 		Action:    headObject,
 		Usage:     "query object info",
 		ArgsUsage: "OBJECT-URL",
@@ -26,7 +26,7 @@ $ gnfd-cmd storage head-obj gnfd://bucket-name/object-name`,
 // cmdHeadBucket query the bucket info and return
 func cmdHeadBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "head-bucket",
+		Name:      "head",
 		Action:    headBucket,
 		Usage:     "query bucket info",
 		ArgsUsage: "BUCKET-URL",
@@ -40,7 +40,7 @@ $ gnfd-cmd storage head-bucket gnfd://bucket-name`,
 // cmdHeadGroup query the group info and return
 func cmdHeadGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "head-group",
+		Name:      "head",
 		Action:    headGroup,
 		Usage:     "query group info",
 		ArgsUsage: "GROUP-URL",
