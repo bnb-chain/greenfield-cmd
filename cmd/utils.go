@@ -112,7 +112,7 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 	case inheritType:
 		return storageTypes.VISIBILITY_TYPE_INHERIT, nil
 	default:
-		return storageTypes.VISIBILITY_TYPE_PRIVATE, errors.New("invalid visibility type")
+		return storageTypes.VISIBILITY_TYPE_UNSPECIFIED, errors.New("invalid visibility type")
 	}
 }
 
@@ -232,8 +232,22 @@ func getBucketAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_UPDATE_BUCKET_INFO, nil
 	case "delete":
 		return permTypes.ACTION_DELETE_BUCKET, nil
+	case "create":
+		return permTypes.ACTION_CREATE_OBJECT, nil
+	case "list":
+		return permTypes.ACTION_LIST_OBJECT, nil
+	case "deleteObj":
+		return permTypes.ACTION_DELETE_OBJECT, nil
+	case "copyObj":
+		return permTypes.ACTION_COPY_OBJECT, nil
+	case "getObj":
+		return permTypes.ACTION_GET_OBJECT, nil
+	case "executeObj":
+		return permTypes.ACTION_EXECUTE_OBJECT, nil
+	case "all":
+		return permTypes.ACTION_TYPE_ALL, nil
 	default:
-		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action of bucket policy")
+		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action :" + action)
 	}
 }
 
@@ -241,7 +255,7 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 	switch action {
 	case "create":
 		return permTypes.ACTION_CREATE_OBJECT, nil
-	case "delete":
+	case "deleteObj":
 		return permTypes.ACTION_DELETE_OBJECT, nil
 	case "copy":
 		return permTypes.ACTION_COPY_OBJECT, nil
@@ -249,8 +263,12 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_GET_OBJECT, nil
 	case "execute":
 		return permTypes.ACTION_EXECUTE_OBJECT, nil
+	case "list":
+		return permTypes.ACTION_LIST_OBJECT, nil
+	case "all":
+		return permTypes.ACTION_TYPE_ALL, nil
 	default:
-		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action of object policy")
+		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action:" + action)
 	}
 }
 

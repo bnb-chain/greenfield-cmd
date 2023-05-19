@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
@@ -136,7 +137,7 @@ $ gnfd-cmd put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-b
 				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"actions can be the following: delete, update." +
+					"actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
 					" multi actions like \"delete,update\" is supported",
 				Required: true,
 			},
@@ -342,11 +343,19 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
+
+	var resources []string
+	actionsString := ctx.String(actionsFlag)
+	if strings.Contains(actionsString, "Obj") || strings.Contains(actionsString, "all") {
+		resources = []string{
+			fmt.Sprintf("grn:o::%s/%s", bucketName, "*")}
+	}
+
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{})
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK

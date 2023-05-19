@@ -148,14 +148,6 @@ List Objects of the bucket, including object name, object id, object status
 
 Examples:
 $ gnfd-cmd storage ls gnfd://gnfd-bucket`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  userAddressFlag,
-				Value: "",
-				Usage: "indicate which user's buckets to be list, you" +
-					" don't need to specify this if you want to list your own bucket ",
-			},
-		},
 	}
 }
 
@@ -187,10 +179,11 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,
 				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"actions can be the following: create, delete, copy, get or execute." +
+					"actions can be the following: create, delete, copy, get, execute, list or all" +
 					" multi actions like \"delete,copy\" is supported",
 				Required: true,
 			},
+
 			&cli.GenericFlag{
 				Name: effectFlag,
 				Value: &CmdEnumValue{
@@ -252,6 +245,7 @@ func putObject(ctx *cli.Context) error {
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
+		fmt.Println("content type:", opts.ContentType)
 	}
 
 	visibity := ctx.Generic(visibilityFlag)
