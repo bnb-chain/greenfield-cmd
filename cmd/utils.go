@@ -255,7 +255,7 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 	switch action {
 	case "create":
 		return permTypes.ACTION_CREATE_OBJECT, nil
-	case "deleteObj":
+	case "delete":
 		return permTypes.ACTION_DELETE_OBJECT, nil
 	case "copy":
 		return permTypes.ACTION_COPY_OBJECT, nil

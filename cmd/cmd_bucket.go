@@ -138,7 +138,9 @@ $ gnfd-cmd put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-b
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
-					" multi actions like \"delete,update\" is supported",
+					", multi actions like \"delete,update\" is supported," +
+					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
+					" the deleteObj means grant the permission of delete Objects in the bucket",
 				Required: true,
 			},
 			&cli.GenericFlag{

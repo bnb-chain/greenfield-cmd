@@ -180,7 +180,7 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"actions can be the following: create, delete, copy, get, execute, list or all" +
-					" multi actions like \"delete,copy\" is supported",
+					", multi actions like \"delete,copy\" is supported",
 				Required: true,
 			},
 
