@@ -16,7 +16,7 @@ import (
 // cmdCreateBucket create a new Bucket
 func cmdCreateGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "make-group",
+		Name:      "create",
 		Action:    createGroup,
 		Usage:     "create a new group",
 		ArgsUsage: "GROUP-URL",
@@ -38,7 +38,7 @@ $ gnfd-cmd group make-group gnfd://group-name`,
 // cmdUpdateGroup add or delete group member to the group
 func cmdUpdateGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "update-group",
+		Name:      "update",
 		Action:    updateGroupMember,
 		Usage:     "update group member",
 		ArgsUsage: "GROUP-URL",
