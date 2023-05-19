@@ -77,6 +77,7 @@ var (
 	ErrObjectNotCreated = errors.New("object not created on chain")
 	ErrObjectSeal       = errors.New("object not sealed before downloading")
 	ErrGroupNotExist    = errors.New("group not exist")
+	ErrFileNotExist     = errors.New("file path not exist")
 )
 
 type CmdEnumValue struct {

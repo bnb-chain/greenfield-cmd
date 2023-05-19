@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -207,11 +208,6 @@ func putObject(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("args number should be 2"))
 	}
 
-	urlInfo := ctx.Args().Get(1)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
 	// read the local file payload
 	filePath := ctx.Args().Get(0)
 	exists, objectSize, err := pathExists(filePath)
@@ -230,6 +226,17 @@ func putObject(ctx *cli.Context) error {
 		return err
 	}
 	defer fileReader.Close()
+
+	urlInfo := ctx.Args().Get(1)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		bucketName = ParseBucket(urlInfo)
+		if bucketName == "" {
+			return toCmdErr(errors.New("fail to parse bucket name"))
+		}
+		// if the object name has not been set, set the file name as object name
+		objectName = filepath.Base(filePath)
+	}
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
@@ -405,8 +412,8 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return toCmdErr(fmt.Errorf("args number more than one"))
+	if ctx.NArg() < 1 {
+		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
 
 	urlInfo := ctx.Args().Get(0)
@@ -428,13 +435,33 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotExist)
 	}
 
-	filePath := ctx.Args().Get(1)
+	var filePath string
+	if ctx.Args().Len() == 1 {
+		filePath = objectName
+	} else if ctx.Args().Len() == 2 {
+		filePath = ctx.Args().Get(1)
+		stat, err := os.Stat(filePath)
+		if os.IsNotExist(err) {
+			return toCmdErr(ErrFileNotExist)
+		}
+
+		if err == nil {
+			if stat.IsDir() {
+				if strings.HasSuffix(filePath, "/") {
+					filePath += objectName
+				} else {
+					filePath = filePath + "/" + objectName
+				}
+			}
+		}
+	}
 
 	// If file exist, open it in append mode
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil {
 		return err
 	}
+
 	defer fd.Close()
 
 	opt := sdktypes.GetObjectOption{}

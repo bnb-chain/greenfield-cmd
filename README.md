@@ -30,7 +30,7 @@ Below is an example of the config file. The rpcAddr and chainId should be consis
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
 The configuration for passwordFile is the path to the file containing the password required to generate the keystore.
-
+Users need to set the password on passwordFile before running commands.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
@@ -187,6 +187,7 @@ the file-path should replace by the file path of local system.
 ```
 gnfd-cmd storage put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
+if the object name has not been set, the command will use the file name as object name
 
 The tool also support create a folder on bucket by "storage make-folder" command.
 ```
@@ -197,10 +198,15 @@ If you need upload a file to the folder , you need to run "storage put" command 
 
 (2) download object
 
-The "storage get" command is used to download an object to local path, the file-path should replace by the file path of local system.
+The "storage get" command is used to download an object to local path. This command will return the local file path where the object will be downloaded and the file size after successful execution.
 ```
 gnfd-cmd storage get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
+The filepath can be a specific file path, a directory path, or not set at all. 
+If not set, the command will download the content to a file with the same name as the object name in the current directory.
+
+It is supported to set the file path as a dir
+
 #### Group Operations
 
 The group commands is used to create group, update group members, delete group and query group info.
