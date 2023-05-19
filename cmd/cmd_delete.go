@@ -22,7 +22,7 @@ Send a deleteBucket txn to greenfield chain, the bucket must be empty before del
 
 Examples:
 # Delete an existed bucket called gnfd-bucket
-$ gnfd-cmd storage del-bucket gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd bucket delete gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -38,7 +38,7 @@ Send a deleteObject txn to greenfield chain
 
 Examples:
 # Delete an existed object called gnfd-object
-$ gnfd-cmd storage del-obj gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -54,7 +54,7 @@ Send a deleteGroup txn to greenfield chain
 
 Examples:
 # Delete an existed group
-$ gnfd-cmd group del-group gnfd://group-name`,
+$ gnfd-cmd group delete gnfd://group-name`,
 	}
 }
 

@@ -29,7 +29,7 @@ The command need to set the primary SP address with --primarySP.
 
 Examples:
 # Create a new bucket called gnfd-bucket, visibility is public-read
-$ gnfd-cmd storage make-bucket  --visibility=public-read  gnfd://gnfd-bucket`,
+$ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -72,7 +72,7 @@ You can update only one item or multiple items at the same time.
 
 Examples:
 update visibility and the payment address of the gnfd-bucket
-$ gnfd-cmd storage update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
+$ gnfd-cmd bucket update --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  paymentFlag,
@@ -106,7 +106,7 @@ func cmdListBuckets() *cli.Command {
 List the bucket names and bucket ids of the user.
 
 Examples:
-$ gnfd-cmd  storage ls-bucket `,
+$ gnfd-cmd bucket ls`,
 	}
 }
 

@@ -33,7 +33,7 @@ The command need to pass the file path inorder to compute hash roots on client
 
 Examples:
 # create object and upload file to storage provider, the corresponding object is gnfd-object
-$ gnfd-cmd -c config.toml storage put file.txt gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -65,7 +65,7 @@ $ gnfd-cmd -c config.toml storage put file.txt gnfd://gnfd-bucket/gnfd-object`,
 // cmdCreateFolder create a folder in bucket
 func cmdCreateFolder() *cli.Command {
 	return &cli.Command{
-		Name:      "make-folder",
+		Name:      "create-folder",
 		Action:    createFolder,
 		Usage:     "create a folder in bucket",
 		ArgsUsage: " OBJECT-URL ",
@@ -75,7 +75,7 @@ Notice that folder is actually an special object.
 
 Examples:
 # create folder called gnfd-folder
-$ gnfd-cmd storage create-folder gnfd://gnfd-bucket/gnfd-folder`,
+$ gnfd-cmd object create-folder gnfd://gnfd-bucket/gnfd-folder`,
 		Flags: []cli.Flag{
 			&cli.GenericFlag{
 				Name: visibilityFlag,
@@ -106,7 +106,7 @@ Download a specific object from storage provider
 
 Examples:
 # download an object payload to file
-$ gnfd-cmd -c config.toml storage get gnfd://gnfd-bucket/gnfd-object  file.txt `,
+$ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
 				Name:  startOffsetFlag,
@@ -133,7 +133,7 @@ func cmdCancelObjects() *cli.Command {
 Cancel the created object 
 
 Examples:
-$ gnfd-cmd storage cancel-create-obj gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object cancel  gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -148,7 +148,7 @@ func cmdListObjects() *cli.Command {
 List Objects of the bucket, including object name, object id, object status
 
 Examples:
-$ gnfd-cmd storage ls gnfd://gnfd-bucket`,
+$ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 

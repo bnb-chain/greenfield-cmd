@@ -19,7 +19,7 @@ func cmdHeadObj() *cli.Command {
 		Description: `
 send headObject txn to chain and fetch object info on greenfield chain
 Examples:
-$ gnfd-cmd storage head-obj gnfd://bucket-name/object-name`,
+$ gnfd-cmd object head gnfd://bucket-name/object-name`,
 	}
 }
 
@@ -33,7 +33,7 @@ func cmdHeadBucket() *cli.Command {
 		Description: `
 send headBucket txn to chain and fetch bucket info on greenfield chain
 Examples:
-$ gnfd-cmd storage head-bucket gnfd://bucket-name`,
+$ gnfd-cmd bucket head gnfd://bucket-name`,
 	}
 }
 
@@ -47,7 +47,7 @@ func cmdHeadGroup() *cli.Command {
 		Description: `
 send headGroup txn to chain and fetch bucketInfo on greenfield chain
 Examples:
-$ gnfd-cmd group head-group --groupOwner  gnfd://group-name`,
+$ gnfd-cmd group head --groupOwner  gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlag,

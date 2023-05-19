@@ -19,7 +19,7 @@ func cmdListSP() *cli.Command {
 List the storage provider info including the endpoint and the address on chain
 
 Examples:
-$ gnfd-cmd ls-sp `,
+$ gnfd-cmd sp ls `,
 	}
 }
 
@@ -33,7 +33,7 @@ func cmdGetSP() *cli.Command {
 Let the storage provider details information , including status, address and so on
 
 Examples:
-$ gnfd-cmd head-sp --spEndpoint https://...`,
+$ gnfd-cmd sp head --spEndpoint https://...`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     spEndpointFlag,
