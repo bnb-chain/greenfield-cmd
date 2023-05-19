@@ -4,3 +4,4 @@ SHELL := /bin/bash
 
 build:
 	go build -o ./build/gnfd-cmd cmd/*.go
+	cp config.toml  ./build
