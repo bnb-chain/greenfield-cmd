@@ -422,12 +422,11 @@ func S3MigrationObjects(ctx *cli.Context) error {
 		if err = greenfieldClient.PutObject(c, greenFieldBucketName, objectName,
 			objectSize, reader, opt); err != nil {
 			fmt.Println("put object fail:", err.Error())
-			removeTmpFiles(filePath)
 			return nil
 		}
 
 		// Check if object is sealed
-		time.Sleep(5 * time.Second)
+		time.Sleep(7 * time.Second)
 		headObjOutput, err := greenfieldClient.HeadObject(c, greenFieldBucketName, objectName)
 		if err != nil {
 			return err
@@ -436,9 +435,8 @@ func S3MigrationObjects(ctx *cli.Context) error {
 		if headObjOutput.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 			fmt.Printf("put object %s successfully \n", objectName)
 			fmt.Printf("you can find the tx on there, %s\n", fmt.Sprintf("https://greenfieldscan.com/tx/%s", txnHash))
-
-			removeTmpFiles(filePath)
-			fmt.Println("remove uploaded file:", filePath)
+			fmt.Println("Uploaded file:", filePath)
+			fmt.Println()
 		}
 
 	}
