@@ -26,3 +26,18 @@
 
 # Log files
 logs/
+
+# env
+.env
+config.toml
+
+# test
+TODO
+tests/
+downloads/
+tmp/
+
+# secret
+password.txt
+key.json
+key.txt

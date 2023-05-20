@@ -117,6 +117,10 @@ func toCmdErr(err error) error {
 	fmt.Printf("run command error: %s\n", err.Error())
 	return nil
 }
+func toCmdErrWithContext(ctx *cli.Context, err error) error {
+	fmt.Printf("run command error: %s\nhelp description)\n'''\n%s\n'''", err.Error(), ctx.Command.Description)
+	return nil
+}
 
 func genCmdErr(msg string) error {
 	fmt.Printf("run command error: %s\n", msg)
@@ -336,10 +340,12 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 }
 
 type cmdConfig struct {
-	RpcAddr      string `toml:"rpcAddr"`
-	ChainId      string `toml:"chainId"`
-	PasswordFile string `toml:"passwordFile"`
-	Host         string `toml:"host"`
+	RpcAddr            string `toml:"rpcAddr"`
+	ChainId            string `toml:"chainId"`
+	PasswordFile       string `toml:"passwordFile"`
+	Host               string `toml:"host"`
+	AwsAccessKeyId     string `toml:"awsAccessKeyId"`
+	AwsSecretAccessKey string `toml:"awsSecretAccessKey"`
 }
 
 func parseConfigFile(filePath string) (*cmdConfig, error) {

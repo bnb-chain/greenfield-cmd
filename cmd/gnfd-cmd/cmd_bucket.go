@@ -160,6 +160,7 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 // createBucket send the create bucket request to storage provider
 func createBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketNameByUrl(ctx)
+	fmt.Println(bucketName)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -182,6 +183,8 @@ func createBucket(ctx *cli.Context) error {
 		primarySpAddrStr = spInfo[0].GetOperatorAddress()
 		fmt.Println("choose primary sp:", spInfo[0].GetEndpoint())
 	}
+
+	fmt.Println(primarySpAddrStr)
 
 	opts := sdktypes.CreateBucketOptions{}
 	paymentAddrStr := ctx.String(paymentFlag)

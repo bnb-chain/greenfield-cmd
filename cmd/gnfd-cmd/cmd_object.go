@@ -13,6 +13,7 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
+	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 
@@ -96,6 +97,21 @@ Cancel the created object
 
 Examples:
 $ gnfd  cancel-create-obj gnfd://gnfdBucket/gnfdObject`,
+	}
+}
+
+// cmdCancelObjects cancel the object which has been created
+func cmdCancelAllObjects() *cli.Command {
+	return &cli.Command{
+		Name:      "cancel-all-create-obj",
+		Action:    cancelAllCreateObject,
+		Usage:     "cancel all the created object",
+		ArgsUsage: "BUCKET-URL",
+		Description: `
+Cancel all created object, created object was failed uploading on sp
+
+Examples:
+$ gnfd  cancel-all-create-obj gnfd://gnfdBucket`,
 	}
 }
 
@@ -430,7 +446,7 @@ func getObject(ctx *cli.Context) error {
 // cancelCreateObject cancel the created object on chain
 func cancelCreateObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
-		return toCmdErr(fmt.Errorf("args number should be one"))
+		return toCmdErrWithContext(ctx, fmt.Errorf("args number should be one"))
 	}
 
 	urlInfo := ctx.Args().Get(0)
@@ -461,6 +477,79 @@ func cancelCreateObject(ctx *cli.Context) error {
 	}
 
 	fmt.Println("cancel create object:", objectName)
+	return nil
+}
+
+// cancelAllCreateObject cancel the created object on chain
+func cancelAllCreateObject(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErrWithContext(ctx, fmt.Errorf("args number should be one"))
+	}
+
+	bucketName, err := getBucketNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	greenFieldClient, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelCancelCreate := context.WithCancel(globalContext)
+	defer cancelCancelCreate()
+
+	_, err = greenFieldClient.HeadBucket(c, bucketName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
+
+	listObjectsRes, err := greenFieldClient.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	if len(listObjectsRes.Objects) == 0 {
+		fmt.Println("no objects")
+		return nil
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+	// objectNameList := make([]string, 0)
+	for _, object := range listObjectsRes.Objects {
+		if object.ObjectInfo.ObjectStatus == storageTypes.OBJECT_STATUS_CREATED {
+			fmt.Printf(`
+{
+	appended object id        : %s,
+	appended object name      : %s,
+	appended object status    : %s,
+	appended object created tx: %s,
+}`,
+				object.ObjectInfo.Id,
+				object.ObjectInfo.ObjectName,
+				object.ObjectInfo.ObjectStatus,
+				object.CreateTxHash)
+			fmt.Println()
+			// objectNameList = append(objectNameList, object.ObjectInfo.ObjectName)
+
+			_, err = greenFieldClient.CancelCreateObject(c, bucketName, object.ObjectInfo.ObjectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
+			if err != nil {
+				return toCmdErr(err)
+			}
+
+			fmt.Println("cancel create object:", object.ObjectInfo.ObjectName)
+		}
+	}
+
+	// https://github.com/bnb-chain/greenfield-go-sdk/pull/74/files
+	// need to merge PR for this feature
+
+	// _, err = greenFieldClient.CancelAllCreateObject(c, bucketName, objectNameList, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
+	// if err != nil {
+	// 	return toCmdErr(err)
+	// }
+
 	return nil
 }
 
@@ -505,12 +594,43 @@ func listObjects(ctx *cli.Context) error {
 		}
 		info := object.ObjectInfo
 		if !object.Removed {
-			fmt.Printf("object name: %s , object id:%s, object status:%s \n", info.ObjectName, info.Id, info.ObjectStatus)
+			fmt.Printf(`
+{
+	object id            : %s,
+	object name          : %s,
+	object status        : %s,
+	object created tx    : %s,
+	object sealed tx     : %s,
+	object operator addr : %s,
+}`,
+				info.ObjectName,
+				info.Id,
+				info.ObjectStatus,
+				object.CreateTxHash,
+				object.SealTxHash,
+				object.Operator,
+			)
 		}
 	}
 
 	return nil
 
+}
+
+func dirExists(path string) (bool, int64, error) {
+	stat, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, 0, nil
+	}
+
+	if err == nil {
+		if stat.IsDir() {
+			return true, 0, nil
+		}
+		return false, 0, fmt.Errorf("download path must be directory")
+	}
+
+	return false, 0, err
 }
 
 func pathExists(path string) (bool, int64, error) {

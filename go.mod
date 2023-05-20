@@ -2,9 +2,12 @@ module github.com/bnb-chain/greenfield-sdk-go
 
 go 1.18
 
+replace github.com/bnb-chain/greenfield-go-sdk => ../greenfield-go-sdk
+
 require (
 	cosmossdk.io/math v1.0.0-beta.3
 	github.com/BurntSushi/toml v1.2.1
+	github.com/aws/aws-sdk-go v1.44.265
 	github.com/bnb-chain/greenfield v0.1.2
 	github.com/bnb-chain/greenfield-go-sdk v0.1.0
 	github.com/cosmos/cosmos-sdk v0.46.4
@@ -74,6 +77,7 @@ require (
 	github.com/hdevalence/ed25519consensus v0.0.0-20220222234857-c00d1f31bab3 // indirect
 	github.com/herumi/bls-eth-go-binary v0.0.0-20210917013441-d37c07cfda4e // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
