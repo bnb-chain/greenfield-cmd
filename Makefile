@@ -11,15 +11,14 @@ help: Makefile
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 .PHONY: help
 
-## build: Build celestia-node-exporter binary.
+## build: Build binary.
 build:
-	@echo "--> Building Celestia Node Exporter"
+	@echo "--> Building"
 	@go build -o build/ ${LDFLAGS} ./cmd/${PROJECTNAME}
 
-## go build -o ./build/gnfd-cmd cmd/*.go
-## install: Install the celestia-node-exporter binary into the GOBIN directory.
+## install: Install the binary into the GOBIN directory.
 install:
-	@echo "--> Installing Celestia Node Exporter"
+	@echo "--> Installing"
 	@go install ${LDFLAGS} ./cmd/${PROJECTNAME}
 
 ## clean: Clean up celestia-node-exporter binary.
