@@ -68,6 +68,13 @@ COMMANDS:
    ls-payment-account      list payment accounts of the owner
    balance                 query a account's balance
    mirror                  mirror resource to bsc
+
+   # new s3 commands
+   cancel-all-create-obj  cancel all the created object
+   s3-ls-bucket           list s3 buckets in specific region
+   s3-ls                  list objects of the aws s3 bucket in specific region
+   s3-download-objects    download all objects in the aws s3 bucket
+   s3-migration-objects   migration all object in the aws specific bucket
 ```
 
 
@@ -180,6 +187,48 @@ The get command is used to download an object to local path, the file-path shoul
 ```
 gnfd-cmd storage get gnfd://bucketname/objectname  file-path 
 ```
+
+#### Cancel Operations
+
+(1) Cancel All Objects
+
+cancel all the created object
+```
+gnfd-cmd storage cancel-all-create-obj gnfd://testbucket
+```
+
+#### S3 Operations
+
+(1) Query AWS S3 bucket list
+
+list s3 buckets in specific region
+
+```
+gnfd-cmd storage s3-ls-bucket ap-northeast-2
+```
+
+(2) Query AWS S3 Objects in specific bucket
+
+list objects of the aws s3 bucket in specific region
+```
+gnfd-cmd storage s3-ls ap-northeast-2 before-bucket
+```
+
+(3) Download AWS S3 Objects in specific bucket
+
+download all objects in the aws s3 bucket
+```
+gnfd-cmd storage s3-download-objects ap-northeast-2 before-bucket ./downloads
+```
+
+(4) Migration All Objects from AWS S3 to Greenfiled
+
+Migration all objects from in the aws s3 bucket
+```
+gnfd-cmd storage s3-migration-objects ap-northeast-2 before-bucket after-bucket
+```
+
+
 
 #### Group Operations
 

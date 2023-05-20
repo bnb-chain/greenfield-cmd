@@ -24,7 +24,7 @@ func cmdS3ListBuckets() *cli.Command {
 	return &cli.Command{
 		Name:      "s3-ls-bucket",
 		Action:    S3ListBuckets,
-		Usage:     "list buckets of the user",
+		Usage:     "list s3 buckets in specific region",
 		ArgsUsage: "BUCKET-REGION",
 		Description: `
 List the s3 buckets in specific region
@@ -39,7 +39,7 @@ func cmdS3ListObjects() *cli.Command {
 	return &cli.Command{
 		Name:      "s3-ls",
 		Action:    S3ListObjects,
-		Usage:     "list objects of the aws s3 bucket",
+		Usage:     "list objects of the aws s3 bucket in specific region",
 		ArgsUsage: "[regionName] BUCKET-NAME",
 		Description: `
 List Objects of the s3 bucket, including object name, object id, object status
@@ -69,11 +69,15 @@ $ gnfd  s3-ls ap-northeast-2 myawsbucket ./downloads`,
 // cmdPutObj return the command to finish uploading payload of the object
 func cmdS3MigrationObjects() *cli.Command {
 	return &cli.Command{
-		Name:        "s3-migration-objects",
-		Action:      S3MigrationObjects,
-		Usage:       "migration all object in the aws specific bucket",
-		ArgsUsage:   "[regionName] BUCKET-NAME GREENFIELD-BUCKET-NAME",
-		Description: "",
+		Name:      "s3-migration-objects",
+		Action:    S3MigrationObjects,
+		Usage:     "migration all object in the aws specific bucket",
+		ArgsUsage: "[regionName] BUCKET-NAME GREENFIELD-BUCKET-NAME",
+		Description: `
+Migrate All Objects in the specific aws s3 bucket
+
+Examples:
+$ gnfd-cmd storage s3-migration-objects ap-northeast-2 before-bucket after-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,

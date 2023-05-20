@@ -72,18 +72,12 @@ func main() {
 					cmdCancelObjects(),
 					cmdListObjects(),
 					cmdCalHash(),
-					// easy canceling failed objects
-					cmdCancelAllObjects(),
 					cmdListBuckets(),
-					// s3 functions
-					// 1. 특정 리전에 있는 버킷 조회
+					// new commands
+					cmdCancelAllObjects(),
 					cmdS3ListBuckets(),
-					// 1.특정 버킷 내 오브젝트 조회
 					cmdS3ListObjects(),
-					// 2. s3 파일 greenfiled 마이그레이션
-					// only download local for filtering by user
 					cmdS3DownloadObjects(),
-					// migrationing all data
 					cmdS3MigrationObjects(),
 				},
 			},
