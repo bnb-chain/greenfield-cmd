@@ -36,7 +36,7 @@ TODO
 tests/
 downloads/
 tmp/
-
+build/
 # secret
 password.txt
 key.json

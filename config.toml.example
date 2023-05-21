@@ -1,0 +1,8 @@
+# GREENFIELD CONFIGURATION
+rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
+chainId = "greenfield_5600-1"
+passwordFile = "password.txt"
+
+# AWS S3 CONFIGURATION
+awsAccessKeyId = "YOUR-AWS-ACCESS-KEY-ID"
+awsSecretAccessKey = "YOUR-AWS-SECRET-ACESS-KEY"
