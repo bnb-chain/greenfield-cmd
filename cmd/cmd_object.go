@@ -252,7 +252,6 @@ func putObject(ctx *cli.Context) error {
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
-		fmt.Println("content type:", opts.ContentType)
 	}
 
 	visibity := ctx.Generic(visibilityFlag)
