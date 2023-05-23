@@ -15,7 +15,7 @@ import (
 // cmdCreatePaymentAccount creates a payment account under the owner
 func cmdCreatePaymentAccount() *cli.Command {
 	return &cli.Command{
-		Name:      "create-payment-account",
+		Name:      "create-account",
 		Action:    CreatePaymentAccount,
 		Usage:     "create a payment account",
 		ArgsUsage: "",
@@ -24,7 +24,7 @@ Create a payment account
 
 Examples:
 # Create a payment account
-$ gnfd-cmd payment create-payment-account `,
+$ gnfd-cmd payment create-account `,
 	}
 }
 
@@ -54,7 +54,7 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 // cmdPaymentDeposit makes deposit from the owner account to the payment account
 func cmdPaymentDeposit() *cli.Command {
 	return &cli.Command{
-		Name:   "payment-deposit",
+		Name:   "deposit",
 		Action: Deposit,
 		Usage:  "deposit into stream(payment) account",
 		Description: `
@@ -62,7 +62,7 @@ Make a deposit into stream(payment) account
 
 Examples:
 # deposit a stream account
-$ gnfd-cmd payment payment-deposit --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment deposit --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,
@@ -113,7 +113,7 @@ func Deposit(ctx *cli.Context) error {
 // cmdPaymentWithdraw makes a withdrawal from payment account to owner account
 func cmdPaymentWithdraw() *cli.Command {
 	return &cli.Command{
-		Name:   "payment-withdraw",
+		Name:   "withdraw",
 		Action: Withdraw,
 		Usage:  "withdraw from stream(payment) account",
 		Description: `
@@ -121,7 +121,7 @@ Make a withdrawal from stream(payment) account
 
 Examples:
 # withdraw from a stream account back to the creator account
-$ gnfd-cmd  payment payment-withdraw --fromAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment withdraw --fromAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     fromAddressFlag,
@@ -172,7 +172,7 @@ func Withdraw(ctx *cli.Context) error {
 // cmdListPaymentAccounts list the payment accounts belong to the owner
 func cmdListPaymentAccounts() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-payment-account",
+		Name:      "ls",
 		Action:    listPaymentAccounts,
 		Usage:     "list payment accounts of the owner",
 		ArgsUsage: "address of owner",
@@ -180,7 +180,7 @@ func cmdListPaymentAccounts() *cli.Command {
 List payment accounts of the owner.
 
 Examples:
-$ gnfd-cmd payment ls-payment-account `,
+$ gnfd-cmd payment ls `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  ownerAddressFlag,

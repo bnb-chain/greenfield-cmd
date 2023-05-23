@@ -29,53 +29,13 @@ The default config file is "config.toml".
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
-The configuration for passwordFile is the path to the file containing the password required to generate the keystore.
-
+The configuration for passwordFile is the path to the file containing the password required to generate or parse the keystore.
+Users need to set the password on passwordFile before running commands.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
 passwordFile = "password.txt"
 ```
-
-### support commands
-
-```
-COMMANDS:
-   make-bucket             create a new bucket
-   update-bucket           update bucket meta on chain
-   put                     create object on chain and upload payload of object to SP
-   get                     download an object
-   put-obj-policy          put object policy to group or account
-   put-bucket-policy       put bucket policy to group or account
-   cancel-create-obj       cancel the created object
-   get-hash                compute the integrity hash of file
-   del-obj                 delete an existed object
-   del-bucket              delete an existed bucket
-   head-obj                query object info
-   head-bucket             query bucket info
-   ls-sp                   list storage providers info
-   head-sp                 get storage provider details
-   make-group              create a new group
-   update-group            update group member
-   head-group              query group info
-   head-member             check if a group member exists
-   del-group               delete an existed group
-   buy-quota               update bucket quota info
-   get-price               get the quota price of the SP
-   quota-info              get quota info of the bucket
-   ls-bucket               list buckets of the user
-   ls                      list objects of the bucket
-   transfer                transfer from your account to a dest account
-   transfer-out            transfer from greenfield to a BSC account
-   create-payment-account  create a payment account
-   payment-deposit         deposit into stream(payment) account
-   payment-withdraw        withdraw from stream(payment) account
-   ls-payment-account      list payment accounts of the owner
-   balance                 query a account's balance
-   mirror                  mirror resource to bsc
-```
-
-
 
 #### Get help
 
@@ -83,15 +43,16 @@ The commands support different categories, including storage,group,bridge,bank,p
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
-   storage     support the storage functions, including create/put/get/list resource
-   group       support the group operation functions
-   bridge      support the bridge functions, including transfer and mirror
-   bank        support the bank functions, including transfer and get balance
-   permission  support object policy and bucket policy operation functions
-   payment     support the payment operation functions
-   ls-sp       list storage providers info
-   head-sp     get storage provider details
-   gen-key     generate new keystore file
+   bucket           support the bucket operation functions, including create/update/delete/head/list
+   object           support the object operation functions, including put/get/update/delete/head/list and so on
+   group            support the group operation functions, including create/update/delete/head/head-member
+   crosschain       support the cross-chain functions, including transfer and mirror
+   bank             support the bank functions
+   policy           support object policy and bucket policy operation functions
+   payment          support the payment operation functions
+   sp               support the storage provider operation functions
+   create-keystore  create a new keystore file
+
 ```
 
 The following command can be used to obtain help information for classified commands. For example, you can use "gnfd-cmd storage -h" to obtain the subcommand infos under the storage command.
@@ -105,7 +66,7 @@ gnfd-cmd [category-name][command-name] -h
 ```
 ### Precautions
 
-1. The user need to use "gen-key" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
+1. The user need to use "create-keystore" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
 and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default file path(key.json).
 
 2. The operator account should have enough balance before sending request to greenfield.
@@ -126,7 +87,7 @@ Assuming that the current private key hex string is written as plaintext in the 
 the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
-gnfd-cmd gen-key --privKeyFile key.txt  key.json
+gnfd-cmd create-keystore --privKeyFile key.txt  key.json
 ```
 
 After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
@@ -157,10 +118,13 @@ gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604A
 THis command is used to list the SP and query the information of SP.
 ```
 // list storage providers
-gnfd-cmd ls-sp
+gnfd-cmd sp ls
 
 // get storage provider info
-./gnfd-cmd head-sp --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
+./gnfd-cmd sp head --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
+
+// get quota price of storage provider:
+gnfd-cmd sp get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
 ```
 
 #### Bucket Operations
@@ -172,11 +136,11 @@ and then select the target SP to which the bucket will be created on.
 // create bucket. 
 // The targt primary SP address to which the bucket will be created on need to be set by --primarySP flag.
 // If the primary SP has not been not set, the cmd will choose first SP in the SP list which obtain from chain as the primary SP.
-gnfd-cmd storage make-bucket gnfd://gnfd-bucket
+gnfd-cmd bucket create gnfd://gnfd-bucket
 
 // update bucket visibility, charged quota or payment address
-(1) gnfd-cmd storage update-bucket  --visibility=public-read gnfd://gnfd-bucket
-(2) gnfd-cmd storage update-bucket  --chargedQuota 50000 gnfd://gnfd-bucket
+(1) gnfd-cmd bucket update --visibility=public-read gnfd://gnfd-bucket
+(2) gnfd-cmd bucket update --chargedQuota 50000 gnfd://gnfd-bucket
 ```
 #### Upload/Download Operations
 
@@ -185,39 +149,45 @@ gnfd-cmd storage make-bucket gnfd://gnfd-bucket
 The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
 the file-path should replace by the file path of local system.
 ```
-gnfd-cmd storage put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
+if the object name has not been set, the command will use the file name as object name
 
 The tool also support create a folder on bucket by "storage make-folder" command.
 ```
-./gnfd-cmd storage make-folder gnfd://gnfd-bucket/test-folder
+./gnfd-cmd object make-folder gnfd://gnfd-bucket/test-folder
 ```
 
 If you need upload a file to the folder , you need to run "storage put" command with "-folder" flag
 
 (2) download object
 
-The "storage get" command is used to download an object to local path, the file-path should replace by the file path of local system.
+The "storage get" command is used to download an object to local path. This command will return the local file path where the object will be downloaded and the file size after successful execution.
 ```
-gnfd-cmd storage get gnfd://gnfd-bucket/gnfd-object file-path 
+gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
+The filepath can be a specific file path, a directory path, or not set at all. 
+If not set, the command will download the content to a file with the same name as the object name in the current directory.
+
+It is supported to set the file path as a dir
+
 #### Group Operations
 
 The group commands is used to create group, update group members, delete group and query group info.
 ```
 // create group
-gnfd-cmd group make-group gnfd://groupname
+gnfd-cmd group create gnfd://groupname
 
 // update group member
-gnfd-cmd group update-group --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+gnfd-cmd group update --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // head group member
 gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // delete group
-gnfd-cmd storage del-group gnfd://group-name
+gnfd-cmd group delete gnfd://group-name
 ```
-#### Permission  Operations
+#### Policy  Operations
 ```
 // The object policy actions can be "create", “delete”, "copy", "get" or "execute"
 // The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
@@ -225,34 +195,34 @@ gnfd-cmd storage del-group gnfd://group-name
 // The policy effect can set to be allow or deny by --effect
 
 // grant object operation permissions to a group
-gnfd-cmd permission put-obj-policy --groupId 128  --actions get,delete  gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd policy put-object-policy --groupId 128  --actions get,delete  gnfd://gnfd-bucket/gnfd-object
 
 // grant object operation permissions to an account
-gnfd-cmd permission put-obj-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd policy put-object-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
-gnfd-cmd permission put-bucket-policy --groupId 130 --actions delete,update  gnfd://gnfd-bucket
+gnfd-cmd policy put-bucket-policy --groupId 130 --actions delete,update  gnfd://gnfd-bucket
 
 // grant bucket operation permissions to an account
-gnfd-cmd permission put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket
+gnfd-cmd policy put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket
 
 ```
 #### List Operations
 ```
 // list buckets
-gnfd-cmd storage ls-bucket 
+gnfd-cmd bucket ls-bucket 
 
 // list objects
-gnfd-cmd storage ls gnfd://gnfd-bucket
+gnfd-cmd object ls gnfd://gnfd-bucket
 
 ```
 #### Delete Operations
 ```
 // delete bucekt
-gnfd-cmd storage del-bucket gnfd://gnfd-bucket
+gnfd-cmd bucket delete gnfd://gnfd-bucket
 
 //delete object
-gnfd-cmd storage del-obj gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object
 
 ```
 #### Head Operations
@@ -275,14 +245,12 @@ gnfd-cmd payment quota-info gnfd://gnfd-bucket
 // buy quota
 gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
 
-// get quota price of storage provider:
-gnfd-cmd payment get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
 ```
 #### Hash Operations
 
 ```
 // compute integrity hash
-gnfd-cmd storage get-hash filepath
+gnfd-cmd object get-hash file-path
 
 ```
 #### Crosschain Operations

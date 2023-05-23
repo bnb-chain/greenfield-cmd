@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ The command need to pass the file path inorder to compute hash roots on client
 
 Examples:
 # create object and upload file to storage provider, the corresponding object is gnfd-object
-$ gnfd-cmd -c config.toml storage put file.txt gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -64,7 +65,7 @@ $ gnfd-cmd -c config.toml storage put file.txt gnfd://gnfd-bucket/gnfd-object`,
 // cmdCreateFolder create a folder in bucket
 func cmdCreateFolder() *cli.Command {
 	return &cli.Command{
-		Name:      "make-folder",
+		Name:      "create-folder",
 		Action:    createFolder,
 		Usage:     "create a folder in bucket",
 		ArgsUsage: " OBJECT-URL ",
@@ -74,7 +75,7 @@ Notice that folder is actually an special object.
 
 Examples:
 # create folder called gnfd-folder
-$ gnfd-cmd storage create-folder gnfd://gnfd-bucket/gnfd-folder`,
+$ gnfd-cmd object create-folder gnfd://gnfd-bucket/gnfd-folder`,
 		Flags: []cli.Flag{
 			&cli.GenericFlag{
 				Name: visibilityFlag,
@@ -105,7 +106,7 @@ Download a specific object from storage provider
 
 Examples:
 # download an object payload to file
-$ gnfd-cmd -c config.toml storage get gnfd://gnfd-bucket/gnfd-object  file.txt `,
+$ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
 				Name:  startOffsetFlag,
@@ -124,7 +125,7 @@ $ gnfd-cmd -c config.toml storage get gnfd://gnfd-bucket/gnfd-object  file.txt `
 // cmdCancelObjects cancel the object which has been created
 func cmdCancelObjects() *cli.Command {
 	return &cli.Command{
-		Name:      "cancel-create-obj",
+		Name:      "cancel",
 		Action:    cancelCreateObject,
 		Usage:     "cancel the created object",
 		ArgsUsage: "OBJECT-URL",
@@ -132,7 +133,7 @@ func cmdCancelObjects() *cli.Command {
 Cancel the created object 
 
 Examples:
-$ gnfd-cmd storage cancel-create-obj gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object cancel  gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -147,22 +148,14 @@ func cmdListObjects() *cli.Command {
 List Objects of the bucket, including object name, object id, object status
 
 Examples:
-$ gnfd-cmd storage ls gnfd://gnfd-bucket`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  userAddressFlag,
-				Value: "",
-				Usage: "indicate which user's buckets to be list, you" +
-					" don't need to specify this if you want to list your own bucket ",
-			},
-		},
+$ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 
 // cmdPutObjPolicy
 func cmdPutObjPolicy() *cli.Command {
 	return &cli.Command{
-		Name:      "put-obj-policy",
+		Name:      "put-object-policy",
 		Action:    putObjectPolicy,
 		Usage:     "put object policy to group or account",
 		ArgsUsage: " OBJECT-URL",
@@ -187,10 +180,11 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,
 				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"actions can be the following: create, delete, copy, get or execute." +
-					" multi actions like \"delete,copy\" is supported",
+					"actions can be the following: create, delete, copy, get, execute, list or all" +
+					", multi actions like \"delete,copy\" is supported",
 				Required: true,
 			},
+
 			&cli.GenericFlag{
 				Name: effectFlag,
 				Value: &CmdEnumValue{
@@ -214,11 +208,6 @@ func putObject(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("args number should be 2"))
 	}
 
-	urlInfo := ctx.Args().Get(1)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
 	// read the local file payload
 	filePath := ctx.Args().Get(0)
 	exists, objectSize, err := pathExists(filePath)
@@ -228,7 +217,7 @@ func putObject(ctx *cli.Context) error {
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(maxFileSize) {
-		return fmt.Errorf("upload file larger than 5G ")
+		return fmt.Errorf("upload file larger than 2G ")
 	}
 
 	// Open the referenced file.
@@ -237,6 +226,17 @@ func putObject(ctx *cli.Context) error {
 		return err
 	}
 	defer fileReader.Close()
+
+	urlInfo := ctx.Args().Get(1)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		bucketName = ParseBucket(urlInfo)
+		if bucketName == "" {
+			return toCmdErr(errors.New("fail to parse bucket name"))
+		}
+		// if the object name has not been set, set the file name as object name
+		objectName = filepath.Base(filePath)
+	}
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
@@ -411,8 +411,8 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return toCmdErr(fmt.Errorf("args number more than one"))
+	if ctx.NArg() < 1 {
+		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
 
 	urlInfo := ctx.Args().Get(0)
@@ -434,13 +434,33 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotExist)
 	}
 
-	filePath := ctx.Args().Get(1)
+	var filePath string
+	if ctx.Args().Len() == 1 {
+		filePath = objectName
+	} else if ctx.Args().Len() == 2 {
+		filePath = ctx.Args().Get(1)
+		stat, err := os.Stat(filePath)
+		if os.IsNotExist(err) {
+			return toCmdErr(ErrFileNotExist)
+		}
+
+		if err == nil {
+			if stat.IsDir() {
+				if strings.HasSuffix(filePath, "/") {
+					filePath += objectName
+				} else {
+					filePath = filePath + "/" + objectName
+				}
+			}
+		}
+	}
 
 	// If file exist, open it in append mode
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil {
 		return err
 	}
+
 	defer fd.Close()
 
 	opt := sdktypes.GetObjectOption{}

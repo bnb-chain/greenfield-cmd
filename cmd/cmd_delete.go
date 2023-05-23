@@ -13,7 +13,7 @@ import (
 // cmdDelBucket delete an existed Bucket, the bucket must be empty
 func cmdDelBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "del-bucket",
+		Name:      "delete",
 		Action:    deleteBucket,
 		Usage:     "delete an existed bucket",
 		ArgsUsage: "BUCKET-URL",
@@ -22,14 +22,14 @@ Send a deleteBucket txn to greenfield chain, the bucket must be empty before del
 
 Examples:
 # Delete an existed bucket called gnfd-bucket
-$ gnfd-cmd storage del-bucket gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd bucket delete gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
 // cmdDelObject delete an existed object in bucket
 func cmdDelObject() *cli.Command {
 	return &cli.Command{
-		Name:      "del-obj",
+		Name:      "delete",
 		Action:    deleteObject,
 		Usage:     "delete an existed object",
 		ArgsUsage: "BUCKET-URL",
@@ -38,14 +38,14 @@ Send a deleteObject txn to greenfield chain
 
 Examples:
 # Delete an existed object called gnfd-object
-$ gnfd-cmd storage del-obj gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
 // cmdDelGroup delete an existed group
 func cmdDelGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "del-group",
+		Name:      "delete",
 		Action:    deleteGroup,
 		Usage:     "delete an existed group",
 		ArgsUsage: "GROUP-URL",
@@ -54,7 +54,7 @@ Send a deleteGroup txn to greenfield chain
 
 Examples:
 # Delete an existed group
-$ gnfd-cmd group del-group gnfd://group-name`,
+$ gnfd-cmd group delete gnfd://group-name`,
 	}
 }
 

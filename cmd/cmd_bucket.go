@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
@@ -17,7 +18,7 @@ import (
 // cmdCreateBucket create a new Bucket
 func cmdCreateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "make-bucket",
+		Name:      "create",
 		Action:    createBucket,
 		Usage:     "create a new bucket",
 		ArgsUsage: "BUCKET-URL",
@@ -28,7 +29,7 @@ The command need to set the primary SP address with --primarySP.
 
 Examples:
 # Create a new bucket called gnfd-bucket, visibility is public-read
-$ gnfd-cmd storage make-bucket  --visibility=public-read  gnfd://gnfd-bucket`,
+$ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -60,7 +61,7 @@ $ gnfd-cmd storage make-bucket  --visibility=public-read  gnfd://gnfd-bucket`,
 // cmdUpdateBucket create a new Bucket
 func cmdUpdateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "update-bucket",
+		Name:      "update",
 		Action:    updateBucket,
 		Usage:     "update bucket meta on chain",
 		ArgsUsage: "BUCKET-URL",
@@ -71,7 +72,7 @@ You can update only one item or multiple items at the same time.
 
 Examples:
 update visibility and the payment address of the gnfd-bucket
-$ gnfd-cmd storage update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
+$ gnfd-cmd bucket update --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  paymentFlag,
@@ -97,15 +98,15 @@ $ gnfd-cmd storage update-bucket --visibility=public-read --paymentAddress xx  g
 // cmdListBuckets list the bucket of the owner
 func cmdListBuckets() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-bucket",
+		Name:      "ls",
 		Action:    listBuckets,
-		Usage:     "list buckets of the user",
+		Usage:     "list buckets",
 		ArgsUsage: "",
 		Description: `
 List the bucket names and bucket ids of the user.
 
 Examples:
-$ gnfd-cmd  storage ls-bucket `,
+$ gnfd-cmd bucket ls`,
 	}
 }
 
@@ -136,8 +137,10 @@ $ gnfd-cmd put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-b
 				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"actions can be the following: delete, update." +
-					" multi actions like \"delete,update\" is supported",
+					"actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
+					", multi actions like \"delete,update\" is supported," +
+					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
+					" the deleteObj means grant the permission of delete Objects in the bucket",
 				Required: true,
 			},
 			&cli.GenericFlag{
@@ -342,11 +345,20 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
+
+	var resources []string
+	actionsString := ctx.String(actionsFlag)
+	// if the actions is *Object (expect createObject), set the resource to be "grn:o::bucketName/*"
+	if (strings.Contains(actionsString, "Obj") || strings.Contains(actionsString, "all")) && actionsString != "create" {
+		resources = []string{
+			fmt.Sprintf("grn:o::%s/%s", bucketName, "*")}
+	}
+
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{})
 	}
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK

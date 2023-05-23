@@ -86,6 +86,7 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 		fmt.Printf("failed to create client %s \n", err.Error())
 		return nil, err
 	}
+
 	return cli, nil
 }
 
