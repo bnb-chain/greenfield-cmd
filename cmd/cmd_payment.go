@@ -11,30 +11,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// cmdGetQuotaPrice query the quota price of the specific sp
-func cmdGetQuotaPrice() *cli.Command {
-	return &cli.Command{
-		Name:      "get-price",
-		Action:    getQuotaPrice,
-		Usage:     "get the quota price of the SP",
-		ArgsUsage: "",
-		Description: `
-Get the quota price of the specific sp, the command need to set the sp address with --spAddress
-The command need to set the SP info with --spAddress.
-
-Examples:
-$ gnfd-cmd payment get-price --spAddress "0x.."`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     spAddressFlag,
-				Value:    "",
-				Usage:    "indicate the storage provider chain address string",
-				Required: true,
-			},
-		},
-	}
-}
-
 // cmdBuyQuota buy the read quota of the bucket
 func cmdBuyQuota() *cli.Command {
 	return &cli.Command{
@@ -109,43 +85,6 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 	}
 
 	fmt.Printf("buy quota for bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
-	return nil
-}
-
-// getQuotaPrice query the quota price info of sp from greenfield chain
-func getQuotaPrice(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
-
-	spAddressStr := ctx.String(spAddressFlag)
-	if spAddressStr == "" {
-		return toCmdErr(errors.New("fail to fetch sp address"))
-	}
-
-	price, err := client.GetStoragePrice(c, spAddressStr)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	quotaPrice, err := price.ReadPrice.Float64()
-	if err != nil {
-		fmt.Println("get quota price error:", err.Error())
-		return err
-	}
-
-	storagePrice, err := price.StorePrice.Float64()
-	if err != nil {
-		fmt.Println("get storage price error:", err.Error())
-		return err
-	}
-
-	fmt.Println("get bucket read quota price:", quotaPrice, " wei/byte")
-	fmt.Println("get bucket storage price:", storagePrice, " wei/byte")
 	return nil
 }
 

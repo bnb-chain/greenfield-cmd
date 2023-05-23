@@ -103,14 +103,14 @@ func main() {
 			},
 			{
 				Name:  "bank",
-				Usage: "support the bank functions, including transfer and get balance",
+				Usage: "support the bank functions, including transfer in greenfield and query balance",
 				Subcommands: []*cli.Command{
 					cmdTransfer(),
 					cmdGetAccountBalance(),
 				},
 			},
 			{
-				Name:  "permission",
+				Name:  "policy",
 				Usage: "support object policy and bucket policy operation functions",
 				Subcommands: []*cli.Command{
 					cmdPutObjPolicy(),
@@ -127,7 +127,6 @@ func main() {
 					cmdPaymentWithdraw(),
 					cmdListPaymentAccounts(),
 					cmdBuyQuota(),
-					cmdGetQuotaPrice(),
 					cmdGetQuotaInfo(),
 				},
 			},
@@ -137,6 +136,7 @@ func main() {
 				Subcommands: []*cli.Command{
 					cmdListSP(),
 					cmdGetSP(),
+					cmdGetQuotaPrice(),
 				},
 			},
 

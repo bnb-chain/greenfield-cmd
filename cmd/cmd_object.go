@@ -155,7 +155,7 @@ $ gnfd-cmd object ls gnfd://gnfd-bucket`,
 // cmdPutObjPolicy
 func cmdPutObjPolicy() *cli.Command {
 	return &cli.Command{
-		Name:      "put-obj-policy",
+		Name:      "put-object-policy",
 		Action:    putObjectPolicy,
 		Usage:     "put object policy to group or account",
 		ArgsUsage: " OBJECT-URL",
@@ -217,7 +217,7 @@ func putObject(ctx *cli.Context) error {
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(maxFileSize) {
-		return fmt.Errorf("upload file larger than 5G ")
+		return fmt.Errorf("upload file larger than 2G ")
 	}
 
 	// Open the referenced file.
