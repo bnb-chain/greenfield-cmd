@@ -348,7 +348,8 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	var resources []string
 	actionsString := ctx.String(actionsFlag)
-	if strings.Contains(actionsString, "Obj") || strings.Contains(actionsString, "all") {
+	// if the actions is *Object (expect createObject), set the resource to be "grn:o::bucketName/*"
+	if (strings.Contains(actionsString, "Obj") || strings.Contains(actionsString, "all")) && actionsString != "create" {
 		resources = []string{
 			fmt.Sprintf("grn:o::%s/%s", bucketName, "*")}
 	}
