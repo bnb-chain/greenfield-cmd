@@ -51,7 +51,7 @@ gnfd-cmd -h
    policy           support object policy and bucket policy operation functions
    payment          support the payment operation functions
    sp               support the storage provider operation functions
-   create-keystore  create new keystore file
+   create-keystore  create a new keystore file
 
 ```
 

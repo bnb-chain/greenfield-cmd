@@ -26,11 +26,6 @@ $ gnfd-cmd create-keystore --privKeyFile key.txt  key.json `,
 				Usage:    "the private key file path which contain the origin private hex string",
 				Required: true,
 			},
-			&cli.StringFlag{
-				Name:  passwordFlag,
-				Value: "",
-				Usage: "the password file path",
-			},
 		},
 	}
 }
