@@ -624,6 +624,9 @@ func createFolder(ctx *cli.Context) error {
 
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
@@ -713,6 +716,9 @@ func getUploadInfo(ctx *cli.Context) error {
 
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
@@ -727,7 +733,7 @@ func getUploadInfo(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	fmt.Println(uploadInfo)
+	fmt.Println("uploading progress:", uploadInfo)
 	return nil
 }
 
