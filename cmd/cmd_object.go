@@ -705,7 +705,7 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("latest object visibility:%s\n", objectInfo.GetVisibility().String())
+	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectInfo.GetVisibility().String())
 	return nil
 }
 
