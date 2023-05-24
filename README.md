@@ -101,16 +101,10 @@ gnfd-cmd bank transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --
 gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
 // create a payment account
-gnfd-cmd payment create-payment-account
+gnfd-cmd payment create-account
 
-// query payments account under owner or a address with optional flag --user 
-gnfd-cmd payment ls-payment-account --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
-
-// deposit from owner's account to the payment account 
-gnfd-cmd payment  payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
-
-// witharaw from a payment account to owner's account
-gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+// list payment accounts under owner or a address with optional flag --user 
+gnfd-cmd payment ls --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 ```
 
 #### Storage Provider Operations
@@ -188,8 +182,8 @@ gnfd-cmd group delete gnfd://group-name
 ```
 #### Policy  Operations
 ```
-// The object policy action can be "create", “delete”, "copy", "get" , "execute", "list" or "all".
-// The bucket policy actions can be "update","delete", "create", "list","update", "getObj" and so on.
+// The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
+// The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
 // The actions info can be set with combined string like "create,delete" by --actions
 // The policy effect can set to be allow or deny by --effect
 
@@ -209,7 +203,7 @@ gnfd-cmd policy put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions de
 #### List Operations
 ```
 // list buckets
-gnfd-cmd bucket ls-bucket 
+gnfd-cmd bucket ls
 
 // list objects
 gnfd-cmd object ls gnfd://gnfd-bucket
@@ -228,13 +222,13 @@ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object
 
 ```
 // head bucekt
-gnfd-cmd storage head-bucket gnfd://gnfd-bucket
+gnfd-cmd bucket head gnfd://gnfd-bucket
 
 // head object
-gnfd-cmd storage head-obj gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd object head gnfd://gnfd-bucket/gnfd-object
 
 // head Group
-gnfd-cmd group head-group gnfd://groupname
+gnfd-cmd group head gnfd://groupname
 ```
 #### Payment Operations
 ```
@@ -244,6 +238,11 @@ gnfd-cmd payment quota-info gnfd://gnfd-bucket
 // buy quota
 gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
 
+// deposit from owner's account to the payment account 
+gnfd-cmd payment deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
+// witharaw from a payment account to owner's account
+gnfd-cmd payment withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
 #### Hash Operations
 
