@@ -693,10 +693,15 @@ func updateObject(ctx *cli.Context) error {
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	_, err = client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &txnOpt})
+	txnHash, err := client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &txnOpt})
 	if err != nil {
 		fmt.Println("update object visibility error:", err.Error())
 		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
 	}
 
 	objectInfo, err := client.HeadObject(c, bucketName, objectName)
@@ -730,7 +735,7 @@ func getUploadInfo(ctx *cli.Context) error {
 
 	uploadInfo, err := client.GetObjectUploadProgress(c, bucketName, objectName)
 	if err != nil {
-		return toCmdErr(ErrBucketNotExist)
+		return toCmdErr(err)
 	}
 
 	fmt.Println("uploading progress:", uploadInfo)

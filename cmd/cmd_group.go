@@ -103,6 +103,12 @@ func createGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit create group txn:" + err.Error()))
+	}
+
 	c, cancelGroup := context.WithCancel(globalContext)
 	defer cancelGroup()
 

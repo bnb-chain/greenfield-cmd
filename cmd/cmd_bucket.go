@@ -263,10 +263,15 @@ func updateBucket(ctx *cli.Context) error {
 	txnOpt := types.TxOption{Mode: &broadcastMode}
 	opts.TxOpts = &txnOpt
 
-	_, err = client.UpdateBucketInfo(c, bucketName, opts)
+	txnHash, err := client.UpdateBucketInfo(c, bucketName, opts)
 	if err != nil {
 		fmt.Println("update bucket error:", err.Error())
 		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
 	}
 
 	bucketInfo, err := client.HeadBucket(c, bucketName)
