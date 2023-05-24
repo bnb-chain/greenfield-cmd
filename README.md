@@ -87,7 +87,7 @@ You need also write your password on the password file which set by the "passwor
 Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
-gnfd-cmd create-keystore --privKeyFile key.txt  key.json
+gnfd-cmd create-keystore --privKeyFile key.txt key.json
 ```
 
 After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
