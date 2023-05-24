@@ -55,15 +55,16 @@ gnfd-cmd -h
 
 ```
 
-The following command can be used to obtain help information for classified commands. For example, you can use "gnfd-cmd object -h" to obtain the subcommand infos under the object command.
+The following command can be used to obtain help information for commands. For example, you can use "gnfd-cmd object -h" to obtain the subcommand infos under the object command.
 ```
-gnfd-cmd [category-name] -h
+gnfd-cmd [command-name] -h
 ```
 
-The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd object update -h" to obtain the help info of "update".
+The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd object update -h" to obtain the help info to update object.
 ```
-gnfd-cmd [category-name][command-name] -h
+gnfd-cmd [command-name][subcommand-name] -h
 ```
+
 ### Precautions
 
 1. The user need to use "create-keystore" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
