@@ -11,7 +11,6 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -206,9 +205,7 @@ func createBucket(ctx *cli.Context) error {
 		opts.ChargedQuota = chargedQuota
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
-
+	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddrStr, opts)
 	if err != nil {
 		return toCmdErr(err)
@@ -259,9 +256,7 @@ func updateBucket(ctx *cli.Context) error {
 		opts.ChargedQuota = &chargedQuota
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	opts.TxOpts = &txnOpt
+	opts.TxOpts = &TxnOptionWithSyncMode
 
 	txnHash, err := client.UpdateBucketInfo(c, bucketName, opts)
 	if err != nil {
@@ -366,15 +361,12 @@ func putBucketPolicy(ctx *cli.Context) error {
 		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{})
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txOpts := &types.TxOption{Mode: &broadcastMode}
-
 	c, cancelPutPolicy := context.WithCancel(globalContext)
 	defer cancelPutPolicy()
 
 	statements := []*permTypes.Statement{&statement}
 	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: txOpts})
+		sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
 
 	if err != nil {
 		return toCmdErr(err)

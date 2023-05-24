@@ -14,11 +14,13 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/BurntSushi/toml"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -71,12 +73,14 @@ const (
 )
 
 var (
-	ErrBucketNotExist   = errors.New("bucket not exist")
-	ErrObjectNotExist   = errors.New("object not exist")
-	ErrObjectNotCreated = errors.New("object not created on chain")
-	ErrObjectSeal       = errors.New("object not sealed before downloading")
-	ErrGroupNotExist    = errors.New("group not exist")
-	ErrFileNotExist     = errors.New("file path not exist")
+	ErrBucketNotExist     = errors.New("bucket not exist")
+	ErrObjectNotExist     = errors.New("object not exist")
+	ErrObjectNotCreated   = errors.New("object not created on chain")
+	ErrObjectSeal         = errors.New("object not sealed before downloading")
+	ErrGroupNotExist      = errors.New("group not exist")
+	ErrFileNotExist       = errors.New("file path not exist")
+	SyncBroadcastMode     = tx.BroadcastMode_BROADCAST_MODE_SYNC
+	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
 
 type CmdEnumValue struct {

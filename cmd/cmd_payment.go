@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/bnb-chain/greenfield/sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -74,10 +72,7 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(errors.New("target quota not set"))
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-
-	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdktypes.BuyQuotaOption{TxOpts: &txnOpt})
+	txnHash, err := client.BuyQuotaForBucket(c, bucketName, targetQuota, sdktypes.BuyQuotaOption{TxOpts: &TxnOptionWithSyncMode})
 
 	if err != nil {
 		fmt.Println("buy quota error:", err.Error())

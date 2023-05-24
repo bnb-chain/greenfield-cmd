@@ -15,8 +15,6 @@ import (
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -419,8 +417,6 @@ func putObjectPolicy(ctx *cli.Context) error {
 	} else {
 		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txOpts := &types.TxOption{Mode: &broadcastMode}
 
 	statements := []*permTypes.Statement{&statement}
 
@@ -428,7 +424,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 	defer cancelPutPolicy()
 
 	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: txOpts})
+		sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
 
 	if err != nil {
 		return toCmdErr(err)
@@ -561,10 +557,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotCreated)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-
-	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
+	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -695,9 +688,7 @@ func updateObject(ctx *cli.Context) error {
 		return typeErr
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &txnOpt})
+	txnHash, err := client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		fmt.Println("update object visibility error:", err.Error())
 		return nil

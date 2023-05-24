@@ -9,7 +9,6 @@ import (
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -93,8 +92,7 @@ func createGroup(ctx *cli.Context) error {
 		opts.InitGroupMember = addrList
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
+	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 
 	c, cancelCreateGroup := context.WithCancel(globalContext)
 	defer cancelCreateGroup()
@@ -108,9 +106,6 @@ func createGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(errors.New("failed to commit create group txn:" + err.Error()))
 	}
-
-	c, cancelGroup := context.WithCancel(globalContext)
-	defer cancelGroup()
 
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err == nil {
@@ -171,8 +166,7 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
-	txOpts := &types.TxOption{Mode: &broadcastMode}
+	txOpts := &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
 		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
