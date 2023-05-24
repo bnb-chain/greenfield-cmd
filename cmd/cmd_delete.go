@@ -89,6 +89,11 @@ func deleteBucket(ctx *cli.Context) error {
 		return nil
 	}
 
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+	}
+
 	fmt.Printf("delete bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
 	return nil
 }
@@ -126,6 +131,11 @@ func deleteObject(ctx *cli.Context) error {
 		return err
 	}
 
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+	}
+
 	fmt.Printf("delete object %s successfully, txn hash:%s \n",
 		objectName, txnHash)
 	return nil
@@ -154,6 +164,11 @@ func deleteGroup(ctx *cli.Context) error {
 	txnHash, err := client.DeleteGroup(c, groupName, sdktypes.DeleteGroupOption{TxOpts: &txnOpt})
 	if err != nil {
 		return toCmdErr(err)
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
 	}
 
 	fmt.Printf("delete group: %s successfully, txn hash: %s \n", groupName, txnHash)

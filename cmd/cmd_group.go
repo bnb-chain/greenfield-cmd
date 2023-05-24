@@ -144,8 +144,19 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(errors.New("fail to get members to update"))
 	}
 
-	addGroupMembers := strings.Split(addMembersInfo, ",")
-	removeGroupMembers := strings.Split(removeMembersInfo, ",")
+	var addGroupMembers []string
+	var removeGroupMembers []string
+	if strings.Contains(addMembersInfo, ",") {
+		addGroupMembers = strings.Split(addMembersInfo, ",")
+	} else if addMembersInfo != "" {
+		addGroupMembers = []string{addMembersInfo}
+	}
+
+	if strings.Contains(removeMembersInfo, ",") {
+		removeGroupMembers = strings.Split(removeMembersInfo, ",")
+	} else if removeMembersInfo != "" {
+		removeGroupMembers = []string{removeMembersInfo}
+	}
 
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err != nil {
@@ -168,6 +179,11 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit update group txn %s, err:%v", txnHash, err))
+	}
+
 	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)
 	return nil
 }
@@ -183,5 +199,6 @@ func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
 	if err != nil {
 		return "", toCmdErr(err)
 	}
+
 	return acc.GetAddress().String(), nil
 }

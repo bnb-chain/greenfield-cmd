@@ -164,7 +164,7 @@ The command is used to set the object policy of the grantee or group-id.
 It required to set grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd policy put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -436,6 +436,10 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
+	_, err = client.WaitForTx(c, policyTx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+	}
 	// get the latest policy from chain
 	if groupId > 0 {
 		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)

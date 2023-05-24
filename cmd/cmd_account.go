@@ -47,7 +47,7 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("create-payment-account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
+	fmt.Printf("create payment account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
 	return nil
 }
 
