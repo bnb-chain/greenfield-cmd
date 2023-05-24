@@ -690,9 +690,9 @@ func updateObject(ctx *cli.Context) error {
 
 	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
 	txnOpt := types.TxOption{Mode: &broadcastMode}
-	_, err = client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{&txnOpt})
+	_, err = client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &txnOpt})
 	if err != nil {
-		fmt.Println("update bucket error:", err.Error())
+		fmt.Println("update object visibility error:", err.Error())
 		return nil
 	}
 
@@ -702,7 +702,7 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("latest object meta on chain:\nvisibility:%s\n", objectInfo.GetVisibility().String())
+	fmt.Printf("latest object visibility:%s\n", objectInfo.GetVisibility().String())
 	return nil
 }
 
