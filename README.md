@@ -146,30 +146,29 @@ gnfd-cmd bucket create gnfd://gnfd-bucket
 
 (1) put Object
 
-The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
+The "object put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
 the file-path should replace by the file path of local system.
 ```
 gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
-if the object name has not been set, the command will use the file name as object name
+if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "-folder" flag.
+
 
 The tool also support create a folder on bucket by "storage make-folder" command.
 ```
 ./gnfd-cmd object make-folder gnfd://gnfd-bucket/test-folder
 ```
 
-If you need upload a file to the folder , you need to run "storage put" command with "-folder" flag
-
 (2) download object
 
-The "storage get" command is used to download an object to local path. This command will return the local file path where the object will be downloaded and the file size after successful execution.
+The "object get" command is used to download an object to local path. This command will return the local file path where the object will be downloaded and the file size after successful execution.
 ```
 gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
 The filepath can be a specific file path, a directory path, or not set at all. 
 If not set, the command will download the content to a file with the same name as the object name in the current directory.
 
-It is supported to set the file path as a dir
+It is supported to set the file path as a directory, the command will download the object file into the directory.
 
 #### Group Operations
 
@@ -189,8 +188,8 @@ gnfd-cmd group delete gnfd://group-name
 ```
 #### Policy  Operations
 ```
-// The object policy actions can be "create", “delete”, "copy", "get" or "execute"
-// The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
+// The object policy action can be "create", “delete”, "copy", "get" , "execute", "list" or "all".
+// The bucket policy actions can be "update","delete", "create", "list","update", "getObj" and so on.
 // The actions info can be set with combined string like "create,delete" by --actions
 // The policy effect can set to be allow or deny by --effect
 
@@ -201,7 +200,7 @@ gnfd-cmd policy put-object-policy --groupId 128  --actions get,delete  gnfd://gn
 gnfd-cmd policy put-object-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
-gnfd-cmd policy put-bucket-policy --groupId 130 --actions delete,update  gnfd://gnfd-bucket
+gnfd-cmd policy put-bucket-policy --groupId 130 --actions delete,update,createObj  gnfd://gnfd-bucket
 
 // grant bucket operation permissions to an account
 gnfd-cmd policy put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket

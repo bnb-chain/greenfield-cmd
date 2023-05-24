@@ -236,6 +236,8 @@ func getBucketAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_CREATE_OBJECT, nil
 	case "list":
 		return permTypes.ACTION_LIST_OBJECT, nil
+	case "createObj":
+		return permTypes.ACTION_CREATE_OBJECT, nil
 	case "deleteObj":
 		return permTypes.ACTION_DELETE_OBJECT, nil
 	case "copyObj":
