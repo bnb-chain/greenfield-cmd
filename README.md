@@ -115,7 +115,7 @@ THis command is used to list the SP and query the information of SP.
 gnfd-cmd sp ls
 
 // get storage provider info
-./gnfd-cmd sp head --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
+gnfd-cmd sp head --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
 
 // get quota price of storage provider:
 gnfd-cmd sp get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
@@ -148,9 +148,9 @@ gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd
 if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "-folder" flag.
 
 
-The tool also support create a folder on bucket by "storage make-folder" command.
+The tool also support create a folder on bucket by "object create-folder" command.
 ```
-./gnfd-cmd object make-folder gnfd://gnfd-bucket/test-folder
+gnfd-cmd object create-folder gnfd://gnfd-bucket/testfolder
 ```
 
 (2) download object
