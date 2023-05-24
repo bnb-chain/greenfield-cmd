@@ -30,7 +30,7 @@ Below is an example of the config file. The rpcAddr and chainId should be consis
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
 The configuration for passwordFile is the path to the file containing the password required to generate or parse the keystore.
-Users need to set the password on passwordFile before running commands.
+Users need to set the password on passwordFile before running commands and the password can be any random string.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
@@ -55,15 +55,16 @@ gnfd-cmd -h
 
 ```
 
-The following command can be used to obtain help information for classified commands. For example, you can use "gnfd-cmd storage -h" to obtain the subcommand infos under the storage command.
+The following command can be used to obtain help information for commands. For example, you can use "gnfd-cmd object -h" to obtain the subcommand infos under the object command.
 ```
-gnfd-cmd [category-name] -h
+gnfd-cmd [command-name] -h
 ```
 
-The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd storage make-bucket -h" to obtain the help info of "make-bucket".
+The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd object update -h" to obtain the help info to update object.
 ```
-gnfd-cmd [category-name][command-name] -h
+gnfd-cmd [command-name][subcommand-name] -h
 ```
+
 ### Precautions
 
 1. The user need to use "create-keystore" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
@@ -83,11 +84,10 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext .
 You need also write your password on the password file which set by the "passwordFile" field in the config file.
 
-Assuming that the current private key hex string is written as plaintext in the file key.txt，
-the following command can be used to generate a keystore file called key.json:
+Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
-gnfd-cmd create-keystore --privKeyFile key.txt  key.json
+gnfd-cmd create-keystore --privKeyFile key.txt key.json
 ```
 
 After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
@@ -101,16 +101,10 @@ gnfd-cmd bank transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --
 gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
 // create a payment account
-gnfd-cmd payment create-payment-account
+gnfd-cmd payment create-account
 
-// query payments account under owner or a address with optional flag --user 
-gnfd-cmd payment ls-payment-account --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
-
-// deposit from owner's account to the payment account 
-gnfd-cmd payment  payment-deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
-
-// witharaw from a payment account to owner's account
-gnfd-cmd payment  payment-withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+// list payment accounts under owner or a address with optional flag --user 
+gnfd-cmd payment ls --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 ```
 
 #### Storage Provider Operations
@@ -121,7 +115,7 @@ THis command is used to list the SP and query the information of SP.
 gnfd-cmd sp ls
 
 // get storage provider info
-./gnfd-cmd sp head --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
+gnfd-cmd sp head --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
 
 // get quota price of storage provider:
 gnfd-cmd sp get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
@@ -146,30 +140,27 @@ gnfd-cmd bucket create gnfd://gnfd-bucket
 
 (1) put Object
 
-The "storage put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
+The "object put" command is used to upload a file from local which is less than 2G. The bucket name and object name should be replaced with specific names and
 the file-path should replace by the file path of local system.
 ```
 gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
-if the object name has not been set, the command will use the file name as object name
+if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "-folder" flag.
 
-The tool also support create a folder on bucket by "storage make-folder" command.
-```
-./gnfd-cmd object make-folder gnfd://gnfd-bucket/test-folder
-```
 
-If you need upload a file to the folder , you need to run "storage put" command with "-folder" flag
+The tool also support create a folder on bucket by "object create-folder" command.
+```
+gnfd-cmd object create-folder gnfd://gnfd-bucket/testfolder
+```
 
 (2) download object
 
-The "storage get" command is used to download an object to local path. This command will return the local file path where the object will be downloaded and the file size after successful execution.
+The "object get" command is used to download an object to local path. This command will return the local file path where the object will be downloaded and the file size after successful execution.
 ```
 gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
 The filepath can be a specific file path, a directory path, or not set at all. 
-If not set, the command will download the content to a file with the same name as the object name in the current directory.
-
-It is supported to set the file path as a dir
+If not set, the command will download the content to a file with the same name as the object name in the current directory. If it is set as a directory, the command will download the object file into the directory.
 
 #### Group Operations
 
@@ -189,8 +180,8 @@ gnfd-cmd group delete gnfd://group-name
 ```
 #### Policy  Operations
 ```
-// The object policy actions can be "create", “delete”, "copy", "get" or "execute"
-// The bucket policy actions can be "update" or "delete"， "update" indicate the updating bucket info permission
+// The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
+// The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
 // The actions info can be set with combined string like "create,delete" by --actions
 // The policy effect can set to be allow or deny by --effect
 
@@ -201,7 +192,7 @@ gnfd-cmd policy put-object-policy --groupId 128  --actions get,delete  gnfd://gn
 gnfd-cmd policy put-object-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
-gnfd-cmd policy put-bucket-policy --groupId 130 --actions delete,update  gnfd://gnfd-bucket
+gnfd-cmd policy put-bucket-policy --groupId 130 --actions delete,update,createObj  gnfd://gnfd-bucket
 
 // grant bucket operation permissions to an account
 gnfd-cmd policy put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket
@@ -210,7 +201,7 @@ gnfd-cmd policy put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions de
 #### List Operations
 ```
 // list buckets
-gnfd-cmd bucket ls-bucket 
+gnfd-cmd bucket ls
 
 // list objects
 gnfd-cmd object ls gnfd://gnfd-bucket
@@ -229,13 +220,13 @@ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object
 
 ```
 // head bucekt
-gnfd-cmd storage head-bucket gnfd://gnfd-bucket
+gnfd-cmd bucket head gnfd://gnfd-bucket
 
 // head object
-gnfd-cmd storage head-obj gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd object head gnfd://gnfd-bucket/gnfd-object
 
 // head Group
-gnfd-cmd group head-group gnfd://groupname
+gnfd-cmd group head gnfd://groupname
 ```
 #### Payment Operations
 ```
@@ -245,6 +236,11 @@ gnfd-cmd payment quota-info gnfd://gnfd-bucket
 // buy quota
 gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
 
+// deposit from owner's account to the payment account 
+gnfd-cmd payment deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
+// witharaw from a payment account to owner's account
+gnfd-cmd payment withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
 #### Hash Operations
 

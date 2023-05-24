@@ -11,7 +11,6 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -121,7 +120,7 @@ The command is used to set the bucket policy of the grantee account or group-id.
 It required to set the grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd policy put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -206,9 +205,7 @@ func createBucket(ctx *cli.Context) error {
 		opts.ChargedQuota = chargedQuota
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
-
+	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddrStr, opts)
 	if err != nil {
 		return toCmdErr(err)
@@ -239,7 +236,7 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	opts := sdktypes.UpdateBucketOption{}
+	opts := sdktypes.UpdateBucketOptions{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		opts.PaymentAddress = paymentAddrStr
@@ -259,14 +256,17 @@ func updateBucket(ctx *cli.Context) error {
 		opts.ChargedQuota = &chargedQuota
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	opts.TxOpts = &txnOpt
+	opts.TxOpts = &TxnOptionWithSyncMode
 
-	_, err = client.UpdateBucketInfo(c, bucketName, opts)
+	txnHash, err := client.UpdateBucketInfo(c, bucketName, opts)
 	if err != nil {
 		fmt.Println("update bucket error:", err.Error())
 		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
 	}
 
 	bucketInfo, err := client.HeadBucket(c, bucketName)
@@ -361,21 +361,23 @@ func putBucketPolicy(ctx *cli.Context) error {
 		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{})
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txOpts := &types.TxOption{Mode: &broadcastMode}
-
 	c, cancelPutPolicy := context.WithCancel(globalContext)
 	defer cancelPutPolicy()
 
 	statements := []*permTypes.Statement{&statement}
 	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: txOpts})
+		sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
 
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
+
+	_, err = client.WaitForTx(c, policyTx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+	}
 
 	if groupId > 0 {
 		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)

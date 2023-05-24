@@ -14,11 +14,13 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/BurntSushi/toml"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	ethHd "github.com/evmos/ethermint/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -66,18 +68,19 @@ const (
 	defaultPasswordfile = "password"
 	privKeyFileFlag     = "privKeyFile"
 	passwordFileFlag    = "passwordfile"
-	passwordFlag        = "password"
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
 )
 
 var (
-	ErrBucketNotExist   = errors.New("bucket not exist")
-	ErrObjectNotExist   = errors.New("object not exist")
-	ErrObjectNotCreated = errors.New("object not created on chain")
-	ErrObjectSeal       = errors.New("object not sealed before downloading")
-	ErrGroupNotExist    = errors.New("group not exist")
-	ErrFileNotExist     = errors.New("file path not exist")
+	ErrBucketNotExist     = errors.New("bucket not exist")
+	ErrObjectNotExist     = errors.New("object not exist")
+	ErrObjectNotCreated   = errors.New("object not created on chain")
+	ErrObjectSeal         = errors.New("object not sealed before downloading")
+	ErrGroupNotExist      = errors.New("group not exist")
+	ErrFileNotExist       = errors.New("file path not exist")
+	SyncBroadcastMode     = tx.BroadcastMode_BROADCAST_MODE_SYNC
+	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
 
 type CmdEnumValue struct {
@@ -237,6 +240,8 @@ func getBucketAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_CREATE_OBJECT, nil
 	case "list":
 		return permTypes.ACTION_LIST_OBJECT, nil
+	case "createObj":
+		return permTypes.ACTION_CREATE_OBJECT, nil
 	case "deleteObj":
 		return permTypes.ACTION_DELETE_OBJECT, nil
 	case "copyObj":
@@ -304,7 +309,6 @@ func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
 	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
 		filepath = passwordFile
-
 	} else if config.PasswordFile != "" {
 		filepath = config.PasswordFile
 	} else {
@@ -352,7 +356,7 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 	}
 	var keyBytesArray [32]byte
 	copy(keyBytesArray[:], priBytes[:32])
-	priKey := ethHd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
+	priKey := hd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
 
 	return string(buf), sdk.AccAddress(priKey.PubKey().Address()), nil
 }

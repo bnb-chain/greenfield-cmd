@@ -15,8 +15,6 @@ import (
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -152,7 +150,7 @@ $ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 
-// cmdPutObjPolicy
+// cmdPutObjPolicy set the policy of object
 func cmdPutObjPolicy() *cli.Command {
 	return &cli.Command{
 		Name:      "put-object-policy",
@@ -164,7 +162,7 @@ The command is used to set the object policy of the grantee or group-id.
 It required to set grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd policy put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -199,6 +197,49 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,
 				Usage: "set the expire unix time stamp of the policy",
 			},
 		},
+	}
+}
+
+// cmdUpdateObject update the visibility of the object
+func cmdUpdateObject() *cli.Command {
+	return &cli.Command{
+		Name:      "update",
+		Action:    updateObject,
+		Usage:     "update object visibility",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+Update the visibility of the object.
+The visibility value can be public-read, private or inherit.
+
+Examples:
+update visibility of the gnfd-object
+$ gnfd-cmd object update --visibility=public-read  gnfd://gnfd-bucket/gnfd-object`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name: visibilityFlag,
+				Value: &CmdEnumValue{
+					Enum:    []string{publicReadType, privateType, inheritType},
+					Default: privateType,
+				},
+				Usage: "set visibility of the bucket",
+			},
+		},
+	}
+}
+
+// cmdGetUploadProgress return the uploading progress info of the object
+func cmdGetUploadProgress() *cli.Command {
+	return &cli.Command{
+		Name:      "get-progress",
+		Action:    getUploadInfo,
+		Usage:     "get the uploading progress info of object",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+The command is used to get the uploading progress info. 
+you can use this command to view the progress information during the process of uploading a file to a Storage Provider.
+
+Examples:
+$ gnfd-cmd object get-progress gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -376,8 +417,6 @@ func putObjectPolicy(ctx *cli.Context) error {
 	} else {
 		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txOpts := &types.TxOption{Mode: &broadcastMode}
 
 	statements := []*permTypes.Statement{&statement}
 
@@ -385,7 +424,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 	defer cancelPutPolicy()
 
 	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: txOpts})
+		sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
 
 	if err != nil {
 		return toCmdErr(err)
@@ -393,6 +432,10 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
+	_, err = client.WaitForTx(c, policyTx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+	}
 	// get the latest policy from chain
 	if groupId > 0 {
 		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
@@ -514,10 +557,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotCreated)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-
-	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
+	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -549,7 +589,6 @@ func listObjects(ctx *cli.Context) error {
 	}
 
 	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
-
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -590,6 +629,7 @@ func createFolder(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
+
 	c, cancelList := context.WithCancel(globalContext)
 	defer cancelList()
 
@@ -616,6 +656,84 @@ func createFolder(ctx *cli.Context) error {
 	}
 
 	fmt.Printf("create folder: %s successfully, txnHash is %s \n", objectName, txnHash)
+	return nil
+}
+
+func updateObject(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	urlInfo := ctx.Args().First()
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelUpdateObject := context.WithCancel(globalContext)
+	defer cancelUpdateObject()
+
+	visibility := ctx.Generic(visibilityFlag)
+	if visibility == "" {
+		return toCmdErr(fmt.Errorf("visibity must set to be updated"))
+	}
+
+	visibilityType, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
+	if typeErr != nil {
+		return typeErr
+	}
+
+	txnHash, err := client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &TxnOptionWithSyncMode})
+	if err != nil {
+		fmt.Println("update object visibility error:", err.Error())
+		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
+	}
+
+	objectInfo, err := client.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		// head fail, no need to print the error
+		return nil
+	}
+
+	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectInfo.GetVisibility().String())
+	return nil
+}
+
+func getUploadInfo(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be 1"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelGetUploadInfo := context.WithCancel(globalContext)
+	defer cancelGetUploadInfo()
+
+	uploadInfo, err := client.GetObjectUploadProgress(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Println("uploading progress:", uploadInfo)
 	return nil
 }
 

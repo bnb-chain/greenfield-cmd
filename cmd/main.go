@@ -80,6 +80,8 @@ func main() {
 					cmdListObjects(),
 					cmdCalHash(),
 					cmdCreateFolder(),
+					cmdUpdateObject(),
+					cmdGetUploadProgress(),
 				},
 			},
 			{

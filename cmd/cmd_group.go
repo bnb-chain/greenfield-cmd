@@ -9,7 +9,6 @@ import (
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
@@ -93,8 +92,7 @@ func createGroup(ctx *cli.Context) error {
 		opts.InitGroupMember = addrList
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
+	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 
 	c, cancelCreateGroup := context.WithCancel(globalContext)
 	defer cancelCreateGroup()
@@ -103,8 +101,11 @@ func createGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	c, cancelGroup := context.WithCancel(globalContext)
-	defer cancelGroup()
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit create group txn:" + err.Error()))
+	}
 
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err == nil {
@@ -138,8 +139,19 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(errors.New("fail to get members to update"))
 	}
 
-	addGroupMembers := strings.Split(addMembersInfo, ",")
-	removeGroupMembers := strings.Split(removeMembersInfo, ",")
+	var addGroupMembers []string
+	var removeGroupMembers []string
+	if strings.Contains(addMembersInfo, ",") {
+		addGroupMembers = strings.Split(addMembersInfo, ",")
+	} else if addMembersInfo != "" {
+		addGroupMembers = []string{addMembersInfo}
+	}
+
+	if strings.Contains(removeMembersInfo, ",") {
+		removeGroupMembers = strings.Split(removeMembersInfo, ",")
+	} else if removeMembersInfo != "" {
+		removeGroupMembers = []string{removeMembersInfo}
+	}
 
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err != nil {
@@ -154,12 +166,16 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txOpts := &types.TxOption{Mode: &broadcastMode}
+	txOpts := &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
 		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
 		return toCmdErr(err)
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit update group txn %s, err:%v", txnHash, err))
 	}
 
 	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)
@@ -177,5 +193,6 @@ func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
 	if err != nil {
 		return "", toCmdErr(err)
 	}
+
 	return acc.GetAddress().String(), nil
 }
