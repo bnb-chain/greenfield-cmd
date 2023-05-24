@@ -160,9 +160,7 @@ The "object get" command is used to download an object to local path. This comma
 gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object file-path 
 ```
 The filepath can be a specific file path, a directory path, or not set at all. 
-If not set, the command will download the content to a file with the same name as the object name in the current directory.
-
-It is supported to set the file path as a directory, the command will download the object file into the directory.
+If not set, the command will download the content to a file with the same name as the object name in the current directory. If it is set as a directory, the command will download the object file into the directory.
 
 #### Group Operations
 
