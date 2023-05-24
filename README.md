@@ -55,12 +55,12 @@ gnfd-cmd -h
 
 ```
 
-The following command can be used to obtain help information for classified commands. For example, you can use "gnfd-cmd storage -h" to obtain the subcommand infos under the storage command.
+The following command can be used to obtain help information for classified commands. For example, you can use "gnfd-cmd object -h" to obtain the subcommand infos under the object command.
 ```
 gnfd-cmd [category-name] -h
 ```
 
-The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd storage make-bucket -h" to obtain the help info of "make-bucket".
+The following command can be used to obtain help information for subcommands. For example, you can use "gnfd-cmd object update -h" to obtain the help info of "update".
 ```
 gnfd-cmd [category-name][command-name] -h
 ```
@@ -83,8 +83,7 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext .
 You need also write your password on the password file which set by the "passwordFile" field in the config file.
 
-Assuming that the current private key hex string is written as plaintext in the file key.txt，
-the following command can be used to generate a keystore file called key.json:
+Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
 gnfd-cmd create-keystore --privKeyFile key.txt  key.json
