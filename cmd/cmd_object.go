@@ -152,7 +152,7 @@ $ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 
-// cmdPutObjPolicy
+// cmdPutObjPolicy set the policy of object
 func cmdPutObjPolicy() *cli.Command {
 	return &cli.Command{
 		Name:      "put-object-policy",
@@ -202,6 +202,7 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,
 	}
 }
 
+// cmdUpdateObject update the visibility of the object
 func cmdUpdateObject() *cli.Command {
 	return &cli.Command{
 		Name:      "update",
@@ -209,12 +210,12 @@ func cmdUpdateObject() *cli.Command {
 		Usage:     "update object visibility",
 		ArgsUsage: "OBJECT-URL",
 		Description: `
-Update the visibility of the bucket.
+Update the visibility of the object.
 The visibility value can be public-read, private or inherit.
 
 Examples:
 update visibility of the gnfd-object
-$ gnfd-cmd object update --visibility=public-read  gnfd://gnfd-bucket`,
+$ gnfd-cmd object update --visibility=public-read  gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.GenericFlag{
 				Name: visibilityFlag,
@@ -225,6 +226,22 @@ $ gnfd-cmd object update --visibility=public-read  gnfd://gnfd-bucket`,
 				Usage: "set visibility of the bucket",
 			},
 		},
+	}
+}
+
+// cmdGetUploadProgress return the uploading progress info of the object
+func cmdGetUploadProgress() *cli.Command {
+	return &cli.Command{
+		Name:      "get-progress",
+		Action:    getUploadInfo,
+		Usage:     "get the uploading progress info of object",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+The command is used to get the uploading progress info. 
+you can use this command to view the progress information during the process of uploading a file to a Storage Provider.
+
+Examples:
+$ gnfd-cmd object get-progress gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -686,6 +703,31 @@ func updateObject(ctx *cli.Context) error {
 	}
 
 	fmt.Printf("latest object meta on chain:\nvisibility:%s\n", objectInfo.GetVisibility().String())
+	return nil
+}
+
+func getUploadInfo(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be 1"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelGetUploadInfo := context.WithCancel(globalContext)
+	defer cancelGetUploadInfo()
+
+	uploadInfo, err := client.GetObjectUploadProgress(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
+
+	fmt.Println(uploadInfo)
 	return nil
 }
 

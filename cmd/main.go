@@ -81,6 +81,7 @@ func main() {
 					cmdCalHash(),
 					cmdCreateFolder(),
 					cmdUpdateObject(),
+					cmdGetUploadProgress(),
 				},
 			},
 			{

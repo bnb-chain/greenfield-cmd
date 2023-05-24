@@ -30,7 +30,7 @@ Below is an example of the config file. The rpcAddr and chainId should be consis
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
 The configuration for passwordFile is the path to the file containing the password required to generate or parse the keystore.
-Users need to set the password on passwordFile before running commands.
+Users need to set the password on passwordFile before running commands and the password can be any random string.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
