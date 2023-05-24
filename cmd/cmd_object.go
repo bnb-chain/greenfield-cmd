@@ -202,6 +202,32 @@ $ gnfd-cmd -c config.toml permission put-obj-policy --groupId 111 --actions get,
 	}
 }
 
+func cmdUpdateObject() *cli.Command {
+	return &cli.Command{
+		Name:      "update",
+		Action:    updateObject,
+		Usage:     "update object visibility",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+Update the visibility of the bucket.
+The visibility value can be public-read, private or inherit.
+
+Examples:
+update visibility of the gnfd-object
+$ gnfd-cmd object update --visibility=public-read  gnfd://gnfd-bucket`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name: visibilityFlag,
+				Value: &CmdEnumValue{
+					Enum:    []string{publicReadType, privateType, inheritType},
+					Default: privateType,
+				},
+				Usage: "set visibility of the bucket",
+			},
+		},
+	}
+}
+
 // putObject upload the payload of file, finish the third stage of putObject
 func putObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
@@ -549,7 +575,6 @@ func listObjects(ctx *cli.Context) error {
 	}
 
 	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
-
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -582,14 +607,12 @@ func createFolder(ctx *cli.Context) error {
 
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
 
 	client, err := NewClient(ctx)
 	if err != nil {
 		return toCmdErr(err)
 	}
+
 	c, cancelList := context.WithCancel(globalContext)
 	defer cancelList()
 
@@ -616,6 +639,53 @@ func createFolder(ctx *cli.Context) error {
 	}
 
 	fmt.Printf("create folder: %s successfully, txnHash is %s \n", objectName, txnHash)
+	return nil
+}
+
+func updateObject(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	urlInfo := ctx.Args().First()
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelUpdateObject := context.WithCancel(globalContext)
+	defer cancelUpdateObject()
+
+	visibility := ctx.Generic(visibilityFlag)
+	if visibility == "" {
+		return toCmdErr(fmt.Errorf("visibity must set to be updated"))
+	}
+
+	visibilityType, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
+	if typeErr != nil {
+		return typeErr
+	}
+
+	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_SYNC
+	txnOpt := types.TxOption{Mode: &broadcastMode}
+	_, err = client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{&txnOpt})
+	if err != nil {
+		fmt.Println("update bucket error:", err.Error())
+		return nil
+	}
+
+	objectInfo, err := client.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		// head fail, no need to print the error
+		return nil
+	}
+
+	fmt.Printf("latest object meta on chain:\nvisibility:%s\n", objectInfo.GetVisibility().String())
 	return nil
 }
 

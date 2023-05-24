@@ -239,7 +239,7 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	opts := sdktypes.UpdateBucketOption{}
+	opts := sdktypes.UpdateBucketOptions{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		opts.PaymentAddress = paymentAddrStr
