@@ -117,7 +117,7 @@ gnfd-cmd sp ls
 // get storage provider info
 gnfd-cmd sp head https://gnfd-testnet-sp-1.nodereal.io
 
-// get quota price of storage provider:
+// get quota and storage price of storage provider:
 gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io
 ```
 
