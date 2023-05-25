@@ -12,42 +12,42 @@ import (
 // cmdHeadObj query the object info and return
 func cmdHeadObj() *cli.Command {
 	return &cli.Command{
-		Name:      "head-obj",
+		Name:      "head",
 		Action:    headObject,
 		Usage:     "query object info",
 		ArgsUsage: "OBJECT-URL",
 		Description: `
 send headObject txn to chain and fetch object info on greenfield chain
 Examples:
-$ gnfd-cmd -c config.toml head-obj gnfd://bucket-name/object-name`,
+$ gnfd-cmd object head gnfd://bucket-name/object-name`,
 	}
 }
 
 // cmdHeadBucket query the bucket info and return
 func cmdHeadBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "head-bucket",
+		Name:      "head",
 		Action:    headBucket,
 		Usage:     "query bucket info",
 		ArgsUsage: "BUCKET-URL",
 		Description: `
 send headBucket txn to chain and fetch bucket info on greenfield chain
 Examples:
-$ gnfd-cmd -c config.toml head-bucket gnfd://bucket-name`,
+$ gnfd-cmd bucket head gnfd://bucket-name`,
 	}
 }
 
 // cmdHeadGroup query the group info and return
 func cmdHeadGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "head-group",
+		Name:      "head",
 		Action:    headGroup,
 		Usage:     "query group info",
 		ArgsUsage: "GROUP-URL",
 		Description: `
 send headGroup txn to chain and fetch bucketInfo on greenfield chain
 Examples:
-$ gnfd-cmd -c config.toml head-group --groupOwner  gnfd://group-name`,
+$ gnfd-cmd group head --groupOwner  gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlag,
@@ -68,7 +68,7 @@ func cmdHeadGroupMember() *cli.Command {
 		Description: `
 send headGroupMember txn to chain and check if member is in the group
 Examples:
-$ gnfd-cmd -c config.toml head-member --headMember gnfd://group-name`,
+$ gnfd-cmd head-member --headMember gnfd://group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlag,

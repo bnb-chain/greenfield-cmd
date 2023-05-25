@@ -20,7 +20,7 @@ func cmdCalHash() *cli.Command {
 Compute the integrity hash value of the file which use same algorithm of greenfield
 
 Examples:
-$ gnfd-cmd -c config.toml get-hash /home/test.text `,
+$ gnfd-cmd object get-hash /home/test.text `,
 	}
 }
 

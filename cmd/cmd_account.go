@@ -15,7 +15,7 @@ import (
 // cmdCreatePaymentAccount creates a payment account under the owner
 func cmdCreatePaymentAccount() *cli.Command {
 	return &cli.Command{
-		Name:      "create-payment-account",
+		Name:      "create-account",
 		Action:    CreatePaymentAccount,
 		Usage:     "create a payment account",
 		ArgsUsage: "",
@@ -24,7 +24,7 @@ Create a payment account
 
 Examples:
 # Create a payment account
-$ gnfd-cmd -c config.toml create-payment-account `,
+$ gnfd-cmd payment create-account `,
 	}
 }
 
@@ -47,14 +47,14 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("create-payment-account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
+	fmt.Printf("create payment account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
 	return nil
 }
 
 // cmdPaymentDeposit makes deposit from the owner account to the payment account
 func cmdPaymentDeposit() *cli.Command {
 	return &cli.Command{
-		Name:   "payment-deposit",
+		Name:   "deposit",
 		Action: Deposit,
 		Usage:  "deposit into stream(payment) account",
 		Description: `
@@ -62,7 +62,7 @@ Make a deposit into stream(payment) account
 
 Examples:
 # deposit a stream account
-$ gnfd-cmd -c config.toml payment-deposit --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment deposit --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,
@@ -113,7 +113,7 @@ func Deposit(ctx *cli.Context) error {
 // cmdPaymentWithdraw makes a withdrawal from payment account to owner account
 func cmdPaymentWithdraw() *cli.Command {
 	return &cli.Command{
-		Name:   "payment-withdraw",
+		Name:   "withdraw",
 		Action: Withdraw,
 		Usage:  "withdraw from stream(payment) account",
 		Description: `
@@ -121,7 +121,7 @@ Make a withdrawal from stream(payment) account
 
 Examples:
 # withdraw from a stream account back to the creator account
-$ gnfd-cmd -c config.toml payment-withdraw --fromAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment withdraw --fromAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     fromAddressFlag,
@@ -172,7 +172,7 @@ func Withdraw(ctx *cli.Context) error {
 // cmdListPaymentAccounts list the payment accounts belong to the owner
 func cmdListPaymentAccounts() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-payment-account",
+		Name:      "ls",
 		Action:    listPaymentAccounts,
 		Usage:     "list payment accounts of the owner",
 		ArgsUsage: "address of owner",
@@ -180,7 +180,7 @@ func cmdListPaymentAccounts() *cli.Command {
 List payment accounts of the owner.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-payment-account `,
+$ gnfd-cmd payment ls `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  ownerAddressFlag,
@@ -244,7 +244,7 @@ func cmdGetAccountBalance() *cli.Command {
 Get the account balance, if address not specified, default to cur user's account
 
 Examples:
-$ gnfd-cmd -c config.toml balance --address 0x... `,
+$ gnfd-cmd bank balance --address 0x... `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addressFlag,
@@ -299,7 +299,7 @@ Make a transfer from your account to a dest account
 
 Examples:
 # Create a transfer
-$ gnfd-cmd -c config.toml transfer --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd bank transfer --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,

@@ -22,7 +22,7 @@ Create a cross chain transfer from Greenfield to a BSC account
 
 Examples:
 # Create a crosschain transfer
-$ gnfd-cmd -c config.toml transfer-out --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd crosschain transfer-out --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,
@@ -82,7 +82,7 @@ Mirror resource to BSC
 
 Examples:
 # Mirror a bucket
-$ gnfd-cmd -c config.toml mirror --resource bucket --id 1`,
+$ gnfd-cmd crosschain mirror --resource bucket --id 1`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     resourceFlag,

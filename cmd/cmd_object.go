@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,8 +15,6 @@ import (
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -31,8 +30,8 @@ Send createObject txn to chain and upload the payload of object to the storage p
 The command need to pass the file path inorder to compute hash roots on client
 
 Examples:
-# create object and upload file to storage provider, the corresponding object is gnfdObject
-$ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
+# create object and upload file to storage provider, the corresponding object is gnfd-object
+$ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -52,6 +51,43 @@ $ gnfd-cmd -c config.toml put file.txt gnfd://gnfdBucket/gnfdObject`,
 				},
 				Usage: "set visibility of the object",
 			},
+			&cli.StringFlag{
+				Name:  folderFlag,
+				Value: "",
+				Usage: "indicate folder in bucket to which the object will be uploaded",
+			},
+		},
+	}
+}
+
+// cmdCreateFolder create a folder in bucket
+func cmdCreateFolder() *cli.Command {
+	return &cli.Command{
+		Name:      "create-folder",
+		Action:    createFolder,
+		Usage:     "create a folder in bucket",
+		ArgsUsage: " OBJECT-URL ",
+		Description: `
+Create a folder in bucket, you can set the prefix of folder by --prefix.
+Notice that folder is actually an special object.
+
+Examples:
+# create folder called gnfd-folder
+$ gnfd-cmd object create-folder gnfd://gnfd-bucket/gnfd-folder`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name: visibilityFlag,
+				Value: &CmdEnumValue{
+					Enum:    []string{publicReadType, privateType, inheritType},
+					Default: inheritType,
+				},
+				Usage: "set visibility of the object",
+			},
+			&cli.StringFlag{
+				Name:  objectPrefix,
+				Value: "",
+				Usage: "The prefix of the folder to be created",
+			},
 		},
 	}
 }
@@ -68,7 +104,7 @@ Download a specific object from storage provider
 
 Examples:
 # download an object payload to file
-$ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
+$ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 		Flags: []cli.Flag{
 			&cli.Int64Flag{
 				Name:  startOffsetFlag,
@@ -87,7 +123,7 @@ $ gnfd -c config.toml get gnfd://gnfdBucket/gnfdObject  file.txt `,
 // cmdCancelObjects cancel the object which has been created
 func cmdCancelObjects() *cli.Command {
 	return &cli.Command{
-		Name:      "cancel-create-obj",
+		Name:      "cancel",
 		Action:    cancelCreateObject,
 		Usage:     "cancel the created object",
 		ArgsUsage: "OBJECT-URL",
@@ -95,7 +131,7 @@ func cmdCancelObjects() *cli.Command {
 Cancel the created object 
 
 Examples:
-$ gnfd  cancel-create-obj gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd object cancel  gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
@@ -110,31 +146,23 @@ func cmdListObjects() *cli.Command {
 List Objects of the bucket, including object name, object id, object status
 
 Examples:
-$ gnfd  ls  gnfd://gnfdBucket`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  userAddressFlag,
-				Value: "",
-				Usage: "indicate which user's buckets to be list, you" +
-					" don't need to specify this if you want to list your own bucket ",
-			},
-		},
+$ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 
-// cmdPutObjPolicy
+// cmdPutObjPolicy set the policy of object
 func cmdPutObjPolicy() *cli.Command {
 	return &cli.Command{
-		Name:      "put-obj-policy",
+		Name:      "put-object-policy",
 		Action:    putObjectPolicy,
 		Usage:     "put object policy to group or account",
 		ArgsUsage: " OBJECT-URL",
 		Description: `
-The command is used to set the object policy of the granted account or group-id.
-It required to set granted account or group-id by --groupId or --granter.
+The command is used to set the object policy of the grantee or group-id.
+It required to set grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd policy put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -142,18 +170,19 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlag,
+				Name:  granteeFlag,
 				Value: "",
-				Usage: "the account address to set the policy",
+				Usage: "the address hex string of the grantee",
 			},
 			&cli.StringFlag{
 				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"actions can be the following: create, delete, copy, get or execute." +
-					" multi actions like \"delete,copy\" is supported",
+					"actions can be the following: create, delete, copy, get, execute, list or all" +
+					", multi actions like \"delete,copy\" is supported",
 				Required: true,
 			},
+
 			&cli.GenericFlag{
 				Name: effectFlag,
 				Value: &CmdEnumValue{
@@ -171,17 +200,55 @@ $ gnfd-cmd -c config.toml put-obj-policy --groupId 111 --action get,delete gnfd:
 	}
 }
 
+// cmdUpdateObject update the visibility of the object
+func cmdUpdateObject() *cli.Command {
+	return &cli.Command{
+		Name:      "update",
+		Action:    updateObject,
+		Usage:     "update object visibility",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+Update the visibility of the object.
+The visibility value can be public-read, private or inherit.
+
+Examples:
+update visibility of the gnfd-object
+$ gnfd-cmd object update --visibility=public-read  gnfd://gnfd-bucket/gnfd-object`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name: visibilityFlag,
+				Value: &CmdEnumValue{
+					Enum:    []string{publicReadType, privateType, inheritType},
+					Default: privateType,
+				},
+				Usage: "set visibility of the bucket",
+			},
+		},
+	}
+}
+
+// cmdGetUploadProgress return the uploading progress info of the object
+func cmdGetUploadProgress() *cli.Command {
+	return &cli.Command{
+		Name:      "get-progress",
+		Action:    getUploadInfo,
+		Usage:     "get the uploading progress info of object",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+The command is used to get the uploading progress info. 
+you can use this command to view the progress information during the process of uploading a file to a Storage Provider.
+
+Examples:
+$ gnfd-cmd object get-progress gnfd://gnfd-bucket/gnfd-object`,
+	}
+}
+
 // putObject upload the payload of file, finish the third stage of putObject
 func putObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
 		return toCmdErr(fmt.Errorf("args number should be 2"))
 	}
 
-	urlInfo := ctx.Args().Get(1)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
 	// read the local file payload
 	filePath := ctx.Args().Get(0)
 	exists, objectSize, err := pathExists(filePath)
@@ -191,7 +258,7 @@ func putObject(ctx *cli.Context) error {
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(maxFileSize) {
-		return fmt.Errorf("upload file larger than 5G ")
+		return fmt.Errorf("upload file larger than 2G ")
 	}
 
 	// Open the referenced file.
@@ -200,6 +267,17 @@ func putObject(ctx *cli.Context) error {
 		return err
 	}
 	defer fileReader.Close()
+
+	urlInfo := ctx.Args().Get(1)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		bucketName = ParseBucket(urlInfo)
+		if bucketName == "" {
+			return toCmdErr(errors.New("fail to parse bucket name"))
+		}
+		// if the object name has not been set, set the file name as object name
+		objectName = filepath.Base(filePath)
+	}
 
 	gnfdClient, err := NewClient(ctx)
 	if err != nil {
@@ -224,6 +302,11 @@ func putObject(ctx *cli.Context) error {
 			return typeErr
 		}
 		opts.Visibility = visibityTypeVal
+	}
+
+	folderName := ctx.String(folderFlag)
+	if folderName != "" {
+		objectName = folderName + "/" + objectName
 	}
 
 	// set second sp address if provided by user
@@ -302,8 +385,8 @@ func putObjectPolicy(ctx *cli.Context) error {
 	}
 
 	groupId := ctx.Uint64(groupIDFlag)
-	granter := ctx.String(granterFlag)
-	principal, err := parsePrincipal(granter, groupId)
+	grantee := ctx.String(granteeFlag)
+	principal, err := parsePrincipal(grantee, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -334,8 +417,6 @@ func putObjectPolicy(ctx *cli.Context) error {
 	} else {
 		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
 	}
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txOpts := &types.TxOption{Mode: &broadcastMode}
 
 	statements := []*permTypes.Statement{&statement}
 
@@ -343,14 +424,18 @@ func putObjectPolicy(ctx *cli.Context) error {
 	defer cancelPutPolicy()
 
 	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: txOpts})
+		sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
 
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("put object policy %s succ, txn hash: %s\n", bucketName, policyTx)
+	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
+	_, err = client.WaitForTx(c, policyTx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+	}
 	// get the latest policy from chain
 	if groupId > 0 {
 		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
@@ -358,7 +443,7 @@ func putObjectPolicy(ctx *cli.Context) error {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, granter)
+		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, grantee)
 		if err == nil {
 			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}
@@ -369,8 +454,8 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return toCmdErr(fmt.Errorf("args number more than one"))
+	if ctx.NArg() < 1 {
+		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
 
 	urlInfo := ctx.Args().Get(0)
@@ -392,13 +477,33 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotExist)
 	}
 
-	filePath := ctx.Args().Get(1)
+	var filePath string
+	if ctx.Args().Len() == 1 {
+		filePath = objectName
+	} else if ctx.Args().Len() == 2 {
+		filePath = ctx.Args().Get(1)
+		stat, err := os.Stat(filePath)
+		if os.IsNotExist(err) {
+			return toCmdErr(ErrFileNotExist)
+		}
+
+		if err == nil {
+			if stat.IsDir() {
+				if strings.HasSuffix(filePath, "/") {
+					filePath += objectName
+				} else {
+					filePath = filePath + "/" + objectName
+				}
+			}
+		}
+	}
 
 	// If file exist, open it in append mode
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil {
 		return err
 	}
+
 	defer fd.Close()
 
 	opt := sdktypes.GetObjectOption{}
@@ -452,10 +557,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotCreated)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-
-	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &txnOpt})
+	_, err = cli.CancelCreateObject(c, bucketName, objectName, sdktypes.CancelCreateOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -487,7 +589,6 @@ func listObjects(ctx *cli.Context) error {
 	}
 
 	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
-
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -511,6 +612,129 @@ func listObjects(ctx *cli.Context) error {
 
 	return nil
 
+}
+
+func createFolder(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be 1"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelList := context.WithCancel(globalContext)
+	defer cancelList()
+
+	opts := sdktypes.CreateObjectOptions{}
+
+	visibity := ctx.Generic(visibilityFlag)
+	if visibity != "" {
+		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
+		if typeErr != nil {
+			return typeErr
+		}
+		opts.Visibility = visibityTypeVal
+	}
+
+	objectName = objectName + "/"
+	prefix := ctx.String(objectPrefix)
+	if prefix != "" {
+		objectName = prefix + "/" + objectName
+	}
+
+	txnHash, err := client.CreateFolder(c, bucketName, objectName, opts)
+	if err != nil {
+		return toCmdErr(ErrBucketNotExist)
+	}
+
+	fmt.Printf("create folder: %s successfully, txnHash is %s \n", objectName, txnHash)
+	return nil
+}
+
+func updateObject(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	urlInfo := ctx.Args().First()
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelUpdateObject := context.WithCancel(globalContext)
+	defer cancelUpdateObject()
+
+	visibility := ctx.Generic(visibilityFlag)
+	if visibility == "" {
+		return toCmdErr(fmt.Errorf("visibity must set to be updated"))
+	}
+
+	visibilityType, typeErr := getVisibilityType(fmt.Sprintf("%s", visibility))
+	if typeErr != nil {
+		return typeErr
+	}
+
+	txnHash, err := client.UpdateObjectVisibility(c, bucketName, objectName, visibilityType, sdktypes.UpdateObjectOption{TxOpts: &TxnOptionWithSyncMode})
+	if err != nil {
+		fmt.Println("update object visibility error:", err.Error())
+		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
+	}
+
+	objectInfo, err := client.HeadObject(c, bucketName, objectName)
+	if err != nil {
+		// head fail, no need to print the error
+		return nil
+	}
+
+	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectInfo.GetVisibility().String())
+	return nil
+}
+
+func getUploadInfo(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be 1"))
+	}
+
+	urlInfo := ctx.Args().Get(0)
+	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelGetUploadInfo := context.WithCancel(globalContext)
+	defer cancelGetUploadInfo()
+
+	uploadInfo, err := client.GetObjectUploadProgress(c, bucketName, objectName)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Println("uploading progress:", uploadInfo)
+	return nil
 }
 
 func pathExists(path string) (bool, int64, error) {

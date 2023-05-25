@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
 // cmdCreateBucket create a new Bucket
 func cmdCreateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "make-bucket",
+		Name:      "create",
 		Action:    createBucket,
 		Usage:     "create a new bucket",
 		ArgsUsage: "BUCKET-URL",
@@ -27,8 +27,8 @@ The bucket name should unique and the default visibility is private.
 The command need to set the primary SP address with --primarySP.
 
 Examples:
-# Create a new bucket called gnfdBucket, visibility is public-read
-$ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnfd://gnfdBucket`,
+# Create a new bucket called gnfd-bucket, visibility is public-read
+$ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -60,7 +60,7 @@ $ gnfd-cmd -c config.toml make-bucket --primarySP  --visibility=public-read  gnf
 // cmdUpdateBucket create a new Bucket
 func cmdUpdateBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "update-bucket",
+		Name:      "update",
 		Action:    updateBucket,
 		Usage:     "update bucket meta on chain",
 		ArgsUsage: "BUCKET-URL",
@@ -70,8 +70,8 @@ The visibility value can be public-read, private or inherit.
 You can update only one item or multiple items at the same time.
 
 Examples:
-update visibility and the payment address of the gnfdBucket
-$ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddress xx  gnfd://gnfdBucket`,
+update visibility and the payment address of the gnfd-bucket
+$ gnfd-cmd bucket update --visibility=public-read --paymentAddress xx  gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  paymentFlag,
@@ -97,15 +97,15 @@ $ gnfd-cmd -c config.toml update-bucket --visibility=public-read --paymentAddres
 // cmdListBuckets list the bucket of the owner
 func cmdListBuckets() *cli.Command {
 	return &cli.Command{
-		Name:      "ls-bucket",
+		Name:      "ls",
 		Action:    listBuckets,
-		Usage:     "list buckets of the user",
+		Usage:     "list buckets",
 		ArgsUsage: "",
 		Description: `
 List the bucket names and bucket ids of the user.
 
 Examples:
-$ gnfd-cmd -c config.toml ls-bucket `,
+$ gnfd-cmd bucket ls`,
 	}
 }
 
@@ -116,11 +116,11 @@ func cmdPutBucketPolicy() *cli.Command {
 		Usage:     "put bucket policy to group or account",
 		ArgsUsage: " BUCKET-URL",
 		Description: `
-The command is used to set the bucket policy of the granted account or group-id.
-It required to set granted account or group-id by --groupId or --granter.
+The command is used to set the bucket policy of the grantee account or group-id.
+It required to set the grantee account or group-id by --grantee or --groupId.
 
 Examples:
-$ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update gnfd://gnfdBucket/gnfdObject`,
+$ gnfd-cmd policy put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,
@@ -128,16 +128,18 @@ $ gnfd-cmd -c config.toml put-bucket-policy --groupId 111 --action delete,update
 				Usage: "the group id of the group",
 			},
 			&cli.StringFlag{
-				Name:  granterFlag,
+				Name:  granteeFlag,
 				Value: "",
-				Usage: "the account address to set the policy",
+				Usage: "the address hex string of the grantee",
 			},
 			&cli.StringFlag{
 				Name:  actionsFlag,
 				Value: "",
 				Usage: "set the actions of the policy," +
-					"actions can be the following: delete, update." +
-					" multi actions like \"delete,update\" is supported",
+					"actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
+					", multi actions like \"delete,update\" is supported," +
+					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
+					" the deleteObj means grant the permission of delete Objects in the bucket",
 				Required: true,
 			},
 			&cli.GenericFlag{
@@ -203,9 +205,7 @@ func createBucket(ctx *cli.Context) error {
 		opts.ChargedQuota = chargedQuota
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	opts.TxOpts = &types.TxOption{Mode: &broadcastMode}
-
+	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddrStr, opts)
 	if err != nil {
 		return toCmdErr(err)
@@ -236,7 +236,7 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	opts := sdktypes.UpdateBucketOption{}
+	opts := sdktypes.UpdateBucketOptions{}
 	paymentAddrStr := ctx.String(paymentFlag)
 	if paymentAddrStr != "" {
 		opts.PaymentAddress = paymentAddrStr
@@ -256,14 +256,17 @@ func updateBucket(ctx *cli.Context) error {
 		opts.ChargedQuota = &chargedQuota
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	opts.TxOpts = &txnOpt
+	opts.TxOpts = &TxnOptionWithSyncMode
 
-	_, err = client.UpdateBucketInfo(c, bucketName, opts)
+	txnHash, err := client.UpdateBucketInfo(c, bucketName, opts)
 	if err != nil {
 		fmt.Println("update bucket error:", err.Error())
 		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
 	}
 
 	bucketInfo, err := client.HeadBucket(c, bucketName)
@@ -316,8 +319,8 @@ func putBucketPolicy(ctx *cli.Context) error {
 	}
 
 	groupId := ctx.Uint64(groupIDFlag)
-	granter := ctx.String(granterFlag)
-	principal, err := parsePrincipal(granter, groupId)
+	grantee := ctx.String(granteeFlag)
+	principal, err := parsePrincipal(grantee, groupId)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -342,28 +345,39 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
-	if expireTime > 0 {
-		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
-	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+
+	var resources []string
+	actionsString := ctx.String(actionsFlag)
+	// if the actions is *Object (expect createObject), set the resource to be "grn:o::bucketName/*"
+	if (strings.Contains(actionsString, "Obj") || strings.Contains(actionsString, "all")) && actionsString != "create" {
+		resources = []string{
+			fmt.Sprintf("grn:o::%s/%s", bucketName, "*")}
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txOpts := &types.TxOption{Mode: &broadcastMode}
+	if expireTime > 0 {
+		tm := time.Unix(int64(expireTime), 0)
+		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+	} else {
+		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{})
+	}
 
 	c, cancelPutPolicy := context.WithCancel(globalContext)
 	defer cancelPutPolicy()
 
 	statements := []*permTypes.Statement{&statement}
 	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: txOpts})
+		sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
 
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("put bucket policy %s succ, txn hash: %s\n", bucketName, policyTx)
+	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
+
+	_, err = client.WaitForTx(c, policyTx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+	}
 
 	if groupId > 0 {
 		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
@@ -371,7 +385,7 @@ func putBucketPolicy(ctx *cli.Context) error {
 			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
 		}
 	} else {
-		policyInfo, err := client.GetBucketPolicy(c, bucketName, granter)
+		policyInfo, err := client.GetBucketPolicy(c, bucketName, grantee)
 		if err == nil {
 			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}

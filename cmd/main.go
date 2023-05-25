@@ -58,26 +58,35 @@ func main() {
 		Flags: flags,
 		Commands: []*cli.Command{
 			{
-				Name:  "storage",
-				Usage: "support the storage functions, including create/put/get/list resource",
+				Name:  "bucket",
+				Usage: "support the bucket operation functions, including create/update/delete/head/list",
 				Subcommands: []*cli.Command{
 					cmdCreateBucket(),
 					cmdUpdateBucket(),
+					cmdDelBucket(),
+					cmdHeadBucket(),
+					cmdListBuckets(),
+				},
+			},
+			{
+				Name:  "object",
+				Usage: "support the object operation functions, including put/get/update/delete/head/list and so on",
+				Subcommands: []*cli.Command{
 					cmdPutObj(),
 					cmdGetObj(),
 					cmdDelObject(),
-					cmdDelBucket(),
 					cmdHeadObj(),
-					cmdHeadBucket(),
 					cmdCancelObjects(),
-					cmdListBuckets(),
 					cmdListObjects(),
 					cmdCalHash(),
+					cmdCreateFolder(),
+					cmdUpdateObject(),
+					cmdGetUploadProgress(),
 				},
 			},
 			{
 				Name:  "group",
-				Usage: "support the group operation functions",
+				Usage: "support the group operation functions, including create/update/delete/head/head-member",
 				Subcommands: []*cli.Command{
 					cmdCreateGroup(),
 					cmdUpdateGroup(),
@@ -96,14 +105,14 @@ func main() {
 			},
 			{
 				Name:  "bank",
-				Usage: "support the bank functions, including transfer and get balance",
+				Usage: "support the bank functions, including transfer in greenfield and query balance",
 				Subcommands: []*cli.Command{
 					cmdTransfer(),
 					cmdGetAccountBalance(),
 				},
 			},
 			{
-				Name:  "permission",
+				Name:  "policy",
 				Usage: "support object policy and bucket policy operation functions",
 				Subcommands: []*cli.Command{
 					cmdPutObjPolicy(),
@@ -120,11 +129,19 @@ func main() {
 					cmdPaymentWithdraw(),
 					cmdListPaymentAccounts(),
 					cmdBuyQuota(),
-					cmdGetQuotaPrice(),
 					cmdGetQuotaInfo(),
 				},
 			},
-			cmdListSP(),
+			{
+				Name:  "sp",
+				Usage: "support the storage provider operation functions",
+				Subcommands: []*cli.Command{
+					cmdListSP(),
+					cmdGetSP(),
+					cmdGetQuotaPrice(),
+				},
+			},
+
 			cmdGenerateKey(),
 		},
 	}

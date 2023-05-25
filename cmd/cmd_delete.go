@@ -5,15 +5,13 @@ import (
 	"fmt"
 
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/bnb-chain/greenfield/sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
 // cmdDelBucket delete an existed Bucket, the bucket must be empty
 func cmdDelBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "del-bucket",
+		Name:      "delete",
 		Action:    deleteBucket,
 		Usage:     "delete an existed bucket",
 		ArgsUsage: "BUCKET-URL",
@@ -21,15 +19,15 @@ func cmdDelBucket() *cli.Command {
 Send a deleteBucket txn to greenfield chain, the bucket must be empty before deleting
 
 Examples:
-# Delete an existed bucket called gnfdBucket
-$ gnfd-cmd -c config.toml del-bucket gnfd://gnfdBucket/gnfdObject`,
+# Delete an existed bucket called gnfd-bucket
+$ gnfd-cmd bucket delete gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
 // cmdDelObject delete an existed object in bucket
 func cmdDelObject() *cli.Command {
 	return &cli.Command{
-		Name:      "del-obj",
+		Name:      "delete",
 		Action:    deleteObject,
 		Usage:     "delete an existed object",
 		ArgsUsage: "BUCKET-URL",
@@ -37,15 +35,15 @@ func cmdDelObject() *cli.Command {
 Send a deleteObject txn to greenfield chain
 
 Examples:
-# Delete an existed object called gnfdObject
-$ gnfd-cmd -c config.toml del-obj gnfd://gnfdBucket/gnfdObject`,
+# Delete an existed object called gnfd-object
+$ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
 // cmdDelGroup delete an existed group
 func cmdDelGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "del-group",
+		Name:      "delete",
 		Action:    deleteGroup,
 		Usage:     "delete an existed group",
 		ArgsUsage: "GROUP-URL",
@@ -54,7 +52,7 @@ Send a deleteGroup txn to greenfield chain
 
 Examples:
 # Delete an existed group
-$ gnfd-cmd -c config.toml del-group gnfd://group-name`,
+$ gnfd-cmd group delete gnfd://group-name`,
 	}
 }
 
@@ -81,12 +79,15 @@ func deleteBucket(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.DeleteBucket(c, bucketName, sdktypes.DeleteBucketOption{TxOpts: &txnOpt})
+	txnHash, err := client.DeleteBucket(c, bucketName, sdktypes.DeleteBucketOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		fmt.Println("delete bucket error:", err.Error())
 		return nil
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
 	}
 
 	fmt.Printf("delete bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
@@ -118,12 +119,15 @@ func deleteObject(ctx *cli.Context) error {
 		return toCmdErr(ErrObjectNotExist)
 	}
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &txnOpt})
+	txnHash, err := client.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		fmt.Println("delete object error:", err.Error())
 		return err
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
 	}
 
 	fmt.Printf("delete object %s successfully, txn hash:%s \n",
@@ -149,11 +153,14 @@ func deleteGroup(ctx *cli.Context) error {
 	c, cancelDelGroup := context.WithCancel(globalContext)
 	defer cancelDelGroup()
 
-	broadcastMode := tx.BroadcastMode_BROADCAST_MODE_BLOCK
-	txnOpt := types.TxOption{Mode: &broadcastMode}
-	txnHash, err := client.DeleteGroup(c, groupName, sdktypes.DeleteGroupOption{TxOpts: &txnOpt})
+	txnHash, err := client.DeleteGroup(c, groupName, sdktypes.DeleteGroupOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		return toCmdErr(err)
+	}
+
+	_, err = client.WaitForTx(c, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
 	}
 
 	fmt.Printf("delete group: %s successfully, txn hash: %s \n", groupName, txnHash)

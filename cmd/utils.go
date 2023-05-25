@@ -14,16 +14,18 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/BurntSushi/toml"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	ethHd "github.com/evmos/ethermint/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	maxFileSize      = 5 * 1024 * 1024 * 1024
+	maxFileSize      = 2 * 1024 * 1024 * 1024
 	maxListObjects   = 100
 	publicReadType   = "public-read"
 	privateType      = "private"
@@ -43,12 +45,10 @@ const (
 	removeMemberFlag = "removeMembers"
 	groupOwnerFlag   = "groupOwner"
 	headMemberFlag   = "headMember"
-	spAddressFlag    = "spAddress"
 	groupIDFlag      = "groupId"
-	granterFlag      = "granter"
+	granteeFlag      = "grantee"
 	actionsFlag      = "actions"
 	effectFlag       = "effect"
-	userAddressFlag  = "user"
 	expireTimeFlag   = "expire"
 
 	ownerAddressFlag = "owner"
@@ -58,22 +58,26 @@ const (
 	amountFlag       = "amount"
 	resourceFlag     = "resource"
 	IdFlag           = "id"
+	objectPrefix     = "prefix"
+	folderFlag       = "folder"
 
 	defaultKeyfile      = "key.json"
 	defaultPasswordfile = "password"
 	privKeyFileFlag     = "privKeyFile"
 	passwordFileFlag    = "passwordfile"
-	passwordFlag        = "password"
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
 )
 
 var (
-	ErrBucketNotExist   = errors.New("bucket not exist")
-	ErrObjectNotExist   = errors.New("object not exist")
-	ErrObjectNotCreated = errors.New("object not created on chain")
-	ErrObjectSeal       = errors.New("object not sealed before downloading")
-	ErrGroupNotExist    = errors.New("group not exist")
+	ErrBucketNotExist     = errors.New("bucket not exist")
+	ErrObjectNotExist     = errors.New("object not exist")
+	ErrObjectNotCreated   = errors.New("object not created on chain")
+	ErrObjectSeal         = errors.New("object not sealed before downloading")
+	ErrGroupNotExist      = errors.New("group not exist")
+	ErrFileNotExist       = errors.New("file path not exist")
+	SyncBroadcastMode     = tx.BroadcastMode_BROADCAST_MODE_SYNC
+	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
 
 type CmdEnumValue struct {
@@ -109,7 +113,7 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 	case inheritType:
 		return storageTypes.VISIBILITY_TYPE_INHERIT, nil
 	default:
-		return storageTypes.VISIBILITY_TYPE_PRIVATE, errors.New("invalid visibility type")
+		return storageTypes.VISIBILITY_TYPE_UNSPECIFIED, errors.New("invalid visibility type")
 	}
 }
 
@@ -188,17 +192,17 @@ func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
 	return addrList, nil
 }
 
-func parsePrincipal(granter string, groupId uint64) (sdktypes.Principal, error) {
-	if granter == "" && groupId == 0 {
+func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) {
+	if grantee == "" && groupId == 0 {
 		return "", errors.New("group id or account need to be set")
 	}
 
-	if granter != "" && groupId > 0 {
+	if grantee != "" && groupId > 0 {
 		return "", errors.New("not support setting group id and account at the same time")
 	}
 
 	var principal sdktypes.Principal
-	var granterAddr sdk.AccAddress
+	var granteeAddr sdk.AccAddress
 	var err error
 	if groupId > 0 {
 		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
@@ -208,11 +212,11 @@ func parsePrincipal(granter string, groupId uint64) (sdktypes.Principal, error) 
 		}
 		principal = sdktypes.Principal(principalBytes)
 	} else {
-		granterAddr, err = sdk.AccAddressFromHexUnsafe(granter)
+		granteeAddr, err = sdk.AccAddressFromHexUnsafe(grantee)
 		if err != nil {
 			return "", err
 		}
-		p := permTypes.NewPrincipalWithAccount(granterAddr)
+		p := permTypes.NewPrincipalWithAccount(granteeAddr)
 		principalBytes, err := p.Marshal()
 		if err != nil {
 			return "", err
@@ -229,8 +233,24 @@ func getBucketAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_UPDATE_BUCKET_INFO, nil
 	case "delete":
 		return permTypes.ACTION_DELETE_BUCKET, nil
+	case "create":
+		return permTypes.ACTION_CREATE_OBJECT, nil
+	case "list":
+		return permTypes.ACTION_LIST_OBJECT, nil
+	case "createObj":
+		return permTypes.ACTION_CREATE_OBJECT, nil
+	case "deleteObj":
+		return permTypes.ACTION_DELETE_OBJECT, nil
+	case "copyObj":
+		return permTypes.ACTION_COPY_OBJECT, nil
+	case "getObj":
+		return permTypes.ACTION_GET_OBJECT, nil
+	case "executeObj":
+		return permTypes.ACTION_EXECUTE_OBJECT, nil
+	case "all":
+		return permTypes.ACTION_TYPE_ALL, nil
 	default:
-		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action of bucket policy")
+		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action :" + action)
 	}
 }
 
@@ -246,8 +266,12 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_GET_OBJECT, nil
 	case "execute":
 		return permTypes.ACTION_EXECUTE_OBJECT, nil
+	case "list":
+		return permTypes.ACTION_LIST_OBJECT, nil
+	case "all":
+		return permTypes.ACTION_TYPE_ALL, nil
 	default:
-		return permTypes.ACTION_EXECUTE_OBJECT, errors.New("invalid action of object policy")
+		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action:" + action)
 	}
 }
 
@@ -282,7 +306,6 @@ func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
 	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
 		filepath = passwordFile
-
 	} else if config.PasswordFile != "" {
 		filepath = config.PasswordFile
 	} else {
@@ -330,7 +353,7 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 	}
 	var keyBytesArray [32]byte
 	copy(keyBytesArray[:], priBytes[:32])
-	priKey := ethHd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
+	priKey := hd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
 
 	return string(buf), sdk.AccAddress(priKey.PubKey().Address()), nil
 }
