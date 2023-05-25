@@ -115,10 +115,10 @@ THis command is used to list the SP and query the information of SP.
 gnfd-cmd sp ls
 
 // get storage provider info
-gnfd-cmd sp head --spEndpoint https://gnfd-testnet-sp-1.nodereal.io
+gnfd-cmd sp head https://gnfd-testnet-sp-1.nodereal.io
 
 // get quota price of storage provider:
-gnfd-cmd sp get-price --spAddress 0x70d1983A9A76C8d5d80c4cC13A801dc570890819
+gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io
 ```
 
 #### Bucket Operations
