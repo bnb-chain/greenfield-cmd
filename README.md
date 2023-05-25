@@ -123,7 +123,7 @@ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io
 
 #### Bucket Operations
 
-Before creating bucket, It is recommended to first run the "ls-sp" command to obtain the SP list information of Greenfield,
+Before creating bucket, It is recommended to first run the "sp ls" command to obtain the SP list information of Greenfield,
 and then select the target SP to which the bucket will be created on.
 
 ```
@@ -145,7 +145,7 @@ the file-path should replace by the file path of local system.
 ```
 gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
-if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "-folder" flag.
+if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "--folder" flag.
 
 
 The tool also support create a folder on bucket by "object create-folder" command.
