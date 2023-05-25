@@ -30,7 +30,7 @@ func cmdGetSP() *cli.Command {
 		Usage:     "get storage provider details",
 		ArgsUsage: "<Storage Provider endpoint>",
 		Description: `
-Get the storage provider details information, including status, address and so on
+Get the storage provider details information, including status, address and so on.
 
 Examples:
 $ gnfd-cmd sp head https://gnfd-testnet-sp-1.nodereal.io`,
@@ -45,10 +45,10 @@ func cmdGetQuotaPrice() *cli.Command {
 		Usage:     "get the quota price of the SP",
 		ArgsUsage: "<Storage Provider endpoint>",
 		Description: `
-Get the quota price of the specific sp, Storage Provider address should set with the hex string of SP operator address.
+Get the quota price and the storage price of the specific Storage Provider.
 
 Examples:
-$ gnfd-cmd payment get-price https://gnfd-testnet-sp-1.nodereal.io`,
+$ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io`,
 	}
 }
 
