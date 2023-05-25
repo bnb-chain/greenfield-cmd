@@ -45,13 +45,10 @@ const (
 	removeMemberFlag = "removeMembers"
 	groupOwnerFlag   = "groupOwner"
 	headMemberFlag   = "headMember"
-	spAddressFlag    = "spAddress"
-	spEndpointFlag   = "spEndpoint"
 	groupIDFlag      = "groupId"
 	granteeFlag      = "grantee"
 	actionsFlag      = "actions"
 	effectFlag       = "effect"
-	userAddressFlag  = "user"
 	expireTimeFlag   = "expire"
 
 	ownerAddressFlag = "owner"

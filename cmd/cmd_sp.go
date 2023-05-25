@@ -28,20 +28,12 @@ func cmdGetSP() *cli.Command {
 		Name:      "head",
 		Action:    querySP,
 		Usage:     "get storage provider details",
-		ArgsUsage: "",
+		ArgsUsage: "<Storage Provider endpoint>",
 		Description: `
-Let the storage provider details information , including status, address and so on
+Get the storage provider details information, including status, address and so on
 
 Examples:
-$ gnfd-cmd sp head --spEndpoint https://...`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     spEndpointFlag,
-				Value:    "",
-				Usage:    "indicate the storage provider chain address string",
-				Required: true,
-			},
-		},
+$ gnfd-cmd sp head https://gnfd-testnet-sp-1.nodereal.io`,
 	}
 }
 
@@ -51,21 +43,12 @@ func cmdGetQuotaPrice() *cli.Command {
 		Name:      "get-price",
 		Action:    getQuotaPrice,
 		Usage:     "get the quota price of the SP",
-		ArgsUsage: "",
+		ArgsUsage: "<Storage Provider endpoint>",
 		Description: `
-Get the quota price of the specific sp, the command need to set the sp address with --spAddress
-The command need to set the SP info with --spAddress.
+Get the quota price of the specific sp, Storage Provider address should set with the hex string of SP operator address.
 
 Examples:
-$ gnfd-cmd payment get-price --spAddress "0x.."`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     spAddressFlag,
-				Value:    "",
-				Usage:    "indicate the storage provider chain address string",
-				Required: true,
-			},
-		},
+$ gnfd-cmd payment get-price https://gnfd-testnet-sp-1.nodereal.io`,
 	}
 }
 
@@ -93,6 +76,11 @@ func ListSP(ctx *cli.Context) error {
 }
 
 func querySP(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return errors.New("the args should be one , please set the sp endpoint")
+	}
+	endpoint := ctx.Args().Get(0)
+
 	client, err := NewClient(ctx)
 	if err != nil {
 		return toCmdErr(err)
@@ -100,11 +88,6 @@ func querySP(ctx *cli.Context) error {
 
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
-
-	endpoint := ctx.String(spEndpointFlag)
-	if endpoint == "" {
-		return toCmdErr(errors.New("fail to fetch sp endpoint"))
-	}
 
 	spList, err := client.ListStorageProviders(c, false)
 	if err != nil {
@@ -131,11 +114,17 @@ func querySP(ctx *cli.Context) error {
 
 	fmt.Println("SP info:")
 	fmt.Println(spInfo.String())
+	fmt.Println("Status:", spInfo.Status)
 	return nil
 }
 
 // getQuotaPrice query the quota price info of sp from greenfield chain
 func getQuotaPrice(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return errors.New("the args should be one , please set the sp endpoint")
+	}
+	endpoint := ctx.Args().Get(0)
+
 	client, err := NewClient(ctx)
 	if err != nil {
 		return toCmdErr(err)
@@ -144,9 +133,22 @@ func getQuotaPrice(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	spAddressStr := ctx.String(spAddressFlag)
-	if spAddressStr == "" {
-		return toCmdErr(errors.New("fail to fetch sp address"))
+	spList, err := client.ListStorageProviders(c, false)
+	if err != nil {
+		return toCmdErr(errors.New("fail to get SP info"))
+	}
+
+	var spAddressStr string
+	var findSP bool
+	for _, info := range spList {
+		if info.Endpoint == endpoint {
+			spAddressStr = info.GetOperatorAddress()
+			findSP = true
+		}
+	}
+
+	if !findSP {
+		return toCmdErr(errors.New("fail to get SP info"))
 	}
 
 	price, err := client.GetStoragePrice(c, spAddressStr)
