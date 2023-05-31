@@ -67,6 +67,8 @@ const (
 	passwordFileFlag    = "passwordfile"
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
+
+	ContextTimeout = time.Second * 20
 )
 
 var (

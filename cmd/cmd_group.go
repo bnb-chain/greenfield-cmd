@@ -102,9 +102,15 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
+
+	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit create group txn:" + err.Error()))
+		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
+	}
+	if txnResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("the createGroup txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
 	}
 
 	groupOwner, err := getGroupOwner(ctx, client)
@@ -173,11 +179,16 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
-	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit update group txn %s, err:%v", txnHash, err))
-	}
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
 
+	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
+	}
+	if txnResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("the updateMember txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
+	}
 	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)
 	return nil
 }

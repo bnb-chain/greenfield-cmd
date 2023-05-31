@@ -85,9 +85,15 @@ func deleteBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
+
+	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
+	}
+	if txnResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("the deleteBucket txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
 	}
 
 	fmt.Printf("delete bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
@@ -125,9 +131,15 @@ func deleteObject(ctx *cli.Context) error {
 		return err
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
+
+	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
+	}
+	if txnResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("the deleteObject txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
 	}
 
 	fmt.Printf("delete object %s successfully, txn hash:%s \n",
@@ -158,11 +170,16 @@ func deleteGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
-	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
-	}
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
 
+	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
+	if err != nil {
+		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
+	}
+	if txnResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("the deleteGroup txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
+	}
 	fmt.Printf("delete group: %s successfully, txn hash: %s \n", groupName, txnHash)
 	return nil
 }

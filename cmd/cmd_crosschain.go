@@ -63,10 +63,19 @@ func TransferOut(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txResp.TxHash)
+
+	txnHash := txResp.TxHash
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
+	defer cancel()
+
+	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
 	if err != nil {
-		return toCmdErr(err)
+		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
 	}
+	if txnResponse.Code != 0 {
+		return toCmdErr(fmt.Errorf("the TransferOut txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
+	}
+
 	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
 	return nil
 }
