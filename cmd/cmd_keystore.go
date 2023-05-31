@@ -16,7 +16,7 @@ func cmdGenerateKey() *cli.Command {
 		Usage:     "create a new keystore file",
 		ArgsUsage: "[ <keyfile> ] ",
 		Description: `
-send headObject txn to chain and fetch object info on greenfield chain
+generate a keystore file to manage user's private key information.
 Examples:
 $ gnfd-cmd create-keystore --privKeyFile key.txt  key.json `,
 		Flags: []cli.Flag{
