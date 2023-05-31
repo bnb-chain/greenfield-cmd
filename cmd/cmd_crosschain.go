@@ -33,7 +33,7 @@ $ gnfd-cmd crosschain transfer-out --toAddress 0x.. --amount 12345`,
 			&cli.StringFlag{
 				Name:     amountFlag,
 				Value:    "",
-				Usage:    "the amount of BNB to be sent",
+				Usage:    "the amount of wei to be sent",
 				Required: true,
 			},
 		},
@@ -76,7 +76,7 @@ func TransferOut(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("the TransferOut txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
 	}
 
-	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
+	fmt.Printf("transfer out %s wei to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
 	return nil
 }
 
@@ -116,17 +116,20 @@ func Mirror(ctx *cli.Context) error {
 	}
 	resource := ctx.String(resourceFlag)
 	id := math.NewUintFromString(ctx.String(IdFlag))
+	groupName := ctx.String(groupNameFlag)
+	bucketName := ctx.String(bucketNameFlag)
+	objectName := ctx.String(objectNameFlag)
 
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
 	var txResp *sdk.TxResponse
 	if resource == "group" {
-		txResp, err = client.MirrorGroup(c, id, gnfdsdktypes.TxOption{})
+		txResp, err = client.MirrorGroup(c, id, groupName, gnfdsdktypes.TxOption{})
 	} else if resource == "bucket" {
-		txResp, err = client.MirrorBucket(c, id, gnfdsdktypes.TxOption{})
+		txResp, err = client.MirrorBucket(c, id, bucketName, gnfdsdktypes.TxOption{})
 	} else if resource == "object" {
-		txResp, err = client.MirrorObject(c, id, gnfdsdktypes.TxOption{})
+		txResp, err = client.MirrorObject(c, id, bucketName, objectName, gnfdsdktypes.TxOption{})
 	} else {
 		return toCmdErr(fmt.Errorf("wrong resource type %s, expect one of (group, bucket, object)", resource))
 	}

@@ -61,6 +61,10 @@ const (
 	objectPrefix     = "prefix"
 	folderFlag       = "folder"
 
+	groupNameFlag  = "groupName"
+	bucketNameFlag = "bucketName"
+	objectNameFlag = "objectName"
+
 	defaultKeyfile      = "key.json"
 	defaultPasswordfile = "password"
 	privKeyFileFlag     = "privKeyFile"
