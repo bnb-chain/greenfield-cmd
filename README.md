@@ -263,6 +263,7 @@ gnfd-cmd crosschain mirror --resource bucket --id 1
 // mirror a object to BSC
 gnfd-cmd crosschain mirror --resource object --id 1
 ```
+Notice! Transfer-in operation, that is trasnferring from BSC to Greenfield, is currently not supported by gnfd-cmd. [DCellar](https://dcellar.io/) dApp can be used as a work around.
 
 ## Reference
 
