@@ -44,7 +44,7 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	err = waitTxnStatus(client, c, txHash,, "CreatePaymentAccount")
+	err = waitTxnStatus(client, c, txHash, "CreatePaymentAccount")
 	if err != nil {
 		return toCmdErr(err)
 	}
