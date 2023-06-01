@@ -432,15 +432,9 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
-	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
-	defer cancel()
-
-	txnResponse, err := client.WaitForTx(ctxTimeout, policyTx)
+	err = waitTxnStatus(client, c, policyTx, "PutPolicy")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", policyTx, err))
-	}
-	if txnResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("the putPolicy txn: %s has failed with response code: %d", policyTx, txnResponse.Code))
+		return toCmdErr(err)
 	}
 
 	// get the latest policy from chain
@@ -701,15 +695,9 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	ctxTimeout, cancel := context.WithTimeout(context.Background(), ContextTimeout)
-	defer cancel()
-
-	txnResponse, err := client.WaitForTx(ctxTimeout, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "UpdateObject")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("the txn: %s ,has been submitted, please check it later:%v", txnHash, err))
-	}
-	if txnResponse.Code != 0 {
-		return toCmdErr(fmt.Errorf("the updateObject txn: %s has failed with response code: %d", txnHash, txnResponse.Code))
+		return toCmdErr(err)
 	}
 
 	objectInfo, err := client.HeadObject(c, bucketName, objectName)

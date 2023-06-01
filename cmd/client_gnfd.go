@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -113,4 +114,19 @@ func ParseBucket(urlPath string) (bucketName string) {
 	splits := strings.SplitN(urlPath, "/", 1)
 
 	return splits[0]
+}
+
+func waitTxnStatus(cli client.Client, ctx context.Context, txnHash string, txnInfo string) error {
+	ctxTimeout, cancel := context.WithTimeout(ctx, ContextTimeout)
+	defer cancel()
+
+	txnResponse, err := cli.WaitForTx(ctxTimeout, txnHash)
+	if err != nil {
+		return fmt.Errorf("the %s txn: %s ,has been submitted, please check it later:%v", txnInfo, txnHash, err)
+	}
+	if txnResponse.Code != 0 {
+		return fmt.Errorf("the %s txn: %s has failed with response code: %d", txnInfo, txnHash, txnResponse.Code)
+	}
+
+	return nil
 }
