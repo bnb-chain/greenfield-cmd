@@ -109,7 +109,7 @@ func Deposit(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("Deposit %s wei to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
+	fmt.Printf("Deposit %s BNB to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
 	return nil
 }
 
@@ -349,6 +349,69 @@ func Transfer(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("transfer %s wei to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	fmt.Printf("transfer %s BNB to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	return nil
+}
+
+// cmdBridge makes a transfer from Greenfield to BSC
+func cmdBridge() *cli.Command {
+	return &cli.Command{
+		Name:      "bridge",
+		Action:    Bridge,
+		Usage:     "transfer from greenfield to a BSC account",
+		ArgsUsage: "",
+		Description: `
+Create a cross chain transfer from Greenfield to a BSC account
+
+Examples:
+# Make a cross chain transfer to BSC
+$ gnfd-cmd bank bridge --toAddress 0x.. --amount 12345`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     toAddressFlag,
+				Value:    "",
+				Usage:    "the receiver address in BSC",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     amountFlag,
+				Value:    "",
+				Usage:    "the amount of BNB to be sent",
+				Required: true,
+			},
+		},
+	}
+}
+
+func Bridge(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, transfer := context.WithCancel(globalContext)
+	defer transfer()
+
+	toAddr := ctx.String(toAddressFlag)
+	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	amountStr := ctx.String(amountFlag)
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
+	}
+	txResp, err := client.TransferOut(c, toAddr, amount, gnfdsdktypes.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txResp.TxHash, "Bridge")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
 	return nil
 }
