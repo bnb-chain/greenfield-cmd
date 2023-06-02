@@ -109,7 +109,7 @@ func Deposit(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("Deposit %s BNB to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
+	fmt.Printf("Deposit %s wei to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
 	return nil
 }
 
@@ -349,7 +349,7 @@ func Transfer(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("transfer %s BNB to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	fmt.Printf("transfer %s wei to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
 	return nil
 }
 

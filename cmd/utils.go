@@ -53,9 +53,6 @@ const (
 	effectFlag       = "effect"
 	expireTimeFlag   = "expire"
 	IdFlag           = "id"
-	groupNameFlag    = "groupName"
-	bucketNameFlag   = "bucketName"
-	objectNameFlag   = "objectName"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
@@ -91,6 +88,12 @@ const (
 	rpcAddrConfigField = "rpcAddr"
 	chainIdConfigField = "chainId"
 	hostConfigField    = "host"
+	groupNameFlag      = "groupName"
+	bucketNameFlag     = "bucketName"
+	objectNameFlag     = "objectName"
+
+	defaultKeyfile      = "key.json"
+	defaultPasswordfile = "password"
 )
 
 var (
