@@ -484,10 +484,6 @@ func getObject(ctx *cli.Context) error {
 	} else if ctx.Args().Len() == 2 {
 		filePath = ctx.Args().Get(1)
 		stat, err := os.Stat(filePath)
-		if os.IsNotExist(err) {
-			return toCmdErr(ErrFileNotExist)
-		}
-
 		if err == nil {
 			if stat.IsDir() {
 				if strings.HasSuffix(filePath, "/") {
@@ -528,7 +524,7 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("download object %s successfully, the file path is %s, content length:%d, \n", objectName, filePath, uint64(info.Size))
+	fmt.Printf("download object %s successfully, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }
