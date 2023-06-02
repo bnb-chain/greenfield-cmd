@@ -75,7 +75,7 @@ const (
 	ContextTimeout       = time.Second * 20
 	BucketResourcePrefix = "grn:b::"
 	ObjectResourcePrefix = "grn:o::"
-	GroupResourcePrefix  = ""
+	GroupResourcePrefix  = "grn:g:"
 
 	ObjectPolicyType = 1
 	BucketPolicyType = 2
@@ -282,7 +282,20 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 	}
 }
 
-func parseActions(ctx *cli.Context, putPolicyType policyType) ([]permTypes.ActionType, error) {
+func getGroupAction(action string) (permTypes.ActionType, error) {
+	switch action {
+	case "update":
+		return permTypes.ACTION_UPDATE_GROUP_MEMBER, nil
+	case "delete":
+		return permTypes.ACTION_DELETE_GROUP, nil
+	case "all":
+		return permTypes.ACTION_TYPE_ALL, nil
+	default:
+		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action:" + action)
+	}
+}
+
+func parseActions(ctx *cli.Context, policyType PolicyType) ([]permTypes.ActionType, error) {
 	actions := make([]permTypes.ActionType, 0)
 	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
@@ -293,10 +306,12 @@ func parseActions(ctx *cli.Context, putPolicyType policyType) ([]permTypes.Actio
 	for _, v := range actionList {
 		var action permTypes.ActionType
 		var err error
-		if putPolicyType == ObjectPolicyType {
+		if policyType == ObjectPolicyType {
 			action, err = getObjectAction(v)
-		} else {
+		} else if policyType == BucketPolicyType {
 			action, err = getBucketAction(v)
+		} else if policyType == GroupPolicyType {
+			action, err = getGroupAction(v)
 		}
 
 		if err != nil {

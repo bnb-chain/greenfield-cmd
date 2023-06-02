@@ -109,7 +109,7 @@ func main() {
 			},
 			{
 				Name:  "policy",
-				Usage: "support object policy and bucket policy operation functions",
+				Usage: "support object,bucket and group policy operation functions",
 				Subcommands: []*cli.Command{
 					cmdPutPolicy(),
 				},

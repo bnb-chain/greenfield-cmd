@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bnb-chain/greenfield-go-sdk/client"
 	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
@@ -14,23 +15,25 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type policyType int
+type PolicyType int
 
 // cmdPutjPolicy set the policy of object
 func cmdPutPolicy() *cli.Command {
 	return &cli.Command{
 		Name:      "put",
 		Action:    putPolicy,
-		Usage:     "put object policy to group or account",
+		Usage:     "put policy to group or account",
 		ArgsUsage: " RESOURCE-URL",
 		Description: `
 The command is used to set the object policy of the grantee or group-id.
 It required to set grantee account or group-id by --grantee or --groupId.
 
-the resource url can be the follow pattern:
+the resource url can be the follow types:
 1) grn:b::bucketname, it indicates the bucket policy
 2) grn:o::bucketname/objectname, it indicates the object policy
 3) grn:g:owneraddress:groupname, it indicates the group policy
+
+if your need to put a group policy , you need set the owneraddress as your own account address.
 
 Examples:
 $ gnfd-cmd policy put --groupId 111 --actions get,delete grn:o::gnfd-bucket/gnfd-object`,
@@ -53,6 +56,7 @@ $ gnfd-cmd policy put --groupId 111 --actions get,delete grn:o::gnfd-bucket/gnfd
 					"if it is a bucket policy, actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
 					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
 					" the deleteObj means grant the permission of delete Objects in the bucket" +
+					"if it is a group policy, actions can be the following: update, delete or all, update indicates the update-group-member action" +
 					", multi actions like \"delete,copy\" is supported",
 				Required: true,
 			},
@@ -79,7 +83,7 @@ func putPolicy(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("args number should be one"))
 	}
 
-	var putPolicyType policyType
+	var putPolicyType PolicyType
 	resource := ctx.Args().Get(0)
 	if strings.HasPrefix(resource, BucketResourcePrefix) {
 		putPolicyType = BucketPolicyType
@@ -88,14 +92,7 @@ func putPolicy(ctx *cli.Context) error {
 	} else if strings.HasPrefix(resource, GroupResourcePrefix) {
 		putPolicyType = GroupPolicyType
 	} else {
-		return toCmdErr(errors.New("invalid resour name"))
-	}
-
-	groupId := ctx.Uint64(groupIDFlag)
-	grantee := ctx.String(granteeFlag)
-	principal, err := parsePrincipal(grantee, groupId)
-	if err != nil {
-		return toCmdErr(err)
+		return toCmdErr(errors.New("invalid resource name"))
 	}
 
 	actions, err := parseActions(ctx, putPolicyType)
@@ -122,50 +119,78 @@ func putPolicy(ctx *cli.Context) error {
 
 	statements := []*permTypes.Statement{&statement}
 
-	if strings.HasPrefix(resource, BucketResourcePrefix) {
-		bucketName, err := parseBucketResource(resource)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		err = handleBucketPolicy(ctx, bucketName, principal, statements)
-		if err != nil {
-			return toCmdErr(err)
-		}
-	} else if strings.HasPrefix(resource, ObjectResourcePrefix) {
-		bucketName, objectName, err := parseObjectResource(resource)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		err = handleObjectPolicy(ctx, bucketName, objectName, principal, statements)
-		if err != nil {
-			return toCmdErr(err)
-		}
-	}
-
-	return nil
+	return handlePutPolicy(ctx, resource, statements, putPolicyType)
 }
 
-func handleObjectPolicy(ctx *cli.Context, bucketName, objectName string, principal sdktypes.Principal,
-	statements []*permTypes.Statement) error {
+func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.Statement, policyType PolicyType) error {
 	client, err := NewClient(ctx)
 	if err != nil {
 		return err
 	}
+	groupId := ctx.Uint64(groupIDFlag)
+	grantee := ctx.String(granteeFlag)
+
+	if policyType == BucketPolicyType {
+		bucketName, err := parseBucketResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		principal, err := parsePrincipal(grantee, groupId)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		err = handleBucketPolicy(ctx, client, bucketName, principal, statements)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	} else if policyType == ObjectPolicyType {
+		bucketName, objectName, err := parseObjectResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		principal, err := parsePrincipal(grantee, groupId)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		err = handleObjectPolicy(ctx, client, bucketName, objectName, principal, statements)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	} else if policyType == GroupPolicyType {
+		_, groupName, err := parseGroupResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		err = handleGroupPolicy(ctx, client, groupName, statements, false)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+	return nil
+}
+
+func handleObjectPolicy(ctx *cli.Context, client client.Client, bucketName, objectName string, principal sdktypes.Principal,
+	statements []*permTypes.Statement) error {
 	c, cancelPutPolicy := context.WithCancel(globalContext)
 	defer cancelPutPolicy()
+
 	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
 		sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
-
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
-	_, err = client.WaitForTx(c, policyTx)
+	err = waitTxnStatus(client, c, policyTx, "putPolicy")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+		return toCmdErr(err)
 	}
+
 	// get the latest policy from chain
 	groupId := ctx.Uint64(groupIDFlag)
 	grantee := ctx.String(granteeFlag)
@@ -184,15 +209,10 @@ func handleObjectPolicy(ctx *cli.Context, bucketName, objectName string, princip
 	return nil
 }
 
-func handleBucketPolicy(ctx *cli.Context, bucketName string, principal sdktypes.Principal,
+func handleBucketPolicy(ctx *cli.Context, client client.Client, bucketName string, principal sdktypes.Principal,
 	statements []*permTypes.Statement) error {
 	c, cancelPutPolicy := context.WithCancel(globalContext)
 	defer cancelPutPolicy()
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
 
 	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
 		sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
@@ -203,7 +223,7 @@ func handleBucketPolicy(ctx *cli.Context, bucketName string, principal sdktypes.
 
 	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
 
-	_, err = client.WaitForTx(c, policyTx)
+	err = waitTxnStatus(client, c, policyTx, "putPolicy")
 	if err != nil {
 		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
 	}
@@ -220,6 +240,33 @@ func handleBucketPolicy(ctx *cli.Context, bucketName string, principal sdktypes.
 		policyInfo, err := client.GetBucketPolicy(c, bucketName, grantee)
 		if err == nil {
 			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+		}
+	}
+
+	return nil
+}
+
+func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
+	statements []*permTypes.Statement, delete bool) error {
+	c, cancelPolicy := context.WithCancel(globalContext)
+	defer cancelPolicy()
+
+	grantee := ctx.String(granteeFlag)
+	if grantee == "" {
+		return errors.New("grantee need to be set when put group policy")
+	}
+	if !delete {
+		policyTx, err := client.PutGroupPolicy(c, groupName, grantee, statements,
+			sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		fmt.Printf("put policy of the group:%s succ, txn hash: %s\n", groupName, policyTx)
+
+		err = waitTxnStatus(client, c, policyTx, "putPolicy")
+		if err != nil {
+			return toCmdErr(err)
 		}
 	}
 
@@ -247,6 +294,23 @@ func parseObjectResource(resourceName string) (string, string, error) {
 
 	if index <= -1 {
 		return "", "", errors.New("invalid object resource name, can not parse bucket name and object name")
+	}
+
+	return objectPath[:index], objectPath[index+1:], nil
+}
+
+func parseGroupResource(resourceName string) (string, string, error) {
+	prefixLen := len(GroupResourcePrefix)
+
+	if len(resourceName) <= prefixLen {
+		return "", "", errors.New("invalid group resource name")
+	}
+
+	objectPath := resourceName[prefixLen:]
+	index := strings.Index(objectPath, ":")
+
+	if index <= -1 {
+		return "", "", errors.New("invalid group resource name, can not parse bucket name and object name")
 	}
 
 	return objectPath[:index], objectPath[index+1:], nil
