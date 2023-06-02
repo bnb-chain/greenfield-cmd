@@ -202,7 +202,7 @@ func cmdMirrorObject() *cli.Command {
 Mirror a object as NFT to BSC
 
 Examples:
-# Mirror a object using bucket id
+# Mirror a object using object id
 $ gnfd-cmd object mirror --id 1
 
 # Mirror a object using bucket and object name
