@@ -61,12 +61,18 @@ const (
 	objectPrefix     = "prefix"
 	folderFlag       = "folder"
 
+	groupNameFlag  = "groupName"
+	bucketNameFlag = "bucketName"
+	objectNameFlag = "objectName"
+
 	defaultKeyfile      = "key.json"
 	defaultPasswordfile = "password"
 	privKeyFileFlag     = "privKeyFile"
 	passwordFileFlag    = "passwordfile"
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
+
+	ContextTimeout = time.Second * 20
 )
 
 var (

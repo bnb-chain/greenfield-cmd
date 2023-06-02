@@ -432,10 +432,11 @@ func putObjectPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 
-	_, err = client.WaitForTx(c, policyTx)
+	err = waitTxnStatus(client, c, policyTx, "PutPolicy")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+		return toCmdErr(err)
 	}
+
 	// get the latest policy from chain
 	if groupId > 0 {
 		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
@@ -483,10 +484,6 @@ func getObject(ctx *cli.Context) error {
 	} else if ctx.Args().Len() == 2 {
 		filePath = ctx.Args().Get(1)
 		stat, err := os.Stat(filePath)
-		if os.IsNotExist(err) {
-			return toCmdErr(ErrFileNotExist)
-		}
-
 		if err == nil {
 			if stat.IsDir() {
 				if strings.HasSuffix(filePath, "/") {
@@ -527,7 +524,7 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("download object %s successfully, the file path is %s, content length:%d, \n", objectName, filePath, uint64(info.Size))
+	fmt.Printf("download object %s successfully, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }
@@ -694,9 +691,9 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "UpdateObject")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
+		return toCmdErr(err)
 	}
 
 	objectInfo, err := client.HeadObject(c, bucketName, objectName)

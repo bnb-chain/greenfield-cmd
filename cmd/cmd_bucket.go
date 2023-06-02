@@ -264,9 +264,9 @@ func updateBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "UpdateBucket")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
+		return toCmdErr(err)
 	}
 
 	bucketInfo, err := client.HeadBucket(c, bucketName)
@@ -374,9 +374,9 @@ func putBucketPolicy(ctx *cli.Context) error {
 
 	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
 
-	_, err = client.WaitForTx(c, policyTx)
+	err = waitTxnStatus(client, c, policyTx, "PutPolicy")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
+		return toCmdErr(err)
 	}
 
 	if groupId > 0 {

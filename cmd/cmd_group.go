@@ -102,11 +102,10 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "CreateGroup")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit create group txn:" + err.Error()))
+		return toCmdErr(err)
 	}
-
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err == nil {
 		info, err := client.HeadGroup(c, groupName, groupOwner)
@@ -173,9 +172,9 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "UpdateGroupMember")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit update group txn %s, err:%v", txnHash, err))
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)

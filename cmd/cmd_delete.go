@@ -85,9 +85,9 @@ func deleteBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "DeleteBucket")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("delete bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
@@ -125,9 +125,9 @@ func deleteObject(ctx *cli.Context) error {
 		return err
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "DeleteObject")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("delete object %s successfully, txn hash:%s \n",
@@ -158,9 +158,9 @@ func deleteGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "DeleteGroup")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit delete txn %s, err:%v", txnHash, err))
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("delete group: %s successfully, txn hash: %s \n", groupName, txnHash)

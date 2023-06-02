@@ -43,10 +43,12 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "CreatePaymentAccount")
 	if err != nil {
 		return toCmdErr(err)
 	}
+
 	fmt.Printf("create payment account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
 	return nil
 }
@@ -102,11 +104,12 @@ func Deposit(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "Deposit")
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("Deposit %s BNB to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
+	fmt.Printf("Deposit %s wei to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
 	return nil
 }
 
@@ -161,10 +164,12 @@ func Withdraw(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "Withdraw")
 	if err != nil {
 		return toCmdErr(err)
 	}
+
 	fmt.Printf("Withdraw %s from %s succ, txHash=%s\n", amount.String(), fromAddr, txHash)
 	return nil
 }
@@ -339,10 +344,11 @@ func Transfer(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "Transfer")
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("transfer %s BNB to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	fmt.Printf("transfer %s wei to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
 	return nil
 }
