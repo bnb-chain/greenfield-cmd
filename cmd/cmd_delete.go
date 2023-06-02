@@ -46,13 +46,13 @@ func cmdDelGroup() *cli.Command {
 		Name:      "delete",
 		Action:    deleteGroup,
 		Usage:     "delete an existed group",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
 Send a deleteGroup txn to greenfield chain
 
 Examples:
 # Delete an existed group
-$ gnfd-cmd group delete gnfd://group-name`,
+$ gnfd-cmd group delete group-name`,
 	}
 }
 

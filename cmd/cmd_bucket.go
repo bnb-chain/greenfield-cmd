@@ -4,13 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -106,56 +102,6 @@ List the bucket names and bucket ids of the user.
 
 Examples:
 $ gnfd-cmd bucket ls`,
-	}
-}
-
-func cmdPutBucketPolicy() *cli.Command {
-	return &cli.Command{
-		Name:      "put-bucket-policy",
-		Action:    putBucketPolicy,
-		Usage:     "put bucket policy to group or account",
-		ArgsUsage: " BUCKET-URL",
-		Description: `
-The command is used to set the bucket policy of the grantee account or group-id.
-It required to set the grantee account or group-id by --grantee or --groupId.
-
-Examples:
-$ gnfd-cmd policy put-bucket-policy --groupId 111 --actions delete,update gnfd://gnfd-bucket/gnfd-object`,
-		Flags: []cli.Flag{
-			&cli.Uint64Flag{
-				Name:  groupIDFlag,
-				Value: 0,
-				Usage: "the group id of the group",
-			},
-			&cli.StringFlag{
-				Name:  granteeFlag,
-				Value: "",
-				Usage: "the address hex string of the grantee",
-			},
-			&cli.StringFlag{
-				Name:  actionsFlag,
-				Value: "",
-				Usage: "set the actions of the policy," +
-					"actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
-					", multi actions like \"delete,update\" is supported," +
-					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
-					" the deleteObj means grant the permission of delete Objects in the bucket",
-				Required: true,
-			},
-			&cli.GenericFlag{
-				Name: effectFlag,
-				Value: &CmdEnumValue{
-					Enum:    []string{effectDeny, effectAllow},
-					Default: effectAllow,
-				},
-				Usage: "set the effect of the policy",
-			},
-			&cli.Uint64Flag{
-				Name:  expireTimeFlag,
-				Value: 0,
-				Usage: "set the expire unix time stamp of the policy",
-			},
-		},
 	}
 }
 
@@ -310,86 +256,4 @@ func listBuckets(ctx *cli.Context) error {
 	}
 	return nil
 
-}
-
-func putBucketPolicy(ctx *cli.Context) error {
-	bucketName, err := getBucketNameByUrl(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	groupId := ctx.Uint64(groupIDFlag)
-	grantee := ctx.String(granteeFlag)
-	principal, err := parsePrincipal(grantee, groupId)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	actions, err := parseActions(ctx, false)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlag)
-	if effectStr != "" {
-		if effectStr == effectDeny {
-			effect = permTypes.EFFECT_DENY
-		}
-	}
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	expireTime := ctx.Uint64(expireTimeFlag)
-	var statement permTypes.Statement
-
-	var resources []string
-	actionsString := ctx.String(actionsFlag)
-	// if the actions is *Object (expect createObject), set the resource to be "grn:o::bucketName/*"
-	if (strings.Contains(actionsString, "Obj") || strings.Contains(actionsString, "all")) && actionsString != "create" {
-		resources = []string{
-			fmt.Sprintf("grn:o::%s/%s", bucketName, "*")}
-	}
-
-	if expireTime > 0 {
-		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
-	} else {
-		statement = utils.NewStatement(actions, effect, resources, sdktypes.NewStatementOptions{})
-	}
-
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
-
-	statements := []*permTypes.Statement{&statement}
-	policyTx, err := client.PutBucketPolicy(c, bucketName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
-
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
-
-	err = waitTxnStatus(client, c, policyTx, "PutPolicy")
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	if groupId > 0 {
-		policyInfo, err := client.GetBucketPolicyOfGroup(c, bucketName, groupId)
-		if err == nil {
-			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
-		}
-	} else {
-		policyInfo, err := client.GetBucketPolicy(c, bucketName, grantee)
-		if err == nil {
-			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-		}
-	}
-
-	return nil
 }

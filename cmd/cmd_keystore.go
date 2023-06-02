@@ -11,14 +11,14 @@ import (
 // cmdGenerateKey generate keystore file
 func cmdGenerateKey() *cli.Command {
 	return &cli.Command{
-		Name:      "create-keystore",
+		Name:      "generate",
 		Action:    generateKey,
 		Usage:     "create a new keystore file",
 		ArgsUsage: "[ <keyfile> ] ",
 		Description: `
 generate a keystore file to manage user's private key information.
 Examples:
-$ gnfd-cmd create-keystore --privKeyFile key.txt  key.json `,
+$ gnfd-cmd keystore generate --privKeyFile key.txt  key.json `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     privKeyFileFlag,

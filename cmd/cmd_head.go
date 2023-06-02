@@ -43,11 +43,11 @@ func cmdHeadGroup() *cli.Command {
 		Name:      "head",
 		Action:    headGroup,
 		Usage:     "query group info",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
 send headGroup txn to chain and fetch bucketInfo on greenfield chain
 Examples:
-$ gnfd-cmd group head --groupOwner  gnfd://group-name`,
+$ gnfd-cmd group head --groupOwner  group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlag,
@@ -64,11 +64,11 @@ func cmdHeadGroupMember() *cli.Command {
 		Name:      "head-member",
 		Action:    headGroupMember,
 		Usage:     "check if a group member exists",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
 send headGroupMember txn to chain and check if member is in the group
 Examples:
-$ gnfd-cmd head-member --headMember gnfd://group-name`,
+$ gnfd-cmd head-member --headMember group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlag,

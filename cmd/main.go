@@ -66,6 +66,8 @@ func main() {
 					cmdDelBucket(),
 					cmdHeadBucket(),
 					cmdListBuckets(),
+					cmdBuyQuota(),
+					cmdGetQuotaInfo(),
 				},
 			},
 			{
@@ -95,28 +97,21 @@ func main() {
 					cmdDelGroup(),
 				},
 			},
-			{
-				Name:  "crosschain",
-				Usage: "support the cross-chain functions, including transfer and mirror",
-				Subcommands: []*cli.Command{
-					cmdMirrorResource(),
-					cmdTransferOut(),
-				},
-			},
+
 			{
 				Name:  "bank",
 				Usage: "support the bank functions, including transfer in greenfield and query balance",
 				Subcommands: []*cli.Command{
 					cmdTransfer(),
 					cmdGetAccountBalance(),
+					cmdTransferOut(),
 				},
 			},
 			{
 				Name:  "policy",
 				Usage: "support object policy and bucket policy operation functions",
 				Subcommands: []*cli.Command{
-					cmdPutObjPolicy(),
-					cmdPutBucketPolicy(),
+					cmdPutPolicy(),
 				},
 			},
 
@@ -128,8 +123,6 @@ func main() {
 					cmdPaymentDeposit(),
 					cmdPaymentWithdraw(),
 					cmdListPaymentAccounts(),
-					cmdBuyQuota(),
-					cmdGetQuotaInfo(),
 				},
 			},
 			{
@@ -142,7 +135,13 @@ func main() {
 				},
 			},
 
-			cmdGenerateKey(),
+			{
+				Name:  "keystore",
+				Usage: "support the keystore operation functions",
+				Subcommands: []*cli.Command{
+					cmdGenerateKey(),
+				},
+			},
 		},
 	}
 	app.Before = altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))

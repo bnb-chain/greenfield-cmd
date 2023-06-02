@@ -72,7 +72,14 @@ const (
 	EncryptScryptN      = 1 << 18
 	EncryptScryptP      = 1
 
-	ContextTimeout = time.Second * 20
+	ContextTimeout       = time.Second * 20
+	BucketResourcePrefix = "grn:b::"
+	ObjectResourcePrefix = "grn:o::"
+	GroupResourcePrefix  = ""
+
+	ObjectPolicyType = 1
+	BucketPolicyType = 2
+	GroupPolicyType  = 3
 )
 
 var (
@@ -176,13 +183,7 @@ func getGroupNameByUrl(ctx *cli.Context) (string, error) {
 		return "", errors.New("the args should be more than one")
 	}
 
-	urlInfo := ctx.Args().Get(0)
-	bucketName := ParseBucket(urlInfo)
-
-	if bucketName == "" {
-		return "", errors.New("fail to parse group name")
-	}
-	return bucketName, nil
+	return ctx.Args().Get(0), nil
 }
 
 func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
@@ -281,7 +282,7 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 	}
 }
 
-func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType, error) {
+func parseActions(ctx *cli.Context, putPolicyType policyType) ([]permTypes.ActionType, error) {
 	actions := make([]permTypes.ActionType, 0)
 	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
@@ -292,7 +293,7 @@ func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType
 	for _, v := range actionList {
 		var action permTypes.ActionType
 		var err error
-		if isObjectPolicy {
+		if putPolicyType == ObjectPolicyType {
 			action, err = getObjectAction(v)
 		} else {
 			action, err = getBucketAction(v)
