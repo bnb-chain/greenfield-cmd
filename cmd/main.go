@@ -116,8 +116,8 @@ func main() {
 			},
 
 			{
-				Name:  "payment",
-				Usage: "support the payment operation functions",
+				Name:  "payment-account",
+				Usage: "support the payment account operation functions",
 				Subcommands: []*cli.Command{
 					cmdCreatePaymentAccount(),
 					cmdPaymentDeposit(),
