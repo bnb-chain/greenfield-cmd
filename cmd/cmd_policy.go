@@ -376,6 +376,33 @@ func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
 	return nil
 }
 
+func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
+	statements []*permTypes.Statement, delete bool) error {
+	c, cancelPolicy := context.WithCancel(globalContext)
+	defer cancelPolicy()
+
+	grantee := ctx.String(granteeFlag)
+	if grantee == "" {
+		return errors.New("grantee need to be set when put group policy")
+	}
+	if !delete {
+		policyTx, err := client.PutGroupPolicy(c, groupName, grantee, statements,
+			sdktypes.PutPolicyOption{TxOpts: &TxnOptionWithSyncMode})
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		fmt.Printf("put policy of the group:%s succ, txn hash: %s\n", groupName, policyTx)
+
+		err = waitTxnStatus(client, c, policyTx, "putPolicy")
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	return nil
+}
+
 func parseBucketResource(resourceName string) (string, error) {
 	prefixLen := len(BucketResourcePrefix)
 	if len(resourceName) <= prefixLen {
