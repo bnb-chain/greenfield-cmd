@@ -63,6 +63,32 @@ $ gnfd-cmd  keystore inspect --privateKey true  `,
 			},
 		},
 
+func cmdPrintKey() *cli.Command {
+	return &cli.Command{
+		Name:      "inspect",
+		Action:    inspectKey,
+		Usage:     "inspect a keystore file",
+		ArgsUsage: "[ <keyfile> ] ",
+		Description: `
+print the private key related information
+
+Examples:
+$ gnfd-cmd  keystore inspect --privateKey true  `,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  privKeyFlag,
+				Value: "",
+				Usage: "include the private key in the output",
+			},
+			&cli.StringFlag{
+				Name:  passwordFileFlag,
+				Value: "",
+				Usage: "the file which contains the password for the keyfile",
+			},
+		},
+	}
+}
+
 func generateKey(ctx *cli.Context) error {
 	keyFilePath := ctx.Args().First()
 	if keyFilePath == "" {
@@ -169,7 +195,7 @@ func writeDefaultPassword(ctx *cli.Context, password string) error {
 		return toCmdErr(fmt.Errorf("failed to write password to the path: %s: %v", filePath, err))
 	}
 
-	fmt.Printf("generate password file: %s successfully \n", filePath)
+	fmt.Printf("\ngenerate password file: %s successfully \n", filePath)
 	return nil
 }
 
