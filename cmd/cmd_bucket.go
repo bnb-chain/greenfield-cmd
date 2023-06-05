@@ -123,7 +123,7 @@ Examples:
 $ gnfd-cmd bucket mirror --id 1
 
 # Mirror a bucket using bucket name
-$ gnfd-cmd bucket mirror --name yourBucketName
+$ gnfd-cmd bucket mirror --bucketName yourBucketName
 `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -305,7 +305,12 @@ func mirrorBucket(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	id := math.NewUintFromString(ctx.String(IdFlag))
+
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
 	bucketName := ctx.String(bucketNameFlag)
 
 	c, cancelContext := context.WithCancel(globalContext)

@@ -676,7 +676,11 @@ func mirrorObject(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	id := math.NewUintFromString(ctx.String(IdFlag))
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
 	bucketName := ctx.String(bucketNameFlag)
 	objectName := ctx.String(objectNameFlag)
 
