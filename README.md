@@ -29,12 +29,9 @@ The default config file is "config.toml".
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
-The configuration for passwordFile is the path to the file containing the password required to generate or parse the keystore.
-Users need to set the password on passwordFile before running commands and the password can be any random string.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
-passwordFile = "password.txt"
 ```
 
 #### Get help
@@ -46,12 +43,11 @@ gnfd-cmd -h
    bucket           support the bucket operation functions, including create/update/delete/head/list
    object           support the object operation functions, including put/get/update/delete/head/list and so on
    group            support the group operation functions, including create/update/delete/head/head-member
-   crosschain       support the cross-chain functions, including transfer and mirror
-   bank             support the bank functions
-   policy           support object policy and bucket policy operation functions
-   payment          support the payment operation functions
+   bank             support the bank functions, including transfer in greenfield and query balance
+   policy           support object,bucket and group policy operation functions
+   payment-account  support the payment account operation functions
    sp               support the storage provider operation functions
-   create-keystore  create a new keystore file
+   keystore         support the keystore operation functions
 
 ```
 
@@ -81,13 +77,12 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 
 #### Generate Keystore
 
-Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext .
-You need also write your password on the password file which set by the "passwordFile" field in the config file.
+Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
 Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file called key.json:
 ```
 // generate keystore key.json
-gnfd-cmd create-keystore --privKeyFile key.txt key.json
+gnfd-cmd create-keystore --privKeyFile key.txt 
 ```
 
 After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
@@ -100,11 +95,6 @@ gnfd-cmd bank transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --
 // query the balance of account
 gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
-// create a payment account
-gnfd-cmd payment create-account
-
-// list payment accounts under owner or a address with optional flag --user 
-gnfd-cmd payment ls --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 ```
 
 #### Storage Provider Operations
@@ -230,18 +220,28 @@ gnfd-cmd group head gnfd://groupname
 ```
 #### Payment Operations
 ```
-// get quota info
-gnfd-cmd payment quota-info gnfd://gnfd-bucket
+// create a payment account
+gnfd-cmd payment-account create
 
-// buy quota
-gnfd-cmd payment buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
+// list payment accounts under owner or a address with optional flag --user 
+gnfd-cmd payment-account ls --owner 0x5a64aCD8DC6Ce41d824638419319409246A9b41A
 
 // deposit from owner's account to the payment account 
-gnfd-cmd payment deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+gnfd-cmd payment-account deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 
 // witharaw from a payment account to owner's account
-gnfd-cmd payment withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+gnfd-cmd payment-account withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
+
+#### Quota Operation
+```
+// get quota info
+gnfd-cmd bucket get-quota gnfd://gnfd-bucket
+
+// buy quota
+gnfd-cmd bucket buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
+```
+
 #### Hash Operations
 
 ```
