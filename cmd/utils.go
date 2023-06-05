@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
@@ -65,12 +67,10 @@ const (
 	bucketNameFlag = "bucketName"
 	objectNameFlag = "objectName"
 
-	defaultKeyfile      = "key.json"
-	defaultPasswordfile = "password"
-	privKeyFileFlag     = "privKeyFile"
-	passwordFileFlag    = "passwordfile"
-	EncryptScryptN      = 1 << 18
-	EncryptScryptP      = 1
+	privKeyFileFlag  = "privKeyFile"
+	passwordFileFlag = "passwordfile"
+	EncryptScryptN   = 1 << 18
+	EncryptScryptP   = 1
 
 	ContextTimeout       = time.Second * 20
 	BucketResourcePrefix = "grn:b::"
@@ -80,6 +80,15 @@ const (
 	ObjectPolicyType = 1
 	BucketPolicyType = 2
 	GroupPolicyType  = 3
+
+	DefaultConfigDir    = ".gnfd-cmd/config"
+	DefaultConfigFile   = "config.toml"
+	DefaultKeyStorePath = ".gnfd-cmd/keystore/key.json"
+	DefaultPasswordPath = ".gnfd-cmd/keystore/password/password.txt"
+
+	rpcAddrConfigField = "rpcAddr"
+	chainIdConfigField = "chainId"
+	hostConfigField    = "host"
 )
 
 var (
@@ -132,11 +141,6 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 
 func toCmdErr(err error) error {
 	fmt.Printf("run command error: %s\n", err.Error())
-	return nil
-}
-
-func genCmdErr(msg string) error {
-	fmt.Printf("run command error: %s\n", msg)
 	return nil
 }
 
@@ -324,22 +328,26 @@ func parseActions(ctx *cli.Context, policyType PolicyType) ([]permTypes.ActionTy
 }
 
 // getPassword return the password content
-func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
+func getPassword(ctx *cli.Context) (string, error) {
 	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
 		filepath = passwordFile
-	} else if config.PasswordFile != "" {
-		filepath = config.PasswordFile
-	} else {
-		filepath = defaultPasswordfile
+		readContent, err := os.ReadFile(filepath)
+		if err != nil {
+			return "", errors.New("failed to read password file" + err.Error())
+		}
+		return strings.TrimRight(string(readContent), "\r\n"), nil
 	}
 
-	readContent, err := os.ReadFile(filepath)
+	fmt.Print("Input Password：")
+	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		return "", errors.New("failed to read password file" + err.Error())
+		fmt.Println("read password ", err)
+		return "", err
 	}
+	password := string(bytePassword)
 
-	return strings.TrimRight(string(readContent), "\r\n"), nil
+	return password, nil
 }
 
 // loadKey loads a secp256k1 private key from the given file.
@@ -381,16 +389,124 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 }
 
 type cmdConfig struct {
-	RpcAddr      string `toml:"rpcAddr"`
-	ChainId      string `toml:"chainId"`
-	PasswordFile string `toml:"passwordFile"`
-	Host         string `toml:"host"`
+	RpcAddr string `toml:"rpcAddr"`
+	ChainId string `toml:"chainId"`
+	Host    string `toml:"host"`
 }
 
+// parseConfigFile decode the config file of TOML format
 func parseConfigFile(filePath string) (*cmdConfig, error) {
 	var config cmdConfig
 	if _, err := toml.DecodeFile(filePath, &config); err != nil {
 		return nil, err
 	}
 	return &config, nil
+}
+
+const configContent = "rpcAddr = \"https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443\"\nchainId = \"greenfield_5600-1\""
+
+// loadConfig parse the default config file path
+func loadConfig() (*cmdConfig, error) {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	configPath := filepath.Join(dirname, DefaultConfigDir, DefaultConfigFile)
+
+	// if config default path not exist, create the config file with default test net config
+	_, err = os.Stat(configPath)
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
+			return nil, toCmdErr(errors.New("failed to create config file directory :%s" + filepath.Dir(configPath)))
+		}
+
+		err = os.WriteFile(configPath, []byte(configContent), 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create config file: %v", err)
+		}
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to check config file: %v", err)
+	}
+
+	content, err := parseConfigFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	return content, nil
+}
+
+// getConfig parse the config of the client, return rpc address, chainId and host
+func getConfig(ctx *cli.Context) (string, string, string, error) {
+	rpcAddr := ctx.String(rpcAddrConfigField)
+	chainId := ctx.String(chainIdConfigField)
+	if rpcAddr != "" && chainId != "" {
+		return rpcAddr, chainId, ctx.String(hostConfigField), nil
+	}
+
+	configFile := ctx.String("config")
+	var config *cmdConfig
+	var err error
+	if configFile != "" {
+		// if user has set config file, parse the file
+		config, err = parseConfigFile(configFile)
+		if err != nil {
+			return "", "", "", err
+		}
+	} else {
+		// if file exist in config default path, read default file.
+		// else generate the default file for user in the default path
+		config, err = loadConfig()
+		if err != nil {
+			return "", "", "", err
+		}
+	}
+
+	if config.RpcAddr == "" || config.ChainId == "" {
+		return "", "", "", fmt.Errorf("failed to parse rpc address or chain id , please set it in the config file")
+	}
+
+	return config.RpcAddr, config.ChainId, config.Host, nil
+}
+
+func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
+	keyfilepath := ctx.String("keystore")
+	if keyfilepath == "" {
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			return nil, toCmdErr(err)
+		}
+
+		keyfilepath = filepath.Join(dirname, DefaultKeyStorePath)
+	}
+
+	// fetch private key from keystore
+	content, err := os.ReadFile(keyfilepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
+	}
+
+	return content, nil
+}
+
+func loadPassWordFile(ctx *cli.Context) (string, error) {
+	passwordFilepath := ctx.String(passwordFileFlag)
+	if passwordFilepath == "" {
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			return "", toCmdErr(err)
+		}
+
+		passwordFilepath = filepath.Join(dirname, DefaultPasswordPath)
+	}
+
+	// fetch password from password file
+	content, err := os.ReadFile(passwordFilepath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read the password at '%s': %v \n", passwordFilepath, err)
+	}
+
+	fmt.Println("get password:", string(content), "length:", len(content))
+	return string(content), nil
 }

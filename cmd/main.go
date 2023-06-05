@@ -31,24 +31,22 @@ func main() {
 				Usage: "greenfield chainId",
 			},
 		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Name:     passwordFileFlag,
-				Usage:    "password file for encrypting and decoding the private key",
-				Required: false,
-			},
-		),
+
+		&cli.StringFlag{
+			Name:    passwordFileFlag,
+			Aliases: []string{"p"},
+			Usage:   "password file for encrypting and decoding the private key",
+		},
+
 		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"c"},
-			Value:   "config.toml",
 			Usage:   "Load configuration from `FILE`",
 		},
 		&cli.StringFlag{
 			Name:    "keystore",
 			Aliases: []string{"k"},
-			Value:   defaultKeyfile,
-			Usage:   "key file path",
+			Usage:   "keystore file path",
 		},
 	}
 
