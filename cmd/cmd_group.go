@@ -83,7 +83,7 @@ Examples:
 $ gnfd-cmd group mirror --id 1
 
 # Mirror a group using group name
-$ gnfd-cmd group mirror --name yourGroupName
+$ gnfd-cmd group mirror --groupName yourGroupName
 `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -235,7 +235,11 @@ func mirrorGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	id := math.NewUintFromString(ctx.String(IdFlag))
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
 	groupName := ctx.String(groupNameFlag)
 
 	c, cancelContext := context.WithCancel(globalContext)
