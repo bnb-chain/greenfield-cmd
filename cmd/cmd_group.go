@@ -23,7 +23,7 @@ func cmdCreateGroup() *cli.Command {
 Create a new group
 
 Examples:
-$ gnfd-cmd group make-group group-name`,
+$ gnfd-cmd group create group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlag,
