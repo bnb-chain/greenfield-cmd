@@ -106,32 +106,6 @@ $ gnfd-cmd policy delete --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
 				Value: "",
 				Usage: "the address hex string of the grantee",
 			},
-			&cli.StringFlag{
-				Name:  actionsFlag,
-				Value: "",
-				Usage: "set the actions of the policy," +
-					"if it is an object policy, actions can be the following: create, delete, copy, get, execute, list or all," +
-					"if it is a bucket policy, actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
-					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
-					" the deleteObj means grant the permission of delete Objects in the bucket" +
-					"if it is a group policy, actions can be the following: update, delete or all, update indicates the update-group-member action" +
-					", multi actions like \"delete,copy\" is supported",
-				Required: true,
-			},
-
-			&cli.GenericFlag{
-				Name: effectFlag,
-				Value: &CmdEnumValue{
-					Enum:    []string{effectDeny, effectAllow},
-					Default: effectAllow,
-				},
-				Usage: "set the effect of the policy",
-			},
-			&cli.Uint64Flag{
-				Name:  expireTimeFlag,
-				Value: 0,
-				Usage: "set the expire unix time stamp of the policy",
-			},
 		},
 	}
 }
@@ -454,7 +428,6 @@ func printObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNa
 			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
 		}
 	}
-	return
 }
 
 func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {

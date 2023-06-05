@@ -23,7 +23,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const (
@@ -58,14 +58,8 @@ const (
 	toAddressFlag    = "toAddress"
 	fromAddressFlag  = "fromAddress"
 	amountFlag       = "amount"
-	resourceFlag     = "resource"
-	IdFlag           = "id"
 	objectPrefix     = "prefix"
 	folderFlag       = "folder"
-
-	groupNameFlag  = "groupName"
-	bucketNameFlag = "bucketName"
-	objectNameFlag = "objectName"
 
 	privKeyFileFlag  = "privKeyFile"
 	privKeyFlag      = "privateKey"
@@ -341,7 +335,7 @@ func getPassword(ctx *cli.Context) (string, error) {
 	}
 
 	fmt.Print("Input Password：")
-	bytePassword, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		fmt.Println("read password ", err)
 		return "", err
