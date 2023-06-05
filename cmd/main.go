@@ -138,6 +138,7 @@ func main() {
 				Usage: "support the keystore operation functions",
 				Subcommands: []*cli.Command{
 					cmdGenerateKey(),
+					cmdPrintKey(),
 				},
 			},
 		},

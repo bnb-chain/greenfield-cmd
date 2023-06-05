@@ -68,6 +68,7 @@ const (
 	objectNameFlag = "objectName"
 
 	privKeyFileFlag  = "privKeyFile"
+	privKeyFlag      = "privateKey"
 	passwordFileFlag = "passwordfile"
 	EncryptScryptN   = 1 << 18
 	EncryptScryptP   = 1
@@ -507,6 +508,5 @@ func loadPassWordFile(ctx *cli.Context) (string, error) {
 		return "", fmt.Errorf("failed to read the password at '%s': %v \n", passwordFilepath, err)
 	}
 
-	fmt.Println("get password:", string(content), "length:", len(content))
 	return string(content), nil
 }

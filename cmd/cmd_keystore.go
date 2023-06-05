@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
 	"github.com/urfave/cli/v2"
 )
 
@@ -27,6 +29,32 @@ $ gnfd-cmd keystore generate --privKeyFile key.txt  `,
 				Value:    "",
 				Usage:    "the private key file path which contain the origin private hex string",
 				Required: true,
+			},
+			&cli.StringFlag{
+				Name:  passwordFileFlag,
+				Value: "",
+				Usage: "the file which contains the password for the keyfile",
+			},
+		},
+	}
+}
+
+func cmdPrintKey() *cli.Command {
+	return &cli.Command{
+		Name:      "inspect",
+		Action:    inspectKey,
+		Usage:     "inspect a keystore file",
+		ArgsUsage: "[ <keyfile> ] ",
+		Description: `
+print the private key related information
+
+Examples:
+$ gnfd-cmd  keystore inspect --privateKey true  `,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  privKeyFlag,
+				Value: "",
+				Usage: "include the private key in the output",
 			},
 			&cli.StringFlag{
 				Name:  passwordFileFlag,
@@ -101,6 +129,28 @@ func generateKey(ctx *cli.Context) error {
 	return nil
 }
 
+func inspectKey(ctx *cli.Context) error {
+	privateKey, err := parseKeystore(ctx)
+	if err != nil {
+		return nil
+	}
+	printPrivate := ctx.Bool(privKeyFlag)
+
+	priBytes := []byte(privateKey)
+	var keyBytesArray [32]byte
+	copy(keyBytesArray[:], priBytes[:32])
+	priKey := hd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
+	pubKey := priKey.PubKey()
+
+	fmt.Println("Address:       ", pubKey.Address())
+	fmt.Println("Public key:    ", pubKey.String())
+	if printPrivate {
+		fmt.Println("Private key:   ", privateKey)
+	}
+
+	return nil
+}
+
 func writeDefaultPassword(password string) error {
 	dirname, err := os.UserHomeDir()
 	if err != nil {
@@ -118,7 +168,7 @@ func writeDefaultPassword(password string) error {
 		return toCmdErr(fmt.Errorf("failed to write password to the path: %s: %v", filePath, err))
 	}
 
-	fmt.Printf("generate password file: %s successfully \n", filePath)
+	fmt.Printf("\ngenerate password file: %s successfully \n", filePath)
 	return nil
 }
 
