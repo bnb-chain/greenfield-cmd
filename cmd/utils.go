@@ -78,9 +78,9 @@ const (
 	ObjectResourcePrefix = "grn:o::"
 	GroupResourcePrefix  = "grn:g:"
 
-	ObjectPolicyType = 1
-	BucketPolicyType = 2
-	GroupPolicyType  = 3
+	ObjectResourceType = 1
+	BucketResourceType = 2
+	GroupResourceType  = 3
 
 	DefaultConfigDir    = ".gnfd-cmd/config"
 	DefaultConfigFile   = "config.toml"
@@ -300,7 +300,7 @@ func getGroupAction(action string) (permTypes.ActionType, error) {
 	}
 }
 
-func parseActions(ctx *cli.Context, policyType PolicyType) ([]permTypes.ActionType, error) {
+func parseActions(ctx *cli.Context, resourceType ResourceType) ([]permTypes.ActionType, error) {
 	actions := make([]permTypes.ActionType, 0)
 	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
@@ -311,11 +311,11 @@ func parseActions(ctx *cli.Context, policyType PolicyType) ([]permTypes.ActionTy
 	for _, v := range actionList {
 		var action permTypes.ActionType
 		var err error
-		if policyType == ObjectPolicyType {
+		if resourceType == ObjectResourceType {
 			action, err = getObjectAction(v)
-		} else if policyType == BucketPolicyType {
+		} else if resourceType == BucketResourceType {
 			action, err = getBucketAction(v)
-		} else if policyType == GroupPolicyType {
+		} else if resourceType == GroupResourceType {
 			action, err = getGroupAction(v)
 		}
 

@@ -110,6 +110,7 @@ func main() {
 				Usage: "support object,bucket and group policy operation functions",
 				Subcommands: []*cli.Command{
 					cmdPutPolicy(),
+					cmdDelPolicy(),
 				},
 			},
 
