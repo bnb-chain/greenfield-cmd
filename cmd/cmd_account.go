@@ -315,7 +315,7 @@ $ gnfd-cmd bank transfer --toAddress 0x.. --amount 12345`,
 			&cli.StringFlag{
 				Name:  amountFlag,
 				Value: "",
-				Usage: "the amount to be sent",
+				Usage: "the amount to be sent, the unit is wei for BNB",
 			},
 		},
 	}
