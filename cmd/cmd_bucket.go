@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"cosmossdk.io/math"
 	"errors"
 	"fmt"
 
@@ -102,6 +103,39 @@ List the bucket names and bucket ids of the user.
 
 Examples:
 $ gnfd-cmd bucket ls`,
+	}
+}
+
+func cmdMirrorBucket() *cli.Command {
+	return &cli.Command{
+		Name:      "mirror",
+		Action:    mirrorBucket,
+		Usage:     "mirror bucket to BSC",
+		ArgsUsage: "",
+		Description: `
+Mirror a bucket as NFT to BSC
+
+Examples:
+# Mirror a bucket using bucket id
+$ gnfd-cmd bucket mirror --id 1
+
+# Mirror a bucket using bucket name
+$ gnfd-cmd bucket mirror --name yourBucketName
+`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     IdFlag,
+				Value:    "",
+				Usage:    "bucket id",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     bucketNameFlag,
+				Value:    "",
+				Usage:    "bucket name",
+				Required: false,
+			},
+		},
 	}
 }
 
@@ -256,4 +290,23 @@ func listBuckets(ctx *cli.Context) error {
 	}
 	return nil
 
+}
+
+func mirrorBucket(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	id := math.NewUintFromString(ctx.String(IdFlag))
+	bucketName := ctx.String(bucketNameFlag)
+
+	c, cancelContext := context.WithCancel(globalContext)
+	defer cancelContext()
+
+	txResp, err := client.MirrorBucket(c, id, bucketName, types.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("mirror bucket succ, txHash: %s\n", txResp.TxHash)
+	return nil
 }

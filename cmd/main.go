@@ -66,6 +66,7 @@ func main() {
 					cmdListBuckets(),
 					cmdBuyQuota(),
 					cmdGetQuotaInfo(),
+					cmdMirrorBucket(),
 				},
 			},
 			{
@@ -82,6 +83,7 @@ func main() {
 					cmdCreateFolder(),
 					cmdUpdateObject(),
 					cmdGetUploadProgress(),
+					cmdMirrorObject(),
 				},
 			},
 			{
@@ -93,6 +95,7 @@ func main() {
 					cmdHeadGroup(),
 					cmdHeadGroupMember(),
 					cmdDelGroup(),
+					cmdMirrorGroup(),
 				},
 			},
 
@@ -102,7 +105,7 @@ func main() {
 				Subcommands: []*cli.Command{
 					cmdTransfer(),
 					cmdGetAccountBalance(),
-					cmdTransferOut(),
+					cmdBridge(),
 				},
 			},
 			{
