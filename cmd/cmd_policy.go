@@ -391,7 +391,7 @@ func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
 		}
 		fmt.Printf("put policy of the group:%s succ, txn hash: %s\n", groupName, policyTx)
 	} else {
-		policyTx, err := client.DeleteGroupPolicy(c, groupName, grantee, sdktypes.DeletePolicyOption{TxOpts: &TxnOptionWithSyncMode})
+		policyTx, err = client.DeleteGroupPolicy(c, groupName, grantee, sdktypes.DeletePolicyOption{TxOpts: &TxnOptionWithSyncMode})
 		if err != nil {
 			return toCmdErr(err)
 		}
