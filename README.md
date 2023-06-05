@@ -47,7 +47,11 @@ The commands support different kinds of commands, including bucket,object,group,
 gnfd-cmd -h
    bucket           support the bucket operation functions, including create/update/delete/head/list and so on
    object           support the object operation functions, including put/get/update/delete/head/list and so on
+<<<<<<< HEAD
    group            support the group operation functions, including create/update/delete/head/head-member/mirror
+=======
+   group            support the group operation functions, including create/update/delete/head/head-member
+>>>>>>> c8b0074 (update readme)
    bank             support the bank functions, including transfer in greenfield and query balance
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
@@ -83,6 +87,7 @@ All the other commands need to run with -k if the keystore is not on the default
 #### Generate Keystore
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
+<<<<<<< HEAD
 
 Users can use "keystore generate" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
 The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
@@ -90,11 +95,18 @@ and it is also the default path to load keystore when running other commands.
 Password info is also needed to run the command. The terminal will prompt user to enter the password information. After the terminal obtains user's password information,
 the password file will store in the path "keystore/password/password.txt" under the home directory of the system or the directory set by "-home".
 Users can also specify the password file path by using the "--passwordfile".
+=======
+>>>>>>> c8b0074 (update readme)
 
 ```
+<<<<<<< HEAD
 // generate keystore key.json, key.txt contain the plaintext private key
 // After the keystore file has been generated, user can delete the private key file key.txt.
 gnfd-cmd keystore generate --privKeyFile key.txt 
+=======
+// generate keystore key.json
+gnfd-cmd create-keystore --privKeyFile key.txt 
+>>>>>>> c8b0074 (update readme)
 ```
 
 Users can use "keystore inspect" to display the keystore information include publicKey, address and privateKey.
@@ -267,6 +279,20 @@ gnfd-cmd payment-account deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8
 // witharaw from a payment account to owner's account
 gnfd-cmd payment-account withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
+<<<<<<< HEAD
+=======
+
+#### Quota Operation
+```
+// get quota info
+gnfd-cmd bucket get-quota gnfd://gnfd-bucket
+
+// buy quota
+gnfd-cmd bucket buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
+```
+
+#### Hash Operations
+>>>>>>> c8b0074 (update readme)
 
 #### Quota Operations
 ```
