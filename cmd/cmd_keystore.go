@@ -38,7 +38,6 @@ $ gnfd-cmd keystore generate --privKeyFile key.txt  `,
 			},
 		},
 	}
-}
 
 func cmdPrintKey() *cli.Command {
 	return &cli.Command{
@@ -63,8 +62,6 @@ $ gnfd-cmd  keystore inspect --privateKey true  `,
 				Usage: "the file which contains the password for the keyfile",
 			},
 		},
-	}
-}
 
 func generateKey(ctx *cli.Context) error {
 	keyFilePath := ctx.Args().First()
@@ -169,10 +166,10 @@ func writeDefaultPassword(ctx *cli.Context, password string) error {
 
 	// store the password
 	if err := os.WriteFile(filePath, []byte(password), 0600); err != nil {
-		return fmt.Errorf("failed to write password to the path: %s: %v", filePath, err)
+		return toCmdErr(fmt.Errorf("failed to write password to the path: %s: %v", filePath, err))
 	}
 
-	fmt.Printf("\ngenerate password file: %s successfully \n", filePath)
+	fmt.Printf("generate password file: %s successfully \n", filePath)
 	return nil
 }
 
