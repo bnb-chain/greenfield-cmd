@@ -52,6 +52,10 @@ const (
 	actionsFlag      = "actions"
 	effectFlag       = "effect"
 	expireTimeFlag   = "expire"
+	IdFlag           = "id"
+	groupNameFlag    = "groupName"
+	bucketNameFlag   = "bucketName"
+	objectNameFlag   = "objectName"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
