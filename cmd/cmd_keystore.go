@@ -192,7 +192,7 @@ func writeDefaultPassword(ctx *cli.Context, password string) error {
 
 	// store the password
 	if err := os.WriteFile(filePath, []byte(password), 0600); err != nil {
-		return toCmdErr(fmt.Errorf("failed to write password to the path: %s: %v", filePath, err))
+		return fmt.Errorf("failed to write password to the path: %s: %v", filePath, err)
 	}
 
 	fmt.Printf("\ngenerate password file: %s successfully \n", filePath)

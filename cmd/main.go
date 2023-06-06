@@ -51,6 +51,7 @@ func main() {
 			Name:    configFlag,
 			Aliases: []string{"c"},
 			Usage:   "Load configuration from `FILE`",
+			//	Value:   filepath.Join(homeDir, DefaultConfigDir, DefaultConfigPath),
 		},
 		&cli.StringFlag{
 			Name:    keyStoreFlag,
