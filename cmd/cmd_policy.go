@@ -365,6 +365,11 @@ func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
 		return toCmdErr(err)
 	}
 
+	policyInfo, err := client.GetGroupPolicy(c, groupName, grantee)
+	if err == nil {
+		fmt.Printf("latest group policy info:  \n %s\n", policyInfo.String())
+	}
+
 	return nil
 }
 
@@ -420,12 +425,12 @@ func printObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNa
 	if groupId > 0 {
 		policyInfo, err := cli.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
 		if err == nil {
-			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
+			fmt.Printf("latest object policy info: \n %s\n", policyInfo.String())
 		}
 	} else {
 		policyInfo, err := cli.GetObjectPolicy(c, bucketName, objectName, grantee)
 		if err == nil {
-			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			fmt.Printf("latest object policy info:  \n %s\n", policyInfo.String())
 		}
 	}
 }
@@ -439,12 +444,12 @@ func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {
 	if groupId > 0 {
 		policyInfo, err := cli.GetBucketPolicyOfGroup(c, bucketName, groupId)
 		if err == nil {
-			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
+			fmt.Printf("latest bucket policy info: \n %s\n", policyInfo.String())
 		}
 	} else {
 		policyInfo, err := cli.GetBucketPolicy(c, bucketName, grantee)
 		if err == nil {
-			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
+			fmt.Printf("latest bucket policy info:  \n %s\n", policyInfo.String())
 		}
 	}
 }

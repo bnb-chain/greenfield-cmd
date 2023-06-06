@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	"github.com/BurntSushi/toml"
+	sdkutils "github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
@@ -215,23 +215,19 @@ func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) 
 	var granteeAddr sdk.AccAddress
 	var err error
 	if groupId > 0 {
-		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
-		principalBytes, err := p.Marshal()
+		principal, err = sdkutils.NewPrincipalWithGroupId(groupId)
 		if err != nil {
 			return "", err
 		}
-		principal = sdktypes.Principal(principalBytes)
 	} else {
 		granteeAddr, err = sdk.AccAddressFromHexUnsafe(grantee)
 		if err != nil {
 			return "", err
 		}
-		p := permTypes.NewPrincipalWithAccount(granteeAddr)
-		principalBytes, err := p.Marshal()
+		principal, err = sdkutils.NewPrincipalWithAccount(granteeAddr)
 		if err != nil {
 			return "", err
 		}
-		principal = sdktypes.Principal(principalBytes)
 	}
 
 	return principal, nil
