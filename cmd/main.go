@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
@@ -12,6 +14,14 @@ import (
 var globalContext, _ = context.WithCancel(context.Background())
 
 func main() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir, err = os.Getwd()
+		if err != nil {
+			fmt.Println("fail to get home dir or local dir")
+		}
+	}
+
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
@@ -37,16 +47,21 @@ func main() {
 			Aliases: []string{"p"},
 			Usage:   "password file for encrypting and decoding the private key",
 		},
-
 		&cli.StringFlag{
-			Name:    "config",
+			Name:    configFlag,
 			Aliases: []string{"c"},
 			Usage:   "Load configuration from `FILE`",
+			//	Value:   filepath.Join(homeDir, DefaultConfigDir, DefaultConfigPath),
 		},
 		&cli.StringFlag{
-			Name:    "keystore",
+			Name:    keyStoreFlag,
 			Aliases: []string{"k"},
 			Usage:   "keystore file path",
+		},
+		&cli.StringFlag{
+			Name:  homeFlag,
+			Usage: "directory for config and keystore",
+			Value: filepath.Join(homeDir, DefaultConfigDir),
 		},
 	}
 
@@ -149,7 +164,7 @@ func main() {
 	}
 	app.Before = altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))
 
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}

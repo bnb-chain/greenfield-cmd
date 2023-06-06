@@ -68,6 +68,9 @@ const (
 	privKeyFileFlag  = "privKeyFile"
 	privKeyFlag      = "privateKey"
 	passwordFileFlag = "passwordfile"
+	homeFlag         = "home"
+	keyStoreFlag     = "keystore"
+	configFlag       = "config"
 	EncryptScryptN   = 1 << 18
 	EncryptScryptP   = 1
 
@@ -80,10 +83,10 @@ const (
 	BucketResourceType = 2
 	GroupResourceType  = 3
 
-	DefaultConfigDir    = ".gnfd-cmd/config"
-	DefaultConfigFile   = "config.toml"
-	DefaultKeyStorePath = ".gnfd-cmd/keystore/key.json"
-	DefaultPasswordPath = ".gnfd-cmd/keystore/password/password.txt"
+	DefaultConfigPath   = "config/config.toml"
+	DefaultConfigDir    = ".gnfd-cmd"
+	DefaultKeyStorePath = "keystore/key.json"
+	DefaultPasswordPath = "keystore/password/password.txt"
 
 	rpcAddrConfigField = "rpcAddr"
 	chainIdConfigField = "chainId"
@@ -401,13 +404,12 @@ func parseConfigFile(filePath string) (*cmdConfig, error) {
 const configContent = "rpcAddr = \"https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443\"\nchainId = \"greenfield_5600-1\""
 
 // loadConfig parse the default config file path
-func loadConfig() (*cmdConfig, error) {
-	dirname, err := os.UserHomeDir()
+func loadConfig(ctx *cli.Context) (*cmdConfig, error) {
+	homeDir, err := getHomeDir(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	configPath := filepath.Join(dirname, DefaultConfigDir, DefaultConfigFile)
+	configPath := filepath.Join(homeDir, DefaultConfigPath)
 
 	// if config default path not exist, create the config file with default test net config
 	_, err = os.Stat(configPath)
@@ -420,6 +422,7 @@ func loadConfig() (*cmdConfig, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create config file: %v", err)
 		}
+		fmt.Println("generate default config file on path:", configPath)
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to check config file: %v", err)
 	}
@@ -452,7 +455,7 @@ func getConfig(ctx *cli.Context) (string, string, string, error) {
 	} else {
 		// if file exist in config default path, read default file.
 		// else generate the default file for user in the default path
-		config, err = loadConfig()
+		config, err = loadConfig(ctx)
 		if err != nil {
 			return "", "", "", err
 		}
@@ -468,12 +471,11 @@ func getConfig(ctx *cli.Context) (string, string, string, error) {
 func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
 	keyfilepath := ctx.String("keystore")
 	if keyfilepath == "" {
-		dirname, err := os.UserHomeDir()
+		homeDir, err := getHomeDir(ctx)
 		if err != nil {
-			return nil, toCmdErr(err)
+			return nil, err
 		}
-
-		keyfilepath = filepath.Join(dirname, DefaultKeyStorePath)
+		keyfilepath = filepath.Join(homeDir, DefaultKeyStorePath)
 	}
 
 	// fetch private key from keystore
@@ -488,12 +490,11 @@ func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
 func loadPassWordFile(ctx *cli.Context) (string, error) {
 	passwordFilepath := ctx.String(passwordFileFlag)
 	if passwordFilepath == "" {
-		dirname, err := os.UserHomeDir()
+		homeDir, err := getHomeDir(ctx)
 		if err != nil {
-			return "", toCmdErr(err)
+			return "", err
 		}
-
-		passwordFilepath = filepath.Join(dirname, DefaultPasswordPath)
+		passwordFilepath = filepath.Join(homeDir, DefaultPasswordPath)
 	}
 
 	// fetch password from password file
@@ -503,4 +504,11 @@ func loadPassWordFile(ctx *cli.Context) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+func getHomeDir(ctx *cli.Context) (string, error) {
+	if ctx.String(homeFlag) != "" {
+		return ctx.String(homeFlag), nil
+	}
+	return "", errors.New("home flag should not be empty")
 }

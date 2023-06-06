@@ -68,7 +68,7 @@ $ gnfd-cmd  keystore inspect --privateKey true  `,
 func generateKey(ctx *cli.Context) error {
 	keyFilePath := ctx.Args().First()
 	if keyFilePath == "" {
-		homeDirname, err := os.UserHomeDir()
+		homeDirname, err := getHomeDir(ctx)
 		if err != nil {
 			return toCmdErr(err)
 		}
@@ -100,13 +100,13 @@ func generateKey(ctx *cli.Context) error {
 	// fetch password content
 	password, err := getPassword(ctx)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	// write password content to default password file path
-	err = writeDefaultPassword(password)
+	err = writeDefaultPassword(ctx, password)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	// encrypt the private key
@@ -151,21 +151,20 @@ func inspectKey(ctx *cli.Context) error {
 	return nil
 }
 
-func writeDefaultPassword(password string) error {
-	dirname, err := os.UserHomeDir()
+func writeDefaultPassword(ctx *cli.Context, password string) error {
+	homeDir, err := getHomeDir(ctx)
 	if err != nil {
-		return toCmdErr(err)
+		return err
 	}
-
-	filePath := filepath.Join(dirname, DefaultPasswordPath)
+	filePath := filepath.Join(homeDir, DefaultPasswordPath)
 
 	if err := os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
-		return toCmdErr(errors.New("failed to create password directory :%s" + filepath.Dir(filePath)))
+		return errors.New("failed to create password directory :%s" + filepath.Dir(filePath))
 	}
 
 	// store the password
 	if err := os.WriteFile(filePath, []byte(password), 0600); err != nil {
-		return toCmdErr(fmt.Errorf("failed to write password to the path: %s: %v", filePath, err))
+		return fmt.Errorf("failed to write password to the path: %s: %v", filePath, err)
 	}
 
 	fmt.Printf("\ngenerate password file: %s successfully \n", filePath)
