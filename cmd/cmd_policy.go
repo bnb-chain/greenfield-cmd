@@ -403,6 +403,11 @@ func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
 		return toCmdErr(err)
 	}
 
+	policyInfo, err := client.GetGroupPolicy(c, groupName, grantee)
+	if err == nil {
+		fmt.Printf("latest group policy info:  \n %s\n", policyInfo.String())
+	}
+
 	return nil
 }
 
