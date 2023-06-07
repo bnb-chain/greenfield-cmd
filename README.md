@@ -100,6 +100,9 @@ After the keystore file has been generated, you can delete the private key file 
 // transfer to an account in Greenfield
 gnfd-cmd bank transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 
+// crosschain transfer some tokens to an account in BSC
+gnfd-cmd bank bridge --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
+
 // query the balance of account
 gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
@@ -213,7 +216,7 @@ gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-
 
 ```
 #### List Operations
-
+```
 // list buckets
 gnfd-cmd bucket ls
 
@@ -271,21 +274,25 @@ gnfd-cmd bucket buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
 ```
 // compute integrity hash
 gnfd-cmd object get-hash file-path
+```
+
+#### Resource mirror Operations
 
 ```
-#### Crosschain Operations
-```
-// crosschain transfer some tokens to an account in BSC
-gnfd-cmd crosschain transfer-out --toAddress "0x2eDD53b48726a887c98aDAb97e0a8600f855570d" --amount 12345
+// mirror a group as NFT to BSC, you might use group id or groupName to identidy the group
+gnfd-cmd group mirror --id 1
+or
+gnfd-cmd group mirror --groupName yourGroupName
 
-// mirror a group to BSC
-gnfd-cmd crosschain mirror --resource group --id 1
+// mirror a bucket as NFT to BSC, you might use bucket id or bucketName to identidy the bucket
+gnfd-cmd bucket mirror --id 1
+or
+gnfd-cmd bucket mirror --bucketName yourBucketName
 
-// mirror a bucket to BSC
-gnfd-cmd crosschain mirror --resource bucket --id 1
-
-// mirror a object to BSC
-gnfd-cmd crosschain mirror --resource object --id 1
+// mirror a object as NFT to BSC, you might use object id or (bucketName, objectName) to identidy the object
+gnfd-cmd object mirror --id 1
+or
+gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
 ```
 
 ## Reference
