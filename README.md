@@ -51,8 +51,12 @@ gnfd-cmd -h
    group            support the group operation functions, including create/update/delete/head/head-member/mirror
 =======
    group            support the group operation functions, including create/update/delete/head/head-member
+<<<<<<< HEAD
 >>>>>>> c8b0074 (update readme)
    bank             support the bank functions, including transfer in greenfield and query balance
+=======
+   bank             support the bank functions, including transfer，bridge and query balance
+>>>>>>> a590355 (update readme)
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
    sp               support the storage provider operation functions
@@ -72,8 +76,13 @@ gnfd-cmd [command-name][subcommand-name] -h
 
 ### Precautions
 
+<<<<<<< HEAD
 1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information.
 All the other commands need to run with -k if the keystore is not on the default path.
+=======
+1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
+and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default path([--home]/keystore/key.json).
+>>>>>>> a590355 (update readme)
 
 2. The operator account should have enough balance before sending request to greenfield.
 
@@ -87,6 +96,7 @@ All the other commands need to run with -k if the keystore is not on the default
 #### Generate Keystore
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 Users can use "keystore generate" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
@@ -104,6 +114,14 @@ Users can also specify the password file path by using the "--passwordfile".
 // After the keystore file has been generated, user can delete the private key file key.txt.
 gnfd-cmd keystore generate --privKeyFile key.txt 
 =======
+=======
+
+Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. The keystore will
+be generated in the path: [--home]/keystore/key.json. The generate command requires specifying password information. 
+You can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
+it will store it in the "[--home]keystore/password/password.txt" file.
+```
+>>>>>>> a590355 (update readme)
 // generate keystore key.json
 gnfd-cmd create-keystore --privKeyFile key.txt 
 >>>>>>> c8b0074 (update readme)
@@ -200,6 +218,7 @@ gnfd-cmd group delete gnfd://group-name
 ```
 #### Policy Operations
 
+<<<<<<< HEAD
 The gnfd-cmd policy command supports the policy for put/delete resources policy(including objects, buckets, and groups) to the principal.
 
 The principal is need to be set by --grantee which indicates a greenfield account or --groupId which indicates group id.
@@ -209,6 +228,15 @@ The bucket policy actions can be "update", "delete", "create", "list", "update",
 The group policy actions can be "update", "delete" or all, update indicates the update-group-member action.
 
 The policy effect can set to be "allow" or "deny" by --effect
+=======
+he gnfd-cmd policy command supports the policy for put/delete resources policy(including objects, buckets, and groups) to the principal.
+
+The principal is need to be set by --grantee which indicates a greenfield account or --groupId which indicates group id.
+The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
+The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
+The group policy actions can be "update", "delete" or all, update indicates the update-group-member action.
+The policy effect can set to be allow or deny by --effect
+>>>>>>> a590355 (update readme)
 
 Put policy examples:
 ```
@@ -223,6 +251,7 @@ gnfd-cmd policy put --groupId 130 --actions delete,update,createObj  grn:b::gnfd
 
 // grant bucket operation permissions to an account
 gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions delete,update  grn:b::gnfd-bucket
+<<<<<<< HEAD
 
 // grant group operation permissions to an account 
 gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:owneraddress:gnfd-group
@@ -234,10 +263,23 @@ gnfd-cmd policy delete --grantee   grn:b::gnfd-bucket
 
 // delete the object policy from an grantee
 gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-object
+=======
+>>>>>>> a590355 (update readme)
+
+// grant group operation permissions to an account 
+gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:owneraddress:gnfd-group
+```
+Delete policy examplse:
+```
+// delete the bucket policy from a group
+gnfd-cmd policy delete --groupId 11  grn:b::gnfd-bucket
+
+// delete the object policy from an grantee
+gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-object
 
 ```
 #### List Operations
-```
+
 // list buckets
 gnfd-cmd bucket ls
 
