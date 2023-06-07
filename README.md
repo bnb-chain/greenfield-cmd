@@ -23,8 +23,9 @@ cd build
 
 ### basic config 
 
-The command should run with "-c filePath" to load the config file and the config should be TOML format.
-The default config file is "config.toml".
+The command tool supports the "--home" option to specify the path of the config file and the keystore.
+The default path is "~/.gnfd-cmd". When running commands that interact with the greenfield, if there is no [--home]/config/config.toml file in the path and the commands runs without "--config" flag, 
+the tool will generate a new config.toml file on [--home]/config  which is consistent with the testnet configuration by default.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
@@ -33,6 +34,10 @@ The rpcAddr indicates the Tendermint RPC address with the port info.
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
 ```
+The command tool can also support other networks besides the test network. 
+you can replace the content of a custom config file in the default config directory with config.toml or
+run command with "-c filepath" to set the custom config file.
+
 
 #### Get help
 
@@ -43,7 +48,7 @@ gnfd-cmd -h
    bucket           support the bucket operation functions, including create/update/delete/head/list
    object           support the object operation functions, including put/get/update/delete/head/list and so on
    group            support the group operation functions, including create/update/delete/head/head-member
-   bank             support the bank functions, including transfer in greenfield and query balance
+   bank             support the bank functions, including transfer，bridge and query balance
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
    sp               support the storage provider operation functions
@@ -63,8 +68,8 @@ gnfd-cmd [command-name][subcommand-name] -h
 
 ### Precautions
 
-1. The user need to use "create-keystore" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
-and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default file path(key.json).
+1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
+and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default path([--home]/keystore/key.json).
 
 2. The operator account should have enough balance before sending request to greenfield.
 
@@ -79,7 +84,10 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
-Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file called key.json:
+Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. The keystore will
+be generated in the path: [--home]/keystore/key.json. The generate command requires specifying password information. 
+You can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
+it will store it in the "[--home]keystore/password/password.txt" file.
 ```
 // generate keystore key.json
 gnfd-cmd create-keystore --privKeyFile key.txt 
@@ -168,28 +176,44 @@ gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc81
 // delete group
 gnfd-cmd group delete gnfd://group-name
 ```
-#### Policy  Operations
-```
-// The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
-// The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
-// The actions info can be set with combined string like "create,delete" by --actions
-// The policy effect can set to be allow or deny by --effect
+#### Policy Operations
 
+he gnfd-cmd policy command supports the policy for put/delete resources policy(including objects, buckets, and groups) to the principal.
+
+The principal is need to be set by --grantee which indicates a greenfield account or --groupId which indicates group id.
+The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
+The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
+The group policy actions can be "update", "delete" or all, update indicates the update-group-member action.
+The policy effect can set to be allow or deny by --effect
+
+Put policy examples:
+```
 // grant object operation permissions to a group
-gnfd-cmd policy put-object-policy --groupId 128  --actions get,delete  gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd policy put  --groupId 128  --actions get,delete  grn:o::gnfd-bucket/gnfd-object
 
 // grant object operation permissions to an account
-gnfd-cmd policy put-object-policy --grantee 0x169321fC04A12c16...  --actions get,delete gnfd://gnfd-bucket/gnfd-object
+gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions get,delete grn:o::gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
-gnfd-cmd policy put-bucket-policy --groupId 130 --actions delete,update,createObj  gnfd://gnfd-bucket
+gnfd-cmd policy put --groupId 130 --actions delete,update,createObj  grn:b::gnfd-bucket
 
 // grant bucket operation permissions to an account
-gnfd-cmd policy put-bucket-policy  --grantee 0x169321fC04A12c16...  --actions delete,update  gnfd://gnfd-bucket
+gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions delete,update  grn:b::gnfd-bucket
+
+// grant group operation permissions to an account 
+gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:owneraddress:gnfd-group
+```
+Delete policy examplse:
+```
+// delete the bucket policy from a group
+gnfd-cmd policy delete --groupId 11  grn:b::gnfd-bucket
+
+// delete the object policy from an grantee
+gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-object
 
 ```
 #### List Operations
-```
+
 // list buckets
 gnfd-cmd bucket ls
 
