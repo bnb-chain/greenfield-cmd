@@ -5,11 +5,12 @@ go 1.19
 require (
 	cosmossdk.io/math v1.0.0
 	github.com/BurntSushi/toml v1.2.1
-	github.com/bnb-chain/greenfield v0.2.1-alpha.1
-	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230606043103-97fa33eec2bf
+	github.com/bnb-chain/greenfield v0.2.1
+	github.com/bnb-chain/greenfield-go-sdk v0.2.1
 	github.com/cosmos/cosmos-sdk v0.47.0-rc2.0.20230220103612-f094a0c33410
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/urfave/cli/v2 v2.10.2
+	golang.org/x/term v0.7.0
 )
 
 require (
@@ -133,7 +134,6 @@ require (
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/term v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20230320184635-7606e756e683 // indirect
 	google.golang.org/grpc v1.54.0 // indirect
@@ -150,5 +150,5 @@ replace (
 	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20230425074444-eb5869b05fe9
 	github.com/cometbft/cometbft => github.com/bnb-chain/greenfield-cometbft v0.0.1
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.2.1-alpha.2
+	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.2.1
 )

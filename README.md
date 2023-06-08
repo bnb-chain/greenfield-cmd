@@ -86,7 +86,7 @@ Before generate keystore, you should export your private key from MetaMask and w
 
 Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. The keystore will
 be generated in the path: [--home]/keystore/key.json. The generate command requires specifying password information. 
-You can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
+User can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
 it will store it in the "[--home]keystore/password/password.txt" file.
 ```
 // generate keystore key.json
@@ -208,8 +208,8 @@ gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:own
 ```
 Delete policy examplse:
 ```
-// delete the bucket policy from a group
-gnfd-cmd policy delete --groupId 11  grn:b::gnfd-bucket
+// delete the bucket policy from an grantee
+gnfd-cmd policy delete --grantee   grn:b::gnfd-bucket
 
 // delete the object policy from an grantee
 gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-object
@@ -279,20 +279,14 @@ gnfd-cmd object get-hash file-path
 #### Resource mirror Operations
 
 ```
-// mirror a group as NFT to BSC, you might use group id or groupName to identidy the group
-gnfd-cmd group mirror --id 1
-or
-gnfd-cmd group mirror --groupName yourGroupName
+// mirror a group as NFT to BSC
+gnfd-cmd group mirror  --id 1
 
-// mirror a bucket as NFT to BSC, you might use bucket id or bucketName to identidy the bucket
+// mirror a bucket as NFT to BSC,
 gnfd-cmd bucket mirror --id 1
-or
-gnfd-cmd bucket mirror --bucketName yourBucketName
 
-// mirror a object as NFT to BSC, you might use object id or (bucketName, objectName) to identidy the object
-gnfd-cmd object mirror --id 1
-or
-gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
+// mirror a object as NFT to BSC,
+gnfd-cmd obbject mirror --id 1
 ```
 
 ## Reference

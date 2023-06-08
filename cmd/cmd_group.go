@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"errors"
 	"fmt"
 	"strings"
 
+	"cosmossdk.io/math"
+
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -81,22 +83,13 @@ Mirror a group as NFT to BSC
 Examples:
 # Mirror a group using group id
 $ gnfd-cmd group mirror --id 1
-
-# Mirror a group using group name
-$ gnfd-cmd group mirror --groupName yourGroupName
 `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     IdFlag,
 				Value:    "",
 				Usage:    "group id",
-				Required: false,
-			},
-			&cli.StringFlag{
-				Name:     groupNameFlag,
-				Value:    "",
-				Usage:    "group name",
-				Required: false,
+				Required: true,
 			},
 		},
 	}
@@ -240,15 +233,13 @@ func mirrorGroup(ctx *cli.Context) error {
 		id = math.NewUintFromString(ctx.String(IdFlag))
 	}
 
-	groupName := ctx.String(groupNameFlag)
-
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	txResp, err := client.MirrorGroup(c, id, groupName, types.TxOption{})
+	txResp, err := client.MirrorGroup(c, id, gnfdsdktypes.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("mirror group succ, txHash: %s\n", txResp.TxHash)
+	fmt.Printf("mirror group with id %s succ, txHash: %s\n", id.String(), txResp.TxHash)
 	return nil
 }

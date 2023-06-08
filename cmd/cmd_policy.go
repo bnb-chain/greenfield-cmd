@@ -281,7 +281,11 @@ func handleObjectPolicy(ctx *cli.Context, client client.Client, bucketName, obje
 		}
 		fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 	} else {
-		policyTx, err = client.DeleteBucketPolicy(c, bucketName, principal,
+		grantee := ctx.String(granteeFlag)
+		if grantee == "" {
+			return errors.New("grantee need to be set when delete object policy")
+		}
+		policyTx, err = client.DeleteObjectPolicy(c, bucketName, objectName, grantee,
 			sdktypes.DeletePolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
 		if err != nil {
 			return toCmdErr(err)
@@ -316,7 +320,11 @@ func handleBucketPolicy(ctx *cli.Context, client client.Client, bucketName strin
 		fmt.Printf("put policy of the bucket:%s succ, txn hash: %s\n", bucketName, policyTx)
 
 	} else {
-		policyTx, err = client.DeleteBucketPolicy(c, bucketName, principal, sdktypes.DeletePolicyOption{TxOpts: &TxnOptionWithSyncMode})
+		grantee := ctx.String(granteeFlag)
+		if grantee == "" {
+			return errors.New("grantee need to be set when delete bucket policy")
+		}
+		policyTx, err = client.DeleteBucketPolicy(c, bucketName, grantee, sdktypes.DeletePolicyOption{TxOpts: &TxnOptionWithSyncMode})
 		if err != nil {
 			return toCmdErr(err)
 		}
@@ -363,11 +371,6 @@ func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
 	err = waitTxnStatus(client, c, policyTx, "groupPolicy")
 	if err != nil {
 		return toCmdErr(err)
-	}
-
-	policyInfo, err := client.GetGroupPolicy(c, groupName, grantee)
-	if err == nil {
-		fmt.Printf("latest group policy info:  \n %s\n", policyInfo.String())
 	}
 
 	return nil

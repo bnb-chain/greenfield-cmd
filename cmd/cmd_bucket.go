@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"errors"
 	"fmt"
 
+	"cosmossdk.io/math"
+
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -119,21 +121,13 @@ Examples:
 # Mirror a bucket using bucket id
 $ gnfd-cmd bucket mirror --id 1
 
-# Mirror a bucket using bucket name
-$ gnfd-cmd bucket mirror --bucketName yourBucketName
 `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     IdFlag,
 				Value:    "",
 				Usage:    "bucket id",
-				Required: false,
-			},
-			&cli.StringFlag{
-				Name:     bucketNameFlag,
-				Value:    "",
-				Usage:    "bucket name",
-				Required: false,
+				Required: true,
 			},
 		},
 	}
@@ -303,15 +297,15 @@ func mirrorBucket(ctx *cli.Context) error {
 		id = math.NewUintFromString(ctx.String(IdFlag))
 	}
 
-	bucketName := ctx.String(bucketNameFlag)
-
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	txResp, err := client.MirrorBucket(c, id, bucketName, types.TxOption{})
+	txResp, err := client.MirrorBucket(c, id, gnfdsdktypes.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
+	fmt.Printf("mirror bucket with id %s succ, txHash: %s\n", id.String(), txResp.TxHash)
+
 	fmt.Printf("mirror bucket succ, txHash: %s\n", txResp.TxHash)
 	return nil
 }
