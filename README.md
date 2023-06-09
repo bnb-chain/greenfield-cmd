@@ -23,9 +23,9 @@ cd build
 
 ### basic config 
 
-The command tool supports the "--home" option to specify the path of the config file and the keystore.
-The default path is "~/.gnfd-cmd". When running commands that interact with the greenfield, if there is no [--home]/config/config.toml file in the path and the commands runs without "--config" flag, 
-the tool will generate a new config.toml file on [--home]/config  which is consistent with the testnet configuration by default.
+The command tool supports the "--home" option to specify the path of the config file and the keystore, the default path is a directory called ".gnfd-cmd" under the home directory of the system
+When running commands that interact with the greenfield, if there is no config/config.toml file in the path and the commands runs without "--config" flag, 
+the tool will generate a new config.toml file on config  which is consistent with the testnet configuration by default.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
@@ -45,9 +45,9 @@ The commands support different categories, including storage,group,bridge,bank,p
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
-   bucket           support the bucket operation functions, including create/update/delete/head/list
+   bucket           support the bucket operation functions, including create/update/delete/head/list/mirror
    object           support the object operation functions, including put/get/update/delete/head/list and so on
-   group            support the group operation functions, including create/update/delete/head/head-member
+   group            support the group operation functions, including create/update/delete/head/head-member/mirror
    bank             support the bank functions, including transfer，bridge and query balance
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
@@ -69,7 +69,7 @@ gnfd-cmd [command-name][subcommand-name] -h
 ### Precautions
 
 1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
-and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default path([--home]/keystore/key.json).
+and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not on the default path.
 
 2. The operator account should have enough balance before sending request to greenfield.
 
@@ -84,16 +84,24 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
-Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. The keystore will
-be generated in the path: [--home]/keystore/key.json. The generate command requires specifying password information. 
-User can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
-it will store it in the "[--home]keystore/password/password.txt" file.
+Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. 
+
+Users can use "keystore create" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
+The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home".
 ```
 // generate keystore key.json
-gnfd-cmd create-keystore --privKeyFile key.txt 
+gnfd-cmd keystore create --privKeyFile key.txt 
 ```
+Password info is also needed to run the command. User can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt user to enter the password information. After the terminal obtains user's password information,
+the password file will store in the path "keystore/password/password.txt" under the home directory of the system or the directory set by "-home"..
 
 After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
+
+Users can use "keystore inspect" to display the keystore information include publicKey, address and privateKey.
+```
+// display the keystore info
+gnfd-cmd keystore inspect --privateKey true
+```
 
 #### Account Operations
 ```
