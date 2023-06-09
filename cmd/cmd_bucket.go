@@ -185,6 +185,11 @@ func createBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	err = waitTxnStatus(client, c, txnHash, "CreateBucket")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
 	fmt.Printf("create bucket %s succ, txn hash: %s\n", bucketName, txnHash)
 	return nil
 }

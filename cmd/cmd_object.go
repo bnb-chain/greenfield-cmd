@@ -295,7 +295,12 @@ func putObject(ctx *cli.Context) error {
 
 	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if err != nil {
-		return err
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(gnfdClient, c, txnHash, "CreateObject")
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
