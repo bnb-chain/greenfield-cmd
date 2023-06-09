@@ -69,7 +69,7 @@ gnfd-cmd [command-name][subcommand-name] -h
 ### Precautions
 
 1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information.
-All the other commands need run with -k if the keystore is not on the default path.
+All the other commands need to run with -k if the keystore is not on the default path.
 
 2. The operator account should have enough balance before sending request to greenfield.
 
