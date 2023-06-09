@@ -15,7 +15,7 @@ import (
 // cmdCreatePaymentAccount creates a payment account under the owner
 func cmdCreatePaymentAccount() *cli.Command {
 	return &cli.Command{
-		Name:      "create-account",
+		Name:      "create",
 		Action:    CreatePaymentAccount,
 		Usage:     "create a payment account",
 		ArgsUsage: "",
@@ -24,7 +24,7 @@ Create a payment account
 
 Examples:
 # Create a payment account
-$ gnfd-cmd payment create-account `,
+$ gnfd-cmd payment-account create`,
 	}
 }
 
@@ -43,10 +43,12 @@ func CreatePaymentAccount(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "CreatePaymentAccount")
 	if err != nil {
 		return toCmdErr(err)
 	}
+
 	fmt.Printf("create payment account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
 	return nil
 }
@@ -62,7 +64,7 @@ Make a deposit into stream(payment) account
 
 Examples:
 # deposit a stream account
-$ gnfd-cmd payment deposit --toAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment-account deposit --toAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     toAddressFlag,
@@ -102,7 +104,8 @@ func Deposit(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "Deposit")
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -121,7 +124,7 @@ Make a withdrawal from stream(payment) account
 
 Examples:
 # withdraw from a stream account back to the creator account
-$ gnfd-cmd payment withdraw --fromAddress 0x.. --amount 12345`,
+$ gnfd-cmd payment-account withdraw --fromAddress 0x.. --amount 12345`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     fromAddressFlag,
@@ -161,10 +164,12 @@ func Withdraw(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "Withdraw")
 	if err != nil {
 		return toCmdErr(err)
 	}
+
 	fmt.Printf("Withdraw %s from %s succ, txHash=%s\n", amount.String(), fromAddr, txHash)
 	return nil
 }
@@ -180,7 +185,7 @@ func cmdListPaymentAccounts() *cli.Command {
 List payment accounts of the owner.
 
 Examples:
-$ gnfd-cmd payment ls `,
+$ gnfd-cmd payment-account ls `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  ownerAddressFlag,
@@ -284,7 +289,7 @@ func getAccountBalance(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("balance: %s%s\n", resp.Amount.String(), gnfdsdktypes.Denom)
+	fmt.Printf("balance: %s wei%s\n", resp.Amount.String(), gnfdsdktypes.Denom)
 	return nil
 }
 
@@ -310,7 +315,7 @@ $ gnfd-cmd bank transfer --toAddress 0x.. --amount 12345`,
 			&cli.StringFlag{
 				Name:  amountFlag,
 				Value: "",
-				Usage: "the amount to be sent",
+				Usage: "the amount to be sent, the unit is wei for BNB",
 			},
 		},
 	}
@@ -339,10 +344,74 @@ func Transfer(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	_, err = client.WaitForTx(c, txHash)
+
+	err = waitTxnStatus(client, c, txHash, "Transfer")
 	if err != nil {
 		return toCmdErr(err)
 	}
 	fmt.Printf("transfer %s BNB to address %s succ, txHash: %s\n", amountStr, toAddr, txHash)
+	return nil
+}
+
+// cmdBridge makes a transfer from Greenfield to BSC
+func cmdBridge() *cli.Command {
+	return &cli.Command{
+		Name:      "bridge",
+		Action:    Bridge,
+		Usage:     "transfer from greenfield to a BSC account",
+		ArgsUsage: "",
+		Description: `
+Create a cross chain transfer from Greenfield to a BSC account
+
+Examples:
+# Make a cross chain transfer to BSC
+$ gnfd-cmd bank bridge --toAddress 0x.. --amount 12345`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     toAddressFlag,
+				Value:    "",
+				Usage:    "the receiver address in BSC",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     amountFlag,
+				Value:    "",
+				Usage:    "the amount of BNB to be sent",
+				Required: true,
+			},
+		},
+	}
+}
+
+func Bridge(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, transfer := context.WithCancel(globalContext)
+	defer transfer()
+
+	toAddr := ctx.String(toAddressFlag)
+	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	amountStr := ctx.String(amountFlag)
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
+	}
+	txResp, err := client.TransferOut(c, toAddr, amount, gnfdsdktypes.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txResp.TxHash, "Bridge")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
 	return nil
 }

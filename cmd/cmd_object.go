@@ -10,10 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/bnb-chain/greenfield/sdk/types"
-	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -150,56 +147,6 @@ $ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 
-// cmdPutObjPolicy set the policy of object
-func cmdPutObjPolicy() *cli.Command {
-	return &cli.Command{
-		Name:      "put-object-policy",
-		Action:    putObjectPolicy,
-		Usage:     "put object policy to group or account",
-		ArgsUsage: " OBJECT-URL",
-		Description: `
-The command is used to set the object policy of the grantee or group-id.
-It required to set grantee account or group-id by --grantee or --groupId.
-
-Examples:
-$ gnfd-cmd policy put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
-		Flags: []cli.Flag{
-			&cli.Uint64Flag{
-				Name:  groupIDFlag,
-				Value: 0,
-				Usage: "the group id of the group",
-			},
-			&cli.StringFlag{
-				Name:  granteeFlag,
-				Value: "",
-				Usage: "the address hex string of the grantee",
-			},
-			&cli.StringFlag{
-				Name:  actionsFlag,
-				Value: "",
-				Usage: "set the actions of the policy," +
-					"actions can be the following: create, delete, copy, get, execute, list or all" +
-					", multi actions like \"delete,copy\" is supported",
-				Required: true,
-			},
-
-			&cli.GenericFlag{
-				Name: effectFlag,
-				Value: &CmdEnumValue{
-					Enum:    []string{effectDeny, effectAllow},
-					Default: effectAllow,
-				},
-				Usage: "set the effect of the policy",
-			},
-			&cli.Uint64Flag{
-				Name:  expireTimeFlag,
-				Value: 0,
-				Usage: "set the expire unix time stamp of the policy",
-			},
-		},
-	}
-}
-
 // cmdUpdateObject update the visibility of the object
 func cmdUpdateObject() *cli.Command {
 	return &cli.Command{
@@ -321,7 +268,12 @@ func putObject(ctx *cli.Context) error {
 
 	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if err != nil {
-		return err
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(gnfdClient, c, txnHash, "CreateObject")
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
@@ -373,85 +325,6 @@ func putObject(ctx *cli.Context) error {
 
 }
 
-func putObjectPolicy(ctx *cli.Context) error {
-	if ctx.NArg() != 1 {
-		return toCmdErr(fmt.Errorf("args number should be one"))
-	}
-	urlInfo := ctx.Args().Get(0)
-
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	groupId := ctx.Uint64(groupIDFlag)
-	grantee := ctx.String(granteeFlag)
-	principal, err := parsePrincipal(grantee, groupId)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	actions, err := parseActions(ctx, true)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlag)
-	if effectStr != "" {
-		if effectStr == effectDeny {
-			effect = permTypes.EFFECT_DENY
-		}
-	}
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	expireTime := ctx.Uint64(expireTimeFlag)
-	var statement permTypes.Statement
-	if expireTime > 0 {
-		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
-	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
-	}
-
-	statements := []*permTypes.Statement{&statement}
-
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
-
-	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
-
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
-
-	_, err = client.WaitForTx(c, policyTx)
-	if err != nil {
-		return toCmdErr(errors.New("failed to commit put policy txn:" + err.Error()))
-	}
-	// get the latest policy from chain
-	if groupId > 0 {
-		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
-		if err == nil {
-			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
-		}
-	} else {
-		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, grantee)
-		if err == nil {
-			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-		}
-	}
-
-	return nil
-}
-
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
 	if ctx.NArg() < 1 {
@@ -483,10 +356,6 @@ func getObject(ctx *cli.Context) error {
 	} else if ctx.Args().Len() == 2 {
 		filePath = ctx.Args().Get(1)
 		stat, err := os.Stat(filePath)
-		if os.IsNotExist(err) {
-			return toCmdErr(ErrFileNotExist)
-		}
-
 		if err == nil {
 			if stat.IsDir() {
 				if strings.HasSuffix(filePath, "/") {
@@ -527,7 +396,7 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("download object %s successfully, the file path is %s, content length:%d, \n", objectName, filePath, uint64(info.Size))
+	fmt.Printf("download object %s successfully, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }
@@ -694,9 +563,9 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "UpdateObject")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit update txn:" + err.Error()))
+		return toCmdErr(err)
 	}
 
 	objectInfo, err := client.HeadObject(c, bucketName, objectName)

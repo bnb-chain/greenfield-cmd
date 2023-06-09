@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
@@ -12,6 +14,14 @@ import (
 var globalContext, _ = context.WithCancel(context.Background())
 
 func main() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir, err = os.Getwd()
+		if err != nil {
+			fmt.Println("fail to get home dir or local dir")
+		}
+	}
+
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(
 			&cli.StringFlag{
@@ -31,24 +41,26 @@ func main() {
 				Usage: "greenfield chainId",
 			},
 		),
-		altsrc.NewStringFlag(
-			&cli.StringFlag{
-				Name:     passwordFileFlag,
-				Usage:    "password file for encrypting and decoding the private key",
-				Required: false,
-			},
-		),
+
 		&cli.StringFlag{
-			Name:    "config",
+			Name:    passwordFileFlag,
+			Aliases: []string{"p"},
+			Usage:   "password file for encrypting and decoding the private key",
+		},
+		&cli.StringFlag{
+			Name:    configFlag,
 			Aliases: []string{"c"},
-			Value:   "config.toml",
 			Usage:   "Load configuration from `FILE`",
 		},
 		&cli.StringFlag{
-			Name:    "keystore",
+			Name:    keyStoreFlag,
 			Aliases: []string{"k"},
-			Value:   defaultKeyfile,
-			Usage:   "key file path",
+			Usage:   "keystore file path",
+		},
+		&cli.StringFlag{
+			Name:  homeFlag,
+			Usage: "directory for config and keystore",
+			Value: filepath.Join(homeDir, DefaultConfigDir),
 		},
 	}
 
@@ -59,13 +71,16 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:  "bucket",
-				Usage: "support the bucket operation functions, including create/update/delete/head/list",
+				Usage: "support the bucket operation functions, including create/update/delete/head/list and so on",
 				Subcommands: []*cli.Command{
 					cmdCreateBucket(),
 					cmdUpdateBucket(),
 					cmdDelBucket(),
 					cmdHeadBucket(),
 					cmdListBuckets(),
+					cmdBuyQuota(),
+					cmdGetQuotaInfo(),
+					cmdMirrorBucket(),
 				},
 			},
 			{
@@ -86,50 +101,43 @@ func main() {
 			},
 			{
 				Name:  "group",
-				Usage: "support the group operation functions, including create/update/delete/head/head-member",
+				Usage: "support the group operation functions, including create/update/delete/head/head-member/mirror",
 				Subcommands: []*cli.Command{
 					cmdCreateGroup(),
 					cmdUpdateGroup(),
 					cmdHeadGroup(),
 					cmdHeadGroupMember(),
 					cmdDelGroup(),
+					cmdMirrorGroup(),
 				},
 			},
-			{
-				Name:  "crosschain",
-				Usage: "support the cross-chain functions, including transfer and mirror",
-				Subcommands: []*cli.Command{
-					cmdMirrorResource(),
-					cmdTransferOut(),
-				},
-			},
+
 			{
 				Name:  "bank",
 				Usage: "support the bank functions, including transfer in greenfield and query balance",
 				Subcommands: []*cli.Command{
 					cmdTransfer(),
 					cmdGetAccountBalance(),
+					cmdBridge(),
 				},
 			},
 			{
 				Name:  "policy",
-				Usage: "support object policy and bucket policy operation functions",
+				Usage: "support object,bucket and group policy operation functions",
 				Subcommands: []*cli.Command{
-					cmdPutObjPolicy(),
-					cmdPutBucketPolicy(),
+					cmdPutPolicy(),
+					cmdDelPolicy(),
 				},
 			},
 
 			{
-				Name:  "payment",
-				Usage: "support the payment operation functions",
+				Name:  "payment-account",
+				Usage: "support the payment account operation functions",
 				Subcommands: []*cli.Command{
 					cmdCreatePaymentAccount(),
 					cmdPaymentDeposit(),
 					cmdPaymentWithdraw(),
 					cmdListPaymentAccounts(),
-					cmdBuyQuota(),
-					cmdGetQuotaInfo(),
 				},
 			},
 			{
@@ -142,12 +150,19 @@ func main() {
 				},
 			},
 
-			cmdGenerateKey(),
+			{
+				Name:  "keystore",
+				Usage: "support the keystore operation functions",
+				Subcommands: []*cli.Command{
+					cmdGenerateKey(),
+					cmdPrintKey(),
+				},
+			},
 		},
 	}
 	app.Before = altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))
 
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
