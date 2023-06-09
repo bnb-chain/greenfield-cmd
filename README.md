@@ -85,7 +85,8 @@ All the other commands need run with -k if the keystore is not on the default pa
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
 Users can use "keystore generate" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
-The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home".
+The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
+and it is also the default path to load keystore when running other commands.
 Password info is also needed to run the command. The terminal will prompt user to enter the password information. After the terminal obtains user's password information,
 the password file will store in the path "keystore/password/password.txt" under the home directory of the system or the directory set by "-home".
 Users can also specify the password file path by using the "--passwordfile".
