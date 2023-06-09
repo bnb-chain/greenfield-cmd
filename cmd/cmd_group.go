@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"strings"
 
+	"cosmossdk.io/math"
+
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -18,12 +21,12 @@ func cmdCreateGroup() *cli.Command {
 		Name:      "create",
 		Action:    createGroup,
 		Usage:     "create a new group",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
-Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
+Create a new group
 
 Examples:
-$ gnfd-cmd group make-group gnfd://group-name`,
+$ gnfd-cmd group create group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlag,
@@ -40,14 +43,14 @@ func cmdUpdateGroup() *cli.Command {
 		Name:      "update",
 		Action:    updateGroupMember,
 		Usage:     "update group member",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
 Add or remove group members of the group, you can set add members 
 and remove members list at the same time.
 You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
-$ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
+$ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addMemberFlag,
@@ -63,6 +66,30 @@ $ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-n
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
+			},
+		},
+	}
+}
+
+func cmdMirrorGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "mirror",
+		Action:    mirrorGroup,
+		Usage:     "mirror group to BSC",
+		ArgsUsage: "",
+		Description: `
+Mirror a group as NFT to BSC
+
+Examples:
+# Mirror a group using group id
+$ gnfd-cmd group mirror --id 1
+`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     IdFlag,
+				Value:    "",
+				Usage:    "group id",
+				Required: true,
 			},
 		},
 	}
@@ -102,11 +129,10 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "CreateGroup")
 	if err != nil {
-		return toCmdErr(errors.New("failed to commit create group txn:" + err.Error()))
+		return toCmdErr(err)
 	}
-
 	groupOwner, err := getGroupOwner(ctx, client)
 	if err == nil {
 		info, err := client.HeadGroup(c, groupName, groupOwner)
@@ -173,9 +199,9 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	_, err = client.WaitForTx(c, txnHash)
+	err = waitTxnStatus(client, c, txnHash, "UpdateGroupMember")
 	if err != nil {
-		return toCmdErr(fmt.Errorf("failed to commit update group txn %s, err:%v", txnHash, err))
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)
@@ -195,4 +221,25 @@ func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
 	}
 
 	return acc.GetAddress().String(), nil
+}
+
+func mirrorGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
+	c, cancelContext := context.WithCancel(globalContext)
+	defer cancelContext()
+
+	txResp, err := client.MirrorGroup(c, id, gnfdsdktypes.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("mirror group with id %s succ, txHash: %s\n", id.String(), txResp.TxHash)
+	return nil
 }

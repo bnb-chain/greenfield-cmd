@@ -34,7 +34,7 @@ $ gnfd-cmd payment buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
 
 func cmdGetQuotaInfo() *cli.Command {
 	return &cli.Command{
-		Name:      "quota-info",
+		Name:      "get-quota",
 		Action:    getQuotaInfo,
 		Usage:     "get quota info of the bucket",
 		ArgsUsage: "BUCKET-URL",
