@@ -289,7 +289,7 @@ func getAccountBalance(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("balance: %s%s\n", resp.Amount.String(), gnfdsdktypes.Denom)
+	fmt.Printf("balance: %s wei%s\n", resp.Amount.String(), gnfdsdktypes.Denom)
 	return nil
 }
 

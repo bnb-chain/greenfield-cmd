@@ -168,11 +168,6 @@ func headGroupMember(ctx *cli.Context) error {
 	headMember := ctx.Args().Get(0)
 	groupName := ctx.Args().Get(1)
 
-	groupName, err := getGroupNameByUrl(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
 	client, err := NewClient(ctx)
 	if err != nil {
 		return toCmdErr(err)
@@ -192,6 +187,6 @@ func headGroupMember(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Println("the user is a member of the group")
+	fmt.Printf("the user %s is a member of the group: %s \n", headMember, groupName)
 	return nil
 }

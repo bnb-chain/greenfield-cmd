@@ -10,9 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"cosmossdk.io/math"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -189,31 +187,6 @@ you can use this command to view the progress information during the process of 
 
 Examples:
 $ gnfd-cmd object get-progress gnfd://gnfd-bucket/gnfd-object`,
-	}
-}
-
-func cmdMirrorObject() *cli.Command {
-	return &cli.Command{
-		Name:      "mirror",
-		Action:    mirrorObject,
-		Usage:     "mirror object to BSC",
-		ArgsUsage: "",
-		Description: `
-Mirror a object as NFT to BSC
-
-Examples:
-# Mirror a object using object id
-$ gnfd-cmd object mirror --id 1
-
-`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     IdFlag,
-				Value:    "",
-				Usage:    "resource id",
-				Required: true,
-			},
-		},
 	}
 }
 
@@ -655,27 +628,4 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 		return "", "", fmt.Errorf("fail to parse bucket name or object name")
 	}
 	return bucketName, objectName, nil
-}
-
-func mirrorObject(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-	id := math.NewUint(0)
-	if ctx.String(IdFlag) != "" {
-		id = math.NewUintFromString(ctx.String(IdFlag))
-	}
-
-	c, cancelContext := context.WithCancel(globalContext)
-	defer cancelContext()
-
-	var txResp *sdk.TxResponse
-	txResp, err = client.MirrorObject(c, id, gnfdsdktypes.TxOption{})
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("mirror object succ, txHash: %s\n", txResp.TxHash)
-	return nil
 }
