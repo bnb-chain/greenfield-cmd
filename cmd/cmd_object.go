@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"errors"
 	"fmt"
-	"github.com/bnb-chain/greenfield/sdk/types"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"cosmossdk.io/math"
+	"github.com/bnb-chain/greenfield/sdk/types"
 
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -309,7 +310,12 @@ func putObject(ctx *cli.Context) error {
 
 	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if err != nil {
-		return err
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(gnfdClient, c, txnHash, "CreateObject")
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)

@@ -277,6 +277,8 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_EXECUTE_OBJECT, nil
 	case "list":
 		return permTypes.ACTION_LIST_OBJECT, nil
+	case "update":
+		return permTypes.ACTION_UPDATE_OBJECT_INFO, nil
 	case "all":
 		return permTypes.ACTION_TYPE_ALL, nil
 	default:

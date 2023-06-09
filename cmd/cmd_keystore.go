@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -136,7 +137,11 @@ func inspectKey(ctx *cli.Context) error {
 	}
 	printPrivate := ctx.Bool(privKeyFlag)
 
-	priBytes := []byte(privateKey)
+	priBytes, err := hex.DecodeString(privateKey)
+	if err != nil {
+		return err
+	}
+
 	var keyBytesArray [32]byte
 	copy(keyBytesArray[:], priBytes[:32])
 	priKey := hd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)

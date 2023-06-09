@@ -23,9 +23,9 @@ cd build
 
 ### basic config 
 
-The command tool supports the "--home" option to specify the path of the config file and the keystore.
-The default path is "~/.gnfd-cmd". When running commands that interact with the greenfield, if there is no [--home]/config/config.toml file in the path and the commands runs without "--config" flag, 
-the tool will generate a new config.toml file on [--home]/config  which is consistent with the testnet configuration by default.
+The command tool supports the "--home" option to specify the path of the config file and the keystore, the default path is a directory called ".gnfd-cmd" under the home directory of the system.
+When running commands that interact with the greenfield, if there is no config/config.toml file under the path and the commands runs without "--config" flag, 
+the tool will generate the config/config.toml file automatically which is consistent with the testnet configuration under the path.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
@@ -41,14 +41,14 @@ run command with "-c filepath" to set the custom config file.
 
 #### Get help
 
-The commands support different categories, including storage,group,bridge,bank,permission and payment 
+The commands support different kinds of commands, including bucket,object,group,bank,policy,sp,payment-account and keystore.
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
-   bucket           support the bucket operation functions, including create/update/delete/head/list
+   bucket           support the bucket operation functions, including create/update/delete/head/list and so on
    object           support the object operation functions, including put/get/update/delete/head/list and so on
-   group            support the group operation functions, including create/update/delete/head/head-member
-   bank             support the bank functions, including transfer，bridge and query balance
+   group            support the group operation functions, including create/update/delete/head/head-member/mirror
+   bank             support the bank functions, including transfer in greenfield and query balance
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
    sp               support the storage provider operation functions
@@ -68,14 +68,14 @@ gnfd-cmd [command-name][subcommand-name] -h
 
 ### Precautions
 
-1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information, 
-and the passwordFile is used for encrypting/decrypting the private key. The other commands need run with -k if the keystore is not the default path([--home]/keystore/key.json).
+1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information.
+All the other commands need to run with -k if the keystore is not on the default path.
 
 2. The operator account should have enough balance before sending request to greenfield.
 
 3. The cmd tool has ability to intelligently select the correct SP by the info of bucket name and object name in command. Users do not need to specify the address of the SP in the command or config file.
 
-4. The "gnfd://" is a fixed prefix which representing the greenfield resources
+4. The "gnfd://" is a fixed prefix which representing the greenfield object or bucket.
 
 
 ### Examples
@@ -84,16 +84,31 @@ and the passwordFile is used for encrypting/decrypting the private key. The othe
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
+<<<<<<< HEAD
 Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. The keystore will
 be generated in the path: [--home]/keystore/key.json. The generate command requires specifying password information. 
 You can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
 it will store it in the "[--home]keystore/password/password.txt" file.
+=======
+Users can use "keystore generate" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
+The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
+and it is also the default path to load keystore when running other commands.
+Password info is also needed to run the command. The terminal will prompt user to enter the password information. After the terminal obtains user's password information,
+the password file will store in the path "keystore/password/password.txt" under the home directory of the system or the directory set by "-home".
+Users can also specify the password file path by using the "--passwordfile".
+
+>>>>>>> f0a2dc1 (update readme)
 ```
-// generate keystore key.json
-gnfd-cmd create-keystore --privKeyFile key.txt 
+// generate keystore key.json, key.txt contain the plaintext private key
+// After the keystore file has been generated, user can delete the private key file key.txt.
+gnfd-cmd keystore generate --privKeyFile key.txt 
 ```
 
-After the keystore file has been generated, you can delete the private key file which contains the plaintext of private key.
+Users can use "keystore inspect" to display the keystore information include publicKey, address and privateKey.
+```
+// display the keystore info
+gnfd-cmd keystore inspect --privateKey true
+```
 
 #### Account Operations
 ```
@@ -110,7 +125,7 @@ gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
 #### Storage Provider Operations
 
-THis command is used to list the SP and query the information of SP.
+The "sp" command is used to list the SP and query the information of SP.
 ```
 // list storage providers
 gnfd-cmd sp ls
@@ -124,7 +139,7 @@ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io
 
 #### Bucket Operations
 
-Before creating bucket, It is recommended to first run the "sp ls" command to obtain the SP list information of Greenfield,
+Before creating bucket, it is recommended to first run the "sp ls" command to obtain the SP list information of Greenfield,
 and then select the target SP to which the bucket will be created on.
 
 ```
@@ -147,7 +162,6 @@ the file-path should replace by the file path of local system.
 gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
 if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "--folder" flag.
-
 
 The tool also support create a folder on bucket by "object create-folder" command.
 ```
@@ -174,20 +188,22 @@ gnfd-cmd group create gnfd://groupname
 gnfd-cmd group update --addMembers 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // head group member
-gnfd-cmd group head-member --headMember 0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
+gnfd-cmd group head-member  0xca807A58caF20B6a4E3eDa3531788179E5bc816b gnfd://groupname
 
 // delete group
 gnfd-cmd group delete gnfd://group-name
 ```
 #### Policy Operations
 
-he gnfd-cmd policy command supports the policy for put/delete resources policy(including objects, buckets, and groups) to the principal.
+The gnfd-cmd policy command supports the policy for put/delete resources policy(including objects, buckets, and groups) to the principal.
 
 The principal is need to be set by --grantee which indicates a greenfield account or --groupId which indicates group id.
+
 The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
 The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
 The group policy actions can be "update", "delete" or all, update indicates the update-group-member action.
-The policy effect can set to be allow or deny by --effect
+
+The policy effect can set to be "allow" or "deny" by --effect
 
 Put policy examples:
 ```
@@ -206,7 +222,7 @@ gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions delete,update  gr
 // grant group operation permissions to an account 
 gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:owneraddress:gnfd-group
 ```
-Delete policy examplse:
+Delete policy examples:
 ```
 // delete the bucket policy from a group
 gnfd-cmd policy delete --groupId 11  grn:b::gnfd-bucket
@@ -220,7 +236,7 @@ gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-
 // list buckets
 gnfd-cmd bucket ls
 
-// list objects
+// list objects of the bucket
 gnfd-cmd object ls gnfd://gnfd-bucket
 
 ```
@@ -234,7 +250,6 @@ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object
 
 ```
 #### Head Operations
-
 ```
 // head bucekt
 gnfd-cmd bucket head gnfd://gnfd-bucket
@@ -260,20 +275,13 @@ gnfd-cmd payment-account deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8
 gnfd-cmd payment-account withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
 
-#### Quota Operation
+#### Quota Operations
 ```
 // get quota info
 gnfd-cmd bucket get-quota gnfd://gnfd-bucket
 
 // buy quota
 gnfd-cmd bucket buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
-```
-
-#### Hash Operations
-
-```
-// compute integrity hash
-gnfd-cmd object get-hash file-path
 ```
 
 #### Resource mirror Operations
@@ -289,10 +297,13 @@ gnfd-cmd bucket mirror --id 1
 or
 gnfd-cmd bucket mirror --bucketName yourBucketName
 
+<<<<<<< HEAD
 // mirror a object as NFT to BSC, you might use object id or (bucketName, objectName) to identidy the object
 gnfd-cmd object mirror --id 1
 or
 gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
+=======
+>>>>>>> f0a2dc1 (update readme)
 ```
 
 ## Reference

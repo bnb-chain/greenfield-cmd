@@ -71,7 +71,7 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:  "bucket",
-				Usage: "support the bucket operation functions, including create/update/delete/head/list",
+				Usage: "support the bucket operation functions, including create/update/delete/head/list and so on",
 				Subcommands: []*cli.Command{
 					cmdCreateBucket(),
 					cmdUpdateBucket(),
@@ -97,12 +97,11 @@ func main() {
 					cmdCreateFolder(),
 					cmdUpdateObject(),
 					cmdGetUploadProgress(),
-					cmdMirrorObject(),
 				},
 			},
 			{
 				Name:  "group",
-				Usage: "support the group operation functions, including create/update/delete/head/head-member",
+				Usage: "support the group operation functions, including create/update/delete/head/head-member/mirror",
 				Subcommands: []*cli.Command{
 					cmdCreateGroup(),
 					cmdUpdateGroup(),

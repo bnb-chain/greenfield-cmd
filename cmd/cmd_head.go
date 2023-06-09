@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -64,21 +63,17 @@ func cmdHeadGroupMember() *cli.Command {
 		Name:      "head-member",
 		Action:    headGroupMember,
 		Usage:     "check if a group member exists",
-		ArgsUsage: "GROUP-NAME",
+		ArgsUsage: "[Member-Address] GROUP-NAME",
 		Description: `
 send headGroupMember txn to chain and check if member is in the group
+
 Examples:
-$ gnfd-cmd head-member --headMember group-name`,
+$ gnfd-cmd head-member 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d  group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
-			},
-			&cli.StringFlag{
-				Name:  headMemberFlag,
-				Value: "",
-				Usage: "indicate the head member address",
 			},
 		},
 	}
@@ -165,10 +160,13 @@ func headGroup(ctx *cli.Context) error {
 }
 
 func headGroupMember(ctx *cli.Context) error {
-	groupName, err := getGroupNameByUrl(ctx)
-	if err != nil {
-		return toCmdErr(err)
+	if ctx.NArg() != 2 {
+		return toCmdErr(fmt.Errorf("args number should be 2"))
 	}
+
+	// read the head member address
+	headMember := ctx.Args().Get(0)
+	groupName := ctx.Args().Get(1)
 
 	client, err := NewClient(ctx)
 	if err != nil {
@@ -183,17 +181,12 @@ func headGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	headMember := ctx.String(headMemberFlag)
-	if headMember == "" {
-		return toCmdErr(errors.New("no head member address"))
-	}
-
 	exist := client.HeadGroupMember(c, groupName, groupOwner, headMember)
 	if !exist {
 		fmt.Println("the user does not exist in the group")
 		return nil
 	}
 
-	fmt.Println("the user is a member of the group")
+	fmt.Printf("the user %s is a member of the group: %s \n", headMember, groupName)
 	return nil
 }
