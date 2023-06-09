@@ -23,9 +23,9 @@ cd build
 
 ### basic config 
 
-The command tool supports the "--home" option to specify the path of the config file and the keystore, the default path is a directory called ".gnfd-cmd" under the home directory of the system
-When running commands that interact with the greenfield, if there is no config/config.toml file in the path and the commands runs without "--config" flag, 
-the tool will generate a new config.toml file on config  which is consistent with the testnet configuration by default.
+The command tool supports the "--home" option to specify the path of the config file and the keystore, the default path is a directory called ".gnfd-cmd" under the home directory of the system.
+When running commands that interact with the greenfield, if there is no config/config.toml file in the directory and the commands runs without "--config" flag, 
+the tool will generate a new config.toml file automatically which is consistent with the testnet configuration by default in the directory.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
