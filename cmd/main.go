@@ -97,7 +97,6 @@ func main() {
 					cmdCreateFolder(),
 					cmdUpdateObject(),
 					cmdGetUploadProgress(),
-					cmdMirrorObject(),
 				},
 			},
 			{
