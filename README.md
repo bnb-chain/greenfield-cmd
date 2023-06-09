@@ -45,10 +45,10 @@ The commands support different categories, including storage,group,bridge,bank,p
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
-   bucket           support the bucket operation functions, including create/update/delete/head/list/mirror
+   bucket           support the bucket operation functions, including create/update/delete/head/list and so on
    object           support the object operation functions, including put/get/update/delete/head/list and so on
    group            support the group operation functions, including create/update/delete/head/head-member/mirror
-   bank             support the bank functions, including transfer，bridge and query balance
+   bank             support the bank functions, including transfer in greenfield and query balance
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
    sp               support the storage provider operation functions
@@ -195,7 +195,7 @@ The principal is need to be set by --grantee which indicates a greenfield accoun
 The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
 The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
 The group policy actions can be "update", "delete" or all, update indicates the update-group-member action.
-The policy effect can set to be allow or deny by --effect
+The policy effect can set to be "allow" or "deny" by --effect
 
 Put policy examples:
 ```
@@ -214,7 +214,7 @@ gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions delete,update  gr
 // grant group operation permissions to an account 
 gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:owneraddress:gnfd-group
 ```
-Delete policy examplse:
+Delete policy examples:
 ```
 // delete the bucket policy from an grantee
 gnfd-cmd policy delete --grantee   grn:b::gnfd-bucket
@@ -268,20 +268,13 @@ gnfd-cmd payment-account deposit --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8
 gnfd-cmd payment-account withdraw --fromAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
 ```
 
-#### Quota Operation
+#### Quota Operations
 ```
 // get quota info
 gnfd-cmd bucket get-quota gnfd://gnfd-bucket
 
 // buy quota
 gnfd-cmd bucket buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
-```
-
-#### Hash Operations
-
-```
-// compute integrity hash
-gnfd-cmd object get-hash file-path
 ```
 
 #### Resource mirror Operations
@@ -293,8 +286,6 @@ gnfd-cmd group mirror  --id 1
 // mirror a bucket as NFT to BSC,
 gnfd-cmd bucket mirror --id 1
 
-// mirror a object as NFT to BSC,
-gnfd-cmd obbject mirror --id 1
 ```
 
 ## Reference
