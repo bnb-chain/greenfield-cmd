@@ -24,8 +24,8 @@ cd build
 ### basic config 
 
 The command tool supports the "--home" option to specify the path of the config file and the keystore, the default path is a directory called ".gnfd-cmd" under the home directory of the system.
-When running commands that interact with the greenfield, if there is no config/config.toml file in the directory and the commands runs without "--config" flag, 
-the tool will generate a new config.toml file automatically which is consistent with the testnet configuration by default in the directory.
+When running commands that interact with the greenfield, if there is no config/config.toml file under the path and the commands runs without "--config" flag, 
+the tool will generate the config/config.toml file automatically which is consistent with the testnet configuration under the path.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
 For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
@@ -41,7 +41,7 @@ run command with "-c filepath" to set the custom config file.
 
 #### Get help
 
-The commands support different categories, including bucket,object,group,bank,policy,sp,payment-account and keystore.
+The commands support different kinds of commands, including bucket,object,group,bank,policy,sp,payment-account and keystore.
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
@@ -117,7 +117,7 @@ gnfd-cmd bank balance --address 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d
 
 #### Storage Provider Operations
 
-THis command is used to list the SP and query the information of SP.
+The "sp" command is used to list the SP and query the information of SP.
 ```
 // list storage providers
 gnfd-cmd sp ls
@@ -131,7 +131,7 @@ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io
 
 #### Bucket Operations
 
-Before creating bucket, It is recommended to first run the "sp ls" command to obtain the SP list information of Greenfield,
+Before creating bucket, it is recommended to first run the "sp ls" command to obtain the SP list information of Greenfield,
 and then select the target SP to which the bucket will be created on.
 
 ```
