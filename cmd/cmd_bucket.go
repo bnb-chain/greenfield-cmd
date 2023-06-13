@@ -7,8 +7,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	"cosmossdk.io/math"
-
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/urfave/cli/v2"
@@ -190,11 +188,6 @@ func createBucket(ctx *cli.Context) error {
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddrStr, opts)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	err = waitTxnStatus(client, c, txnHash, "CreateBucket")
 	if err != nil {
 		return toCmdErr(err)
 	}
