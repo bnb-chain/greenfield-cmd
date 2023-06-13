@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"errors"
 	"fmt"
+
+	"cosmossdk.io/math"
 
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
@@ -187,11 +188,6 @@ func createBucket(ctx *cli.Context) error {
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 	txnHash, err := client.CreateBucket(c, bucketName, primarySpAddrStr, opts)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	err = waitTxnStatus(client, c, txnHash, "CreateBucket")
 	if err != nil {
 		return toCmdErr(err)
 	}
