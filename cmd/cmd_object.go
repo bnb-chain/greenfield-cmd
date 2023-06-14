@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
-	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"cosmossdk.io/math"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
+
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -150,56 +150,6 @@ $ gnfd-cmd object ls gnfd://gnfd-bucket`,
 	}
 }
 
-// cmdPutObjPolicy set the policy of object
-func cmdPutObjPolicy() *cli.Command {
-	return &cli.Command{
-		Name:      "put-object-policy",
-		Action:    putObjectPolicy,
-		Usage:     "put object policy to group or account",
-		ArgsUsage: " OBJECT-URL",
-		Description: `
-The command is used to set the object policy of the grantee or group-id.
-It required to set grantee account or group-id by --grantee or --groupId.
-
-Examples:
-$ gnfd-cmd policy put-obj-policy --groupId 111 --actions get,delete gnfd://gnfd-bucket/gnfd-object`,
-		Flags: []cli.Flag{
-			&cli.Uint64Flag{
-				Name:  groupIDFlag,
-				Value: 0,
-				Usage: "the group id of the group",
-			},
-			&cli.StringFlag{
-				Name:  granteeFlag,
-				Value: "",
-				Usage: "the address hex string of the grantee",
-			},
-			&cli.StringFlag{
-				Name:  actionsFlag,
-				Value: "",
-				Usage: "set the actions of the policy," +
-					"actions can be the following: create, delete, copy, get, execute, list or all" +
-					", multi actions like \"delete,copy\" is supported",
-				Required: true,
-			},
-
-			&cli.GenericFlag{
-				Name: effectFlag,
-				Value: &CmdEnumValue{
-					Enum:    []string{effectDeny, effectAllow},
-					Default: effectAllow,
-				},
-				Usage: "set the effect of the policy",
-			},
-			&cli.Uint64Flag{
-				Name:  expireTimeFlag,
-				Value: 0,
-				Usage: "set the expire unix time stamp of the policy",
-			},
-		},
-	}
-}
-
 // cmdUpdateObject update the visibility of the object
 func cmdUpdateObject() *cli.Command {
 	return &cli.Command{
@@ -240,6 +190,45 @@ you can use this command to view the progress information during the process of 
 
 Examples:
 $ gnfd-cmd object get-progress gnfd://gnfd-bucket/gnfd-object`,
+	}
+}
+
+func cmdMirrorObject() *cli.Command {
+	return &cli.Command{
+		Name:      "mirror",
+		Action:    mirrorObject,
+		Usage:     "mirror object to BSC",
+		ArgsUsage: "",
+		Description: `
+Mirror a object as NFT to BSC
+
+Examples:
+# Mirror a object using object id
+$ gnfd-cmd object mirror --id 1
+
+# Mirror a object using bucket and object name
+$ gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
+`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     IdFlag,
+				Value:    "",
+				Usage:    "object id",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     bucketNameFlag,
+				Value:    "",
+				Usage:    "bucket name",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     objectNameFlag,
+				Value:    "",
+				Usage:    "object name",
+				Required: false,
+			},
+		},
 	}
 }
 
@@ -321,7 +310,7 @@ func putObject(ctx *cli.Context) error {
 
 	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
@@ -371,86 +360,6 @@ func putObject(ctx *cli.Context) error {
 		}
 	}
 
-}
-
-func putObjectPolicy(ctx *cli.Context) error {
-	if ctx.NArg() != 1 {
-		return toCmdErr(fmt.Errorf("args number should be one"))
-	}
-	urlInfo := ctx.Args().Get(0)
-
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	groupId := ctx.Uint64(groupIDFlag)
-	grantee := ctx.String(granteeFlag)
-	principal, err := parsePrincipal(grantee, groupId)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	actions, err := parseActions(ctx, true)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	effect := permTypes.EFFECT_ALLOW
-	effectStr := ctx.String(effectFlag)
-	if effectStr != "" {
-		if effectStr == effectDeny {
-			effect = permTypes.EFFECT_DENY
-		}
-	}
-
-	client, err := NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	expireTime := ctx.Uint64(expireTimeFlag)
-	var statement permTypes.Statement
-	if expireTime > 0 {
-		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
-	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
-	}
-
-	statements := []*permTypes.Statement{&statement}
-
-	c, cancelPutPolicy := context.WithCancel(globalContext)
-	defer cancelPutPolicy()
-
-	policyTx, err := client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
-		sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
-
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
-
-	err = waitTxnStatus(client, c, policyTx, "PutPolicy")
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	// get the latest policy from chain
-	if groupId > 0 {
-		policyInfo, err := client.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
-		if err == nil {
-			fmt.Printf("policy info of the group: \n %s\n", policyInfo.String())
-		}
-	} else {
-		policyInfo, err := client.GetObjectPolicy(c, bucketName, objectName, grantee)
-		if err == nil {
-			fmt.Printf("policy info of the account:  \n %s\n", policyInfo.String())
-		}
-	}
-
-	return nil
 }
 
 // getObject download the object payload from sp
@@ -756,4 +665,28 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 		return "", "", fmt.Errorf("fail to parse bucket name or object name")
 	}
 	return bucketName, objectName, nil
+}
+
+func mirrorObject(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
+	bucketName := ctx.String(bucketNameFlag)
+	objectName := ctx.String(objectNameFlag)
+
+	c, cancelContext := context.WithCancel(globalContext)
+	defer cancelContext()
+
+	txResp, err := client.MirrorObject(c, id, bucketName, objectName, types.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("mirror object succ, txHash: %s\n", txResp.TxHash)
+	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"cosmossdk.io/math"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,12 +19,12 @@ func cmdCreateGroup() *cli.Command {
 		Name:      "create",
 		Action:    createGroup,
 		Usage:     "create a new group",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
-Create a new group, the group name need to set by GROUP-URL like "gnfd://groupName"
+Create a new group
 
 Examples:
-$ gnfd-cmd group make-group gnfd://group-name`,
+$ gnfd-cmd group create group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  initMemberFlag,
@@ -40,14 +41,14 @@ func cmdUpdateGroup() *cli.Command {
 		Name:      "update",
 		Action:    updateGroupMember,
 		Usage:     "update group member",
-		ArgsUsage: "GROUP-URL",
+		ArgsUsage: "GROUP-NAME",
 		Description: `
 Add or remove group members of the group, you can set add members 
 and remove members list at the same time.
 You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
-$ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-name`,
+$ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addMemberFlag,
@@ -63,6 +64,39 @@ $ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. gnfd://group-n
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
+			},
+		},
+	}
+}
+
+func cmdMirrorGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "mirror",
+		Action:    mirrorGroup,
+		Usage:     "mirror group to BSC",
+		ArgsUsage: "",
+		Description: `
+Mirror a group as NFT to BSC
+
+Examples:
+# Mirror a group using group id
+$ gnfd-cmd group mirror --id 1
+
+# Mirror a group using group name
+$ gnfd-cmd group mirror --groupName yourGroupName
+`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     IdFlag,
+				Value:    "",
+				Usage:    "group id",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     groupNameFlag,
+				Value:    "",
+				Usage:    "group name",
+				Required: false,
 			},
 		},
 	}
@@ -194,4 +228,27 @@ func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
 	}
 
 	return acc.GetAddress().String(), nil
+}
+
+func mirrorGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
+	groupName := ctx.String(groupNameFlag)
+
+	c, cancelContext := context.WithCancel(globalContext)
+	defer cancelContext()
+
+	txResp, err := client.MirrorGroup(c, id, groupName, types.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("mirror group succ, txHash: %s\n", txResp.TxHash)
+	return nil
 }

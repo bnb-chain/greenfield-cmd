@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	"github.com/BurntSushi/toml"
+	sdkutils "github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
@@ -22,6 +23,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
 )
 
 const (
@@ -50,29 +52,45 @@ const (
 	actionsFlag      = "actions"
 	effectFlag       = "effect"
 	expireTimeFlag   = "expire"
+	IdFlag           = "id"
+	groupNameFlag    = "groupName"
+	bucketNameFlag   = "bucketName"
+	objectNameFlag   = "objectName"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
 	toAddressFlag    = "toAddress"
 	fromAddressFlag  = "fromAddress"
 	amountFlag       = "amount"
-	resourceFlag     = "resource"
-	IdFlag           = "id"
 	objectPrefix     = "prefix"
 	folderFlag       = "folder"
 
-	groupNameFlag  = "groupName"
-	bucketNameFlag = "bucketName"
-	objectNameFlag = "objectName"
+	privKeyFileFlag  = "privKeyFile"
+	privKeyFlag      = "privateKey"
+	passwordFileFlag = "passwordfile"
+	homeFlag         = "home"
+	keyStoreFlag     = "keystore"
+	configFlag       = "config"
+	EncryptScryptN   = 1 << 18
+	EncryptScryptP   = 1
 
-	defaultKeyfile      = "key.json"
-	defaultPasswordfile = "password"
-	privKeyFileFlag     = "privKeyFile"
-	passwordFileFlag    = "passwordfile"
-	EncryptScryptN      = 1 << 18
-	EncryptScryptP      = 1
+	ContextTimeout       = time.Second * 20
+	BucketResourcePrefix = "grn:b::"
+	ObjectResourcePrefix = "grn:o::"
+	GroupResourcePrefix  = "grn:g:"
 
-	ContextTimeout = time.Second * 20
+	ObjectResourceType = 1
+	BucketResourceType = 2
+	GroupResourceType  = 3
+
+	DefaultConfigPath   = "config/config.toml"
+	DefaultConfigDir    = ".gnfd-cmd"
+	DefaultKeyStorePath = "keystore/key.json"
+	DefaultPasswordPath = "keystore/password/password.txt"
+
+	rpcAddrConfigField = "rpcAddr"
+	chainIdConfigField = "chainId"
+	hostConfigField    = "host"
 )
 
 var (
@@ -128,11 +146,6 @@ func toCmdErr(err error) error {
 	return nil
 }
 
-func genCmdErr(msg string) error {
-	fmt.Printf("run command error: %s\n", msg)
-	return nil
-}
-
 // parse bucket info or object info meta on the chain
 func parseChainInfo(info string, isBucketInfo bool) {
 	if isBucketInfo {
@@ -176,13 +189,7 @@ func getGroupNameByUrl(ctx *cli.Context) (string, error) {
 		return "", errors.New("the args should be more than one")
 	}
 
-	urlInfo := ctx.Args().Get(0)
-	bucketName := ParseBucket(urlInfo)
-
-	if bucketName == "" {
-		return "", errors.New("fail to parse group name")
-	}
-	return bucketName, nil
+	return ctx.Args().Get(0), nil
 }
 
 func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
@@ -211,23 +218,19 @@ func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) 
 	var granteeAddr sdk.AccAddress
 	var err error
 	if groupId > 0 {
-		p := permTypes.NewPrincipalWithGroup(sdkmath.NewUint(groupId))
-		principalBytes, err := p.Marshal()
+		principal, err = sdkutils.NewPrincipalWithGroupId(groupId)
 		if err != nil {
 			return "", err
 		}
-		principal = sdktypes.Principal(principalBytes)
 	} else {
 		granteeAddr, err = sdk.AccAddressFromHexUnsafe(grantee)
 		if err != nil {
 			return "", err
 		}
-		p := permTypes.NewPrincipalWithAccount(granteeAddr)
-		principalBytes, err := p.Marshal()
+		principal, err = sdkutils.NewPrincipalWithAccount(granteeAddr)
 		if err != nil {
 			return "", err
 		}
-		principal = sdktypes.Principal(principalBytes)
 	}
 
 	return principal, nil
@@ -274,6 +277,8 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 		return permTypes.ACTION_EXECUTE_OBJECT, nil
 	case "list":
 		return permTypes.ACTION_LIST_OBJECT, nil
+	case "update":
+		return permTypes.ACTION_UPDATE_OBJECT_INFO, nil
 	case "all":
 		return permTypes.ACTION_TYPE_ALL, nil
 	default:
@@ -281,7 +286,20 @@ func getObjectAction(action string) (permTypes.ActionType, error) {
 	}
 }
 
-func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType, error) {
+func getGroupAction(action string) (permTypes.ActionType, error) {
+	switch action {
+	case "update":
+		return permTypes.ACTION_UPDATE_GROUP_MEMBER, nil
+	case "delete":
+		return permTypes.ACTION_DELETE_GROUP, nil
+	case "all":
+		return permTypes.ACTION_TYPE_ALL, nil
+	default:
+		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action:" + action)
+	}
+}
+
+func parseActions(ctx *cli.Context, resourceType ResourceType) ([]permTypes.ActionType, error) {
 	actions := make([]permTypes.ActionType, 0)
 	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
@@ -292,10 +310,12 @@ func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType
 	for _, v := range actionList {
 		var action permTypes.ActionType
 		var err error
-		if isObjectPolicy {
+		if resourceType == ObjectResourceType {
 			action, err = getObjectAction(v)
-		} else {
+		} else if resourceType == BucketResourceType {
 			action, err = getBucketAction(v)
+		} else if resourceType == GroupResourceType {
+			action, err = getGroupAction(v)
 		}
 
 		if err != nil {
@@ -308,22 +328,26 @@ func parseActions(ctx *cli.Context, isObjectPolicy bool) ([]permTypes.ActionType
 }
 
 // getPassword return the password content
-func getPassword(ctx *cli.Context, config *cmdConfig) (string, error) {
+func getPassword(ctx *cli.Context) (string, error) {
 	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
 		filepath = passwordFile
-	} else if config.PasswordFile != "" {
-		filepath = config.PasswordFile
-	} else {
-		filepath = defaultPasswordfile
+		readContent, err := os.ReadFile(filepath)
+		if err != nil {
+			return "", errors.New("failed to read password file" + err.Error())
+		}
+		return strings.TrimRight(string(readContent), "\r\n"), nil
 	}
 
-	readContent, err := os.ReadFile(filepath)
+	fmt.Print("Input Password：")
+	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		return "", errors.New("failed to read password file" + err.Error())
+		fmt.Println("read password ", err)
+		return "", err
 	}
+	password := string(bytePassword)
 
-	return strings.TrimRight(string(readContent), "\r\n"), nil
+	return password, nil
 }
 
 // loadKey loads a secp256k1 private key from the given file.
@@ -365,16 +389,128 @@ func loadKey(file string) (string, sdk.AccAddress, error) {
 }
 
 type cmdConfig struct {
-	RpcAddr      string `toml:"rpcAddr"`
-	ChainId      string `toml:"chainId"`
-	PasswordFile string `toml:"passwordFile"`
-	Host         string `toml:"host"`
+	RpcAddr string `toml:"rpcAddr"`
+	ChainId string `toml:"chainId"`
+	Host    string `toml:"host"`
 }
 
+// parseConfigFile decode the config file of TOML format
 func parseConfigFile(filePath string) (*cmdConfig, error) {
 	var config cmdConfig
 	if _, err := toml.DecodeFile(filePath, &config); err != nil {
 		return nil, err
 	}
 	return &config, nil
+}
+
+const configContent = "rpcAddr = \"https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443\"\nchainId = \"greenfield_5600-1\""
+
+// loadConfig parse the default config file path
+func loadConfig(ctx *cli.Context) (*cmdConfig, error) {
+	homeDir, err := getHomeDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+	configPath := filepath.Join(homeDir, DefaultConfigPath)
+
+	// if config default path not exist, create the config file with default test net config
+	_, err = os.Stat(configPath)
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
+			return nil, toCmdErr(errors.New("failed to create config file directory :%s" + filepath.Dir(configPath)))
+		}
+
+		err = os.WriteFile(configPath, []byte(configContent), 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create config file: %v", err)
+		}
+		fmt.Println("generate default config file on path:", configPath)
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to check config file: %v", err)
+	}
+
+	content, err := parseConfigFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	return content, nil
+}
+
+// getConfig parse the config of the client, return rpc address, chainId and host
+func getConfig(ctx *cli.Context) (string, string, string, error) {
+	rpcAddr := ctx.String(rpcAddrConfigField)
+	chainId := ctx.String(chainIdConfigField)
+	if rpcAddr != "" && chainId != "" {
+		return rpcAddr, chainId, ctx.String(hostConfigField), nil
+	}
+
+	configFile := ctx.String("config")
+	var config *cmdConfig
+	var err error
+	if configFile != "" {
+		// if user has set config file, parse the file
+		config, err = parseConfigFile(configFile)
+		if err != nil {
+			return "", "", "", err
+		}
+	} else {
+		// if file exist in config default path, read default file.
+		// else generate the default file for user in the default path
+		config, err = loadConfig(ctx)
+		if err != nil {
+			return "", "", "", err
+		}
+	}
+
+	if config.RpcAddr == "" || config.ChainId == "" {
+		return "", "", "", fmt.Errorf("failed to parse rpc address or chain id , please set it in the config file")
+	}
+
+	return config.RpcAddr, config.ChainId, config.Host, nil
+}
+
+func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
+	keyfilepath := ctx.String("keystore")
+	if keyfilepath == "" {
+		homeDir, err := getHomeDir(ctx)
+		if err != nil {
+			return nil, err
+		}
+		keyfilepath = filepath.Join(homeDir, DefaultKeyStorePath)
+	}
+
+	// fetch private key from keystore
+	content, err := os.ReadFile(keyfilepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
+	}
+
+	return content, nil
+}
+
+func loadPassWordFile(ctx *cli.Context) (string, error) {
+	passwordFilepath := ctx.String(passwordFileFlag)
+	if passwordFilepath == "" {
+		homeDir, err := getHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		passwordFilepath = filepath.Join(homeDir, DefaultPasswordPath)
+	}
+
+	// fetch password from password file
+	content, err := os.ReadFile(passwordFilepath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read the password at '%s': %v \n", passwordFilepath, err)
+	}
+
+	return string(content), nil
+}
+
+func getHomeDir(ctx *cli.Context) (string, error) {
+	if ctx.String(homeFlag) != "" {
+		return ctx.String(homeFlag), nil
+	}
+	return "", errors.New("home flag should not be empty")
 }
