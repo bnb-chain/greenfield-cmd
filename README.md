@@ -84,12 +84,6 @@ All the other commands need to run with -k if the keystore is not on the default
 
 Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
-<<<<<<< HEAD
-Assuming that the current private key hex string is written as plaintext in the file key.txt, the following command can be used to generate a keystore file. The keystore will
-be generated in the path: [--home]/keystore/key.json. The generate command requires specifying password information. 
-You can specify the path of the file where the password is stored by using the "--passwordfile" argument, or the terminal will prompt you to enter the password information and after the terminal obtains your password information,
-it will store it in the "[--home]keystore/password/password.txt" file.
-=======
 Users can use "keystore generate" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
 The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
 and it is also the default path to load keystore when running other commands.
@@ -97,7 +91,6 @@ Password info is also needed to run the command. The terminal will prompt user t
 the password file will store in the path "keystore/password/password.txt" under the home directory of the system or the directory set by "-home".
 Users can also specify the password file path by using the "--passwordfile".
 
->>>>>>> f0a2dc1 (update readme)
 ```
 // generate keystore key.json, key.txt contain the plaintext private key
 // After the keystore file has been generated, user can delete the private key file key.txt.
@@ -297,13 +290,10 @@ gnfd-cmd bucket mirror --id 1
 or
 gnfd-cmd bucket mirror --bucketName yourBucketName
 
-<<<<<<< HEAD
 // mirror a object as NFT to BSC, you might use object id or (bucketName, objectName) to identidy the object
 gnfd-cmd object mirror --id 1
 or
 gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
-=======
->>>>>>> f0a2dc1 (update readme)
 ```
 
 ## Reference
