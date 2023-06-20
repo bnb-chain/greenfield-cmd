@@ -99,7 +99,7 @@ func querySP(ctx *cli.Context) error {
 	var findSP bool
 	for _, info := range spList {
 		if info.Endpoint == endpoint {
-			addr = info.GetOperator()
+			addr, _ = sdk.AccAddressFromHexUnsafe(info.GetOperatorAddress())
 			findSP = true
 		}
 	}
