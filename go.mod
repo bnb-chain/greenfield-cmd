@@ -5,8 +5,8 @@ go 1.19
 require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.2.1
-	github.com/bnb-chain/greenfield v0.2.3-0.20230627033213-6ad8b1a86216
-	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230627040226-02712d592003
+	github.com/bnb-chain/greenfield v0.2.3-0.20230627033213-6ad8b1a86216 // virtual_group_dev branch
+	github.com/bnb-chain/greenfield-go-sdk v0.0.10-0.20230627040226-02712d592003 // feat-adaptor-sp-exit branch
 	github.com/cosmos/cosmos-sdk v0.47.2
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/urfave/cli/v2 v2.10.2
