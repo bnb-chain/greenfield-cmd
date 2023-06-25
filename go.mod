@@ -6,7 +6,7 @@ require (
 	cosmossdk.io/math v1.0.0
 	github.com/BurntSushi/toml v1.2.1
 	github.com/bnb-chain/greenfield v0.2.2
-	github.com/bnb-chain/greenfield-go-sdk v0.2.2-alpha.1
+	github.com/bnb-chain/greenfield-go-sdk v0.2.2
 	github.com/cosmos/cosmos-sdk v0.47.0-rc2.0.20230220103612-f094a0c33410
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/urfave/cli/v2 v2.10.2
