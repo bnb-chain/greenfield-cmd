@@ -217,8 +217,8 @@ gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:own
 ```
 Delete policy examples:
 ```
-// delete the bucket policy from an grantee
-gnfd-cmd policy delete --grantee   grn:b::gnfd-bucket
+// delete the bucket policy from a group
+gnfd-cmd policy delete --groupId 11  grn:b::gnfd-bucket
 
 // delete the object policy from an grantee
 gnfd-cmd policy delete --grantee 0x169321fC04A12c16...  grn:o::gnfd-bucket/gnfd-object
@@ -280,12 +280,20 @@ gnfd-cmd bucket buy-quota --chargedQuota 1000000 gnfd://gnfd-bucket
 #### Resource mirror Operations
 
 ```
-// mirror a group as NFT to BSC
-gnfd-cmd group mirror  --id 1
+// mirror a group as NFT to BSC, you might use group id or groupName to identidy the group
+gnfd-cmd group mirror --id 1
+or
+gnfd-cmd group mirror --groupName yourGroupName
 
-// mirror a bucket as NFT to BSC,
+// mirror a bucket as NFT to BSC, you might use bucket id or bucketName to identidy the bucket
 gnfd-cmd bucket mirror --id 1
+or
+gnfd-cmd bucket mirror --bucketName yourBucketName
 
+// mirror a object as NFT to BSC, you might use object id or (bucketName, objectName) to identidy the object
+gnfd-cmd object mirror --id 1
+or
+gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
 ```
 
 ## Reference

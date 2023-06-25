@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"cosmossdk.io/math"
+	"github.com/bnb-chain/greenfield/sdk/types"
+
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
@@ -190,6 +193,45 @@ $ gnfd-cmd object get-progress gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
+func cmdMirrorObject() *cli.Command {
+	return &cli.Command{
+		Name:      "mirror",
+		Action:    mirrorObject,
+		Usage:     "mirror object to BSC",
+		ArgsUsage: "",
+		Description: `
+Mirror a object as NFT to BSC
+
+Examples:
+# Mirror a object using object id
+$ gnfd-cmd object mirror --id 1
+
+# Mirror a object using bucket and object name
+$ gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
+`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     IdFlag,
+				Value:    "",
+				Usage:    "object id",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     bucketNameFlag,
+				Value:    "",
+				Usage:    "bucket name",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     objectNameFlag,
+				Value:    "",
+				Usage:    "object name",
+				Required: false,
+			},
+		},
+	}
+}
+
 // putObject upload the payload of file, finish the third stage of putObject
 func putObject(ctx *cli.Context) error {
 	if ctx.NArg() != 2 {
@@ -266,17 +308,16 @@ func putObject(ctx *cli.Context) error {
 		opts.SecondarySPAccs = addrList
 	}
 
-	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	var txnHash string
+	// if err==nil, object exist on chain, no need to createObject
 	if err != nil {
-		return toCmdErr(err)
+		txnHash, err = gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
 	}
-
-	err = waitTxnStatus(gnfdClient, c, txnHash, "CreateObject")
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
 
 	if objectSize == 0 {
 		return nil
@@ -286,7 +327,6 @@ func putObject(ctx *cli.Context) error {
 	if contentType != "" {
 		opt.ContentType = contentType
 	}
-	opt.TxnHash = txnHash
 
 	// Open the referenced file.
 	reader, err := os.Open(filePath)
@@ -628,4 +668,28 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 		return "", "", fmt.Errorf("fail to parse bucket name or object name")
 	}
 	return bucketName, objectName, nil
+}
+
+func mirrorObject(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	id := math.NewUint(0)
+	if ctx.String(IdFlag) != "" {
+		id = math.NewUintFromString(ctx.String(IdFlag))
+	}
+
+	bucketName := ctx.String(bucketNameFlag)
+	objectName := ctx.String(objectNameFlag)
+
+	c, cancelContext := context.WithCancel(globalContext)
+	defer cancelContext()
+
+	txResp, err := client.MirrorObject(c, id, bucketName, objectName, types.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("mirror object succ, txHash: %s\n", txResp.TxHash)
+	return nil
 }
