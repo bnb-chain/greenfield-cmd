@@ -38,30 +38,7 @@ $ gnfd-cmd keystore generate --privKeyFile key.txt  `,
 			},
 		},
 	}
-
-func cmdPrintKey() *cli.Command {
-	return &cli.Command{
-		Name:      "inspect",
-		Action:    inspectKey,
-		Usage:     "inspect a keystore file",
-		ArgsUsage: "[ <keyfile> ] ",
-		Description: `
-print the private key related information
-
-Examples:
-$ gnfd-cmd  keystore inspect --privateKey true  `,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  privKeyFlag,
-				Value: "",
-				Usage: "include the private key in the output",
-			},
-			&cli.StringFlag{
-				Name:  passwordFileFlag,
-				Value: "",
-				Usage: "the file which contains the password for the keyfile",
-			},
-		},
+}
 
 func cmdPrintKey() *cli.Command {
 	return &cli.Command{

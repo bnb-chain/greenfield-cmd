@@ -281,44 +281,6 @@ func handleObjectPolicy(ctx *cli.Context, client client.Client, bucketName, obje
 		}
 		fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
 	} else {
-		grantee := ctx.String(granteeFlag)
-		if grantee == "" {
-			return errors.New("grantee need to be set when delete object policy")
-		}
-		policyTx, err = client.DeleteObjectPolicy(c, bucketName, objectName, grantee,
-			sdktypes.DeletePolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
-		if err != nil {
-			return toCmdErr(err)
-		}
-		fmt.Printf("delete policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
-	}
-
-	err = waitTxnStatus(client, c, policyTx, "objectPolicy")
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	// print object policy info after updated
-	printObjectPolicy(ctx, client, bucketName, objectName)
-
-	return nil
-}
-
-func handleObjectPolicy(ctx *cli.Context, client client.Client, bucketName, objectName string, principal sdktypes.Principal,
-	statements []*permTypes.Statement, delete bool) error {
-	c, cancelObjectPolicy := context.WithCancel(globalContext)
-	defer cancelObjectPolicy()
-
-	var policyTx string
-	var err error
-	if !delete {
-		policyTx, err = client.PutObjectPolicy(c, bucketName, objectName, principal, statements,
-			sdktypes.PutPolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
-		if err != nil {
-			return toCmdErr(err)
-		}
-		fmt.Printf("put policy of the object:%s succ, txn hash: %s\n", objectName, policyTx)
-	} else {
 		policyTx, err = client.DeleteObjectPolicy(c, bucketName, objectName, principal,
 			sdktypes.DeletePolicyOption{TxOpts: &types.TxOption{Mode: &SyncBroadcastMode}})
 		if err != nil {

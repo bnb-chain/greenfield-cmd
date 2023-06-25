@@ -308,12 +308,16 @@ func putObject(ctx *cli.Context) error {
 		opts.SecondarySPAccs = addrList
 	}
 
-	txnHash, err := gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	var txnHash string
+	// if err==nil, object exist on chain, no need to createObject
 	if err != nil {
-		return toCmdErr(err)
+		txnHash, err = gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
 	}
-
-	fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
 
 	if objectSize == 0 {
 		return nil
@@ -323,7 +327,6 @@ func putObject(ctx *cli.Context) error {
 	if contentType != "" {
 		opt.ContentType = contentType
 	}
-	opt.TxnHash = txnHash
 
 	// Open the referenced file.
 	reader, err := os.Open(filePath)

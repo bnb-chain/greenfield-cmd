@@ -7,9 +7,6 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-
-	"cosmossdk.io/math"
-
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"

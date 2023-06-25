@@ -91,9 +91,6 @@ const (
 	groupNameFlag      = "groupName"
 	bucketNameFlag     = "bucketName"
 	objectNameFlag     = "objectName"
-
-	defaultKeyfile      = "key.json"
-	defaultPasswordfile = "password"
 )
 
 var (
