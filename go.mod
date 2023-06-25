@@ -5,7 +5,7 @@ go 1.19
 require (
 	cosmossdk.io/math v1.0.0
 	github.com/BurntSushi/toml v1.2.1
-	github.com/bnb-chain/greenfield v0.2.2-alpha.2
+	github.com/bnb-chain/greenfield v0.2.2
 	github.com/bnb-chain/greenfield-go-sdk v0.2.2-alpha.1
 	github.com/cosmos/cosmos-sdk v0.47.0-rc2.0.20230220103612-f094a0c33410
 	github.com/ethereum/go-ethereum v1.10.22
@@ -150,5 +150,5 @@ replace (
 	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20230425074444-eb5869b05fe9
 	github.com/cometbft/cometbft => github.com/bnb-chain/greenfield-cometbft v0.0.1
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.2.2-alpha.1
+	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.2.2
 )
