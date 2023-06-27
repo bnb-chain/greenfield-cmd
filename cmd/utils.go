@@ -91,6 +91,11 @@ const (
 	groupNameFlag      = "groupName"
 	bucketNameFlag     = "bucketName"
 	objectNameFlag     = "objectName"
+
+	// resumable download & upload
+	partSizeFlag                 = "partSize"
+	disableResumableFlag         = "disable-resumable"
+	disableResuabmleDownloadFlag = "disable-resumable-download"
 )
 
 var (
