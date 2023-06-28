@@ -59,7 +59,8 @@ $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 			&cli.Uint64Flag{
 				Name:  partSizeFlag,
 				Value: 16 * 1024 * 1024,
-				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts",
+				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
+					"The part size is an integer multiple of the segment size.",
 			},
 			&cli.BoolFlag{
 				Name:  resumableUploadFlag,
