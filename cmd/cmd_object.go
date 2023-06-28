@@ -62,9 +62,11 @@ $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts",
 			},
 			&cli.BoolFlag{
-				Name:  disableResumableFlag,
+				Name:  resumableUploadFlag,
 				Value: false,
-				Usage: "indicate whether need to enable resumeable upload",
+				Usage: "indicate whether need to enable resumeable upload. Resumable upload refers to the process of uploading " +
+					"a file in multiple parts, where each part is uploaded separately.This allows the upload to be resumed from " +
+					"where it left off in case of interruptions or failures, rather than starting the entire upload process from the beginning.",
 			},
 		},
 	}
@@ -289,7 +291,7 @@ func putObject(ctx *cli.Context) error {
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
-	disableResumable := ctx.Bool(disableResumableFlag)
+	resumableUpload := ctx.Bool(resumableUploadFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
@@ -340,7 +342,7 @@ func putObject(ctx *cli.Context) error {
 		opt.ContentType = contentType
 	}
 
-	opt.DisableResumable = disableResumable
+	opt.DisableResumable = !resumableUpload
 	opt.PartSize = partSize
 
 	// Open the referenced file.

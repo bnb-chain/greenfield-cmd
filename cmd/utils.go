@@ -93,8 +93,8 @@ const (
 	objectNameFlag     = "objectName"
 
 	// resumable download & upload
-	partSizeFlag         = "partSize"
-	disableResumableFlag = "disable-resumable"
+	partSizeFlag        = "partSize"
+	resumableUploadFlag = "resumableUpload"
 )
 
 var (
