@@ -11,7 +11,7 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 
 ## Cmd usage
 
-The latest release version is compatible with the greenfield. If  the user need to use the command tool on the test net of greenfield, he will need to switch to the latest release version.
+The latest release version is compatible with the greenfield. If the user need to use the command tool on the test net of greenfield, he will need to switch to the latest release version.
 ### installation
 
 ```
