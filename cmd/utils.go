@@ -83,7 +83,6 @@ const (
 	DefaultConfigPath   = "config/config.toml"
 	DefaultConfigDir    = ".gnfd-cmd"
 	DefaultKeyStorePath = "keystore/key.json"
-	DefaultPasswordPath = "keystore/password/password.txt"
 
 	rpcAddrConfigField = "rpcAddr"
 	chainIdConfigField = "chainId"
@@ -491,25 +490,6 @@ func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
 	}
 
 	return content, nil
-}
-
-func loadPassWordFile(ctx *cli.Context) (string, error) {
-	passwordFilepath := ctx.String(passwordFileFlag)
-	if passwordFilepath == "" {
-		homeDir, err := getHomeDir(ctx)
-		if err != nil {
-			return "", err
-		}
-		passwordFilepath = filepath.Join(homeDir, DefaultPasswordPath)
-	}
-
-	// fetch password from password file
-	content, err := os.ReadFile(passwordFilepath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read the password at '%s': %v \n", passwordFilepath, err)
-	}
-
-	return string(content), nil
 }
 
 func getHomeDir(ctx *cli.Context) (string, error) {

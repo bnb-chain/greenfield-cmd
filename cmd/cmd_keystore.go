@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
@@ -104,12 +103,6 @@ func generateKey(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	// write password content to default password file path
-	err = writeDefaultPassword(ctx, password)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
 	// encrypt the private key
 	encryptContent, err := EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
 	if err != nil {
@@ -156,46 +149,16 @@ func inspectKey(ctx *cli.Context) error {
 	return nil
 }
 
-func writeDefaultPassword(ctx *cli.Context, password string) error {
-	homeDir, err := getHomeDir(ctx)
-	if err != nil {
-		return err
-	}
-	filePath := filepath.Join(homeDir, DefaultPasswordPath)
-
-	if err := os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
-		return errors.New("failed to create password directory :%s" + filepath.Dir(filePath))
-	}
-
-	// store the password
-	if err := os.WriteFile(filePath, []byte(password), 0600); err != nil {
-		return fmt.Errorf("failed to write password to the path: %s: %v", filePath, err)
-	}
-
-	fmt.Printf("\ngenerate password file: %s successfully \n", filePath)
-	return nil
-}
-
 func parseKeystore(ctx *cli.Context) (string, error) {
 	keyjson, err := loadKeyStoreFile(ctx)
 	if err != nil {
 		return "", toCmdErr(err)
 	}
 
-	var password string
-	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
-		// load password from password flag
-		readContent, err := os.ReadFile(passwordFile)
-		if err != nil {
-			return "", errors.New("failed to read password file" + err.Error())
-		}
-		password = strings.TrimRight(string(readContent), "\r\n")
-	} else {
-		// load password from default password file path
-		password, err = loadPassWordFile(ctx)
-		if err != nil {
-			return "", toCmdErr(err)
-		}
+	// fetch password content
+	password, err := getPassword(ctx)
+	if err != nil {
+		return "", toCmdErr(err)
 	}
 
 	privateKey, err := DecryptKey(keyjson, password)
