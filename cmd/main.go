@@ -152,11 +152,12 @@ func main() {
 			},
 
 			{
-				Name:  "keystore",
+				Name:  "account",
 				Usage: "support the keystore operation functions",
 				Subcommands: []*cli.Command{
-					cmdGenerateKey(),
-					cmdPrintKey(),
+					cmdImportAccount(),
+					cmdListAccount(),
+					cmdCreateAccount(),
 				},
 			},
 		},

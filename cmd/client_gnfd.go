@@ -15,7 +15,7 @@ const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (client.Client, error) {
-	privateKey, err := parseKeystore(ctx)
+	privateKey, _, err := parseKeystore(ctx)
 	if err != nil {
 		return nil, err
 	}

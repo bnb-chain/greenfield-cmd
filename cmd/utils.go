@@ -342,14 +342,14 @@ func getPassword(ctx *cli.Context) (string, error) {
 		return strings.TrimRight(string(readContent), "\r\n"), nil
 	}
 
-	fmt.Print("Input Password：")
+	fmt.Print("Please enter a passphrase now:")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		fmt.Println("read password ", err)
 		return "", err
 	}
 	password := string(bytePassword)
-
+	fmt.Println()
 	return password, nil
 }
 
@@ -473,12 +473,12 @@ func getConfig(ctx *cli.Context) (string, string, string, error) {
 	return config.RpcAddr, config.ChainId, config.Host, nil
 }
 
-func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
+func loadKeyStoreFile(ctx *cli.Context) ([]byte, string, error) {
 	keyfilepath := ctx.String("keystore")
 	if keyfilepath == "" {
 		homeDir, err := getHomeDir(ctx)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		keyfilepath = filepath.Join(homeDir, DefaultKeyStorePath)
 	}
@@ -486,10 +486,10 @@ func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
 	// fetch private key from keystore
 	content, err := os.ReadFile(keyfilepath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
+		return nil, "", fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
 	}
 
-	return content, nil
+	return content, keyfilepath, nil
 }
 
 func getHomeDir(ctx *cli.Context) (string, error) {
