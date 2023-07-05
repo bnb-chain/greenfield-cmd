@@ -345,7 +345,7 @@ func getPassword(ctx *cli.Context) (string, error) {
 	fmt.Print("Please enter a passphrase now:")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		fmt.Println("read password ", err)
+		fmt.Println("read password err:", err)
 		return "", err
 	}
 	password := string(bytePassword)

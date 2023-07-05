@@ -19,6 +19,7 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKey)
 	if err != nil {
 		fmt.Println("new account err", err.Error())

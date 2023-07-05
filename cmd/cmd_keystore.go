@@ -21,9 +21,11 @@ func cmdImportAccount() *cli.Command {
 		Usage:     "import the account by the private key file",
 		ArgsUsage: "[ <keyfile> ] ",
 		Description: `
-generate a keystore file to manage user's private key information.
+Import account info from private key file and generate a keystore file to manage user's private key information.
+If no keyfile is specified, a keystore will be generated at the default path （homedir/.gnfd-cmd/keystore/key.json）
+
 Examples:
-$ gnfd-cmd keystore generate --privKeyFile key.txt  `,
+$ gnfd-cmd  account import --privKeyFile  key.txt  ./key.json`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     privKeyFileFlag,
@@ -31,36 +33,26 @@ $ gnfd-cmd keystore generate --privKeyFile key.txt  `,
 				Usage:    "the private key file path which contain the origin private hex string",
 				Required: true,
 			},
-			&cli.StringFlag{
-				Name:  passwordFileFlag,
-				Value: "",
-				Usage: "the file which contains the password for the keyfile",
-			},
 		},
 	}
 }
 
 func cmdListAccount() *cli.Command {
 	return &cli.Command{
-		Name:      "list",
+		Name:      "ls",
 		Action:    listAccounts,
-		Usage:     "inspect a keystore file",
-		ArgsUsage: "[ <keyfile> ] ",
+		Usage:     "list account info",
+		ArgsUsage: " ",
 		Description: `
-print the private key related information
+list the account info, if the user needs to print the privateKey info, set privateKey flag as true
 
 Examples:
-$ gnfd-cmd  keystore inspect --privateKey true  `,
+$ gnfd-cmd account ls `,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  privKeyFlag,
 				Value: "",
 				Usage: "include the private key in the output",
-			},
-			&cli.StringFlag{
-				Name:  passwordFileFlag,
-				Value: "",
-				Usage: "the file which contains the password for the keyfile",
 			},
 		},
 	}
@@ -71,24 +63,12 @@ func cmdCreateAccount() *cli.Command {
 		Name:      "new",
 		Action:    createAccount,
 		Usage:     "create a new account",
-		ArgsUsage: " ",
+		ArgsUsage: "",
 		Description: `
 create a new account and store the private key in a keystore file
 
 Examples:
-$ gnfd-cmd  keystore createAccount  `,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  privKeyFlag,
-				Value: "",
-				Usage: "include the private key in the output",
-			},
-			&cli.StringFlag{
-				Name:  passwordFileFlag,
-				Value: "",
-				Usage: "the file which contains the password for the keyfile",
-			},
-		},
+$ gnfd-cmd account new  `,
 	}
 }
 
@@ -153,13 +133,13 @@ func importKey(ctx *cli.Context) error {
 func listAccounts(ctx *cli.Context) error {
 	privateKey, keyfile, err := parseKeystore(ctx)
 	if err != nil {
-		return nil
+		return toCmdErr(err)
 	}
 	printPrivate := ctx.Bool(privKeyFlag)
 
 	priBytes, err := hex.DecodeString(privateKey)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
 	var keyBytesArray [32]byte
@@ -167,25 +147,17 @@ func listAccounts(ctx *cli.Context) error {
 	priKey := hd.EthSecp256k1.Generate()(keyBytesArray[:]).(*ethsecp256k1.PrivKey)
 	pubKey := priKey.PubKey()
 
-	/*
-		fmt.Println("Address:       ", pubKey.Address())
-		fmt.Println("Public key:    ", pubKey.String()
-		if printPrivate {
-			fmt.Println("Private key:   ", privateKey)
-		}
-
-	*/
 	if !printPrivate {
-		fmt.Printf("Account : { %s },  keystore %s \n", pubKey.Address(), keyfile)
+		fmt.Printf("Account: { %s },  Keystore : %s \n", pubKey.Address(), keyfile)
 	} else {
-		fmt.Printf("Account : { %s },  keystore %s:, private key %s \n", pubKey.Address(), keyfile, privateKey)
+		fmt.Printf("Account: { %s },  Keystore : %s:, Private-key: %s \n", pubKey.Address(), keyfile, privateKey)
 	}
 
 	return nil
 }
 
 func createAccount(ctx *cli.Context) error {
-	keyFilePath := ctx.Args().First()
+	keyFilePath := ctx.String("keystore")
 	if keyFilePath == "" {
 		homeDirname, err := getHomeDir(ctx)
 		if err != nil {
@@ -200,7 +172,10 @@ func createAccount(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	account, privateKey, err := sdktypes.NewAccount("test-account")
+	account, privateKey, err := sdktypes.NewAccount("gnfd-account")
+	if err != nil {
+		return toCmdErr(err)
+	}
 
 	key := &Key{
 		Address:    account.GetAddress(),
@@ -227,8 +202,6 @@ func createAccount(ctx *cli.Context) error {
 	if err := os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
 		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
 	}
-
-	//fmt.Printf("generate keystore %s successfully, key address: %s \n", keyFilePath, key.Address)
 
 	fmt.Printf("create new account: {%s} successfully \n", account.GetAddress())
 	return nil

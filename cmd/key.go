@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -38,6 +39,7 @@ func DecryptKey(keyJson []byte, auth string) (string, error) {
 	if err := json.Unmarshal(keyJson, k); err != nil {
 		return "", err
 	}
+
 	keyBytes, err := decryptKey(k, auth)
 	if err != nil {
 		return "", err
@@ -51,5 +53,9 @@ func decryptKey(key *encryptedKey, auth string) (keyBytes []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return plainText, err
+
+	if len(plainText) == 0 {
+		return nil, fmt.Errorf("decrypt content empty")
+	}
+	return plainText, nil
 }
