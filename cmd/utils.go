@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	Version          = "v0.0.9-alpha.1"
 	maxFileSize      = 2 * 1024 * 1024 * 1024
 	maxListObjects   = 100
 	publicReadType   = "public-read"
@@ -63,7 +64,8 @@ const (
 	folderFlag       = "folder"
 
 	privKeyFileFlag  = "privKeyFile"
-	privKeyFlag      = "privateKey"
+	unsafeFlag       = "unsafe"
+	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
 	homeFlag         = "home"
 	keyStoreFlag     = "keystore"

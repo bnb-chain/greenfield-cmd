@@ -158,8 +158,10 @@ func main() {
 					cmdImportAccount(),
 					cmdListAccount(),
 					cmdCreateAccount(),
+					cmdExportAccount(),
 				},
 			},
+			cmdShowVersion(),
 		},
 	}
 	app.Before = altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))
