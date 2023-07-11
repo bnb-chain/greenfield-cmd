@@ -99,7 +99,7 @@ func headObject(ctx *cli.Context) error {
 		fmt.Println("no such object")
 		return nil
 	}
-	parseChainInfo(objectInfo.String(), false)
+	parseChainInfo(objectInfo.ObjectInfo.String(), false)
 	return nil
 }
 

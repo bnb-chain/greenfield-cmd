@@ -355,7 +355,7 @@ func putObject(ctx *cli.Context) error {
 				return err
 			}
 
-			if headObjOutput.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
+			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("put object %s successfully \n", objectName)
 				return nil
@@ -415,7 +415,7 @@ func getObject(ctx *cli.Context) error {
 
 	defer fd.Close()
 
-	opt := sdktypes.GetObjectOption{}
+	opt := sdktypes.GetObjectOptions{}
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
 
@@ -614,7 +614,7 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectInfo.GetVisibility().String())
+	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectInfo.ObjectInfo.GetVisibility().String())
 	return nil
 }
 
