@@ -11,15 +11,15 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 
 ## Cmd usage
 
-Please notice that the latest release version is compatible with the greenfield system of test net. 
-If the user need to use the command tool on the test net of greenfield, he will need to switch to the latest release version.
-To obtain the latest version of the command tool, please visit the following URL: https://github.com/bnb-chain/greenfield-cmd/releases.
+Greenfield is still undergoing rapid development iterations, and greenfield-cmd also needs to be continuously updated and adapted. When using it, please do not directly use the master branch or develop branch. If you are using this tool on the Greenfield Testnet, please switch to the latest official release version. 
+To obtain the latest release, please visit the following URL: https://github.com/bnb-chain/greenfield-cmd/releases.
 
 ### installation
 
 ```
 git clone https://github.com/bnb-chain/greenfield-cmd.git
 cd greenfield-cmd
+# Find the latest release here: https://github.com/bnb-chain/greenfield-cmd/releases
 git checkout -b branch-name v0.0.8
 make build
 cd build
@@ -39,7 +39,7 @@ The rpcAddr indicates the Tendermint RPC address with the port info.
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
 chainId = "greenfield_5600-1"
 ```
-The command tool can also support other networks besides the test net. 
+The command tool can also support other networks besides the Testnet.
 you can replace the content of a custom config file in the default config directory with config.toml or
 run command with "-c filepath" to set the custom config file.
 
