@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	Version          = "v0.0.8-hf.1"
 	maxFileSize      = 2 * 1024 * 1024 * 1024
 	maxListObjects   = 100
 	publicReadType   = "public-read"
