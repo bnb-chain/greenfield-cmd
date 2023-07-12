@@ -152,13 +152,16 @@ func main() {
 			},
 
 			{
-				Name:  "keystore",
+				Name:  "account",
 				Usage: "support the keystore operation functions",
 				Subcommands: []*cli.Command{
-					cmdGenerateKey(),
-					cmdPrintKey(),
+					cmdImportAccount(),
+					cmdListAccount(),
+					cmdCreateAccount(),
+					cmdExportAccount(),
 				},
 			},
+			cmdShowVersion(),
 		},
 	}
 	app.Before = altsrc.InitInputSourceWithContext(flags, altsrc.NewTomlSourceFromFlagFunc("config"))

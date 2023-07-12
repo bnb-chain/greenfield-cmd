@@ -13,12 +13,31 @@ import (
 
 const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
 
+func cmdShowVersion() *cli.Command {
+	return &cli.Command{
+		Name:      "version",
+		Action:    showVersion,
+		Usage:     "print version info",
+		ArgsUsage: "",
+		Description: `
+
+Examples:
+$ gnfd-cmd version  `,
+	}
+}
+
+func showVersion(ctx *cli.Context) error {
+	fmt.Println("Greenfield Cmd Version:", Version)
+	return nil
+}
+
 // NewClient returns a new greenfield client
 func NewClient(ctx *cli.Context) (client.Client, error) {
-	privateKey, err := parseKeystore(ctx)
+	privateKey, _, err := parseKeystore(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKey)
 	if err != nil {
 		fmt.Println("new account err", err.Error())
