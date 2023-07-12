@@ -20,7 +20,7 @@ To obtain the latest release, please visit the following URL: https://github.com
 git clone https://github.com/bnb-chain/greenfield-cmd.git
 cd greenfield-cmd
 # Find the latest release here: https://github.com/bnb-chain/greenfield-cmd/releases
-git checkout -b branch-name v0.0.8
+git checkout -b branch-name v0.0.8-hf.1
 make build
 cd build
 ./gnfd-cmd -h
