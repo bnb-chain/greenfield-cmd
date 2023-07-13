@@ -5,8 +5,8 @@ go 1.19
 require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/bnb-chain/greenfield v0.2.3-0.20230711112213-f847ad5053fd // feat_sp_exit_develop branch
-	github.com/bnb-chain/greenfield-go-sdk v0.2.3-alpha.2.0.20230711140408-70d38d2b9611 // feat-adaptor-sp-exit branch
+	github.com/bnb-chain/greenfield v0.2.3-alpha.5
+	github.com/bnb-chain/greenfield-go-sdk v0.2.3-alpha.3.0.20230713142312-3b9432a4f66b
 	github.com/cosmos/cosmos-sdk v0.47.2
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/urfave/cli/v2 v2.10.2
@@ -149,8 +149,8 @@ require (
 replace (
 	cosmossdk.io/api => github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20230425074444-eb5869b05fe9
 	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20230425074444-eb5869b05fe9
-	github.com/cometbft/cometbft => github.com/bnb-chain/greenfield-cometbft v0.0.0-20230706104359-7fd423a5762d
+	github.com/cometbft/cometbft => github.com/bnb-chain/greenfield-cometbft v0.0.2-alpha.1
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.2.3-0.20230708022057-415c3959394c
-	github.com/cosmos/iavl => github.com/bnb-chain/greenfield-iavl v0.0.0-20230704034816-734af4bed8ae
+	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v0.2.3-alpha.3
+	github.com/cosmos/iavl => github.com/bnb-chain/greenfield-iavl v0.20.1-alpha.1
 )
