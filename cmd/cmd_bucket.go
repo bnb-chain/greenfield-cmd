@@ -271,7 +271,7 @@ func listBuckets(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	bucketListRes, err := client.ListBuckets(c)
+	bucketListRes, err := client.ListBuckets(c, sdktypes.EndPointOptions{})
 
 	if err != nil {
 		return toCmdErr(err)

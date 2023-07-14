@@ -98,8 +98,8 @@ func waitTxnStatus(cli client.Client, ctx context.Context, txnHash string, txnIn
 	if err != nil {
 		return fmt.Errorf("the %s txn: %s ,has been submitted, please check it later:%v", txnInfo, txnHash, err)
 	}
-	if txnResponse.Code != 0 {
-		return fmt.Errorf("the %s txn: %s has failed with response code: %d", txnInfo, txnHash, txnResponse.Code)
+	if txnResponse.TxResult.Code != 0 {
+		return fmt.Errorf("the %s txn: %s has failed with response code: %d", txnInfo, txnHash, txnResponse.TxResult.Code)
 	}
 
 	return nil

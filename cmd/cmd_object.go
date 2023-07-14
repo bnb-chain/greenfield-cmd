@@ -260,7 +260,7 @@ func putObject(ctx *cli.Context) error {
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(maxFileSize) {
-		return fmt.Errorf("upload file larger than 2G ")
+		return fmt.Errorf("upload file larger than 10G ")
 	}
 
 	// Open the referenced file.
@@ -373,7 +373,7 @@ func putObject(ctx *cli.Context) error {
 				return err
 			}
 
-			if headObjOutput.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
+			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("put object %s successfully \n", objectName)
 				return nil
@@ -625,13 +625,13 @@ func updateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	objectInfo, err := client.HeadObject(c, bucketName, objectName)
+	objectDetail, err := client.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		// head fail, no need to print the error
 		return nil
 	}
 
-	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectInfo.GetVisibility().String())
+	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectDetail.ObjectInfo.GetVisibility().String())
 	return nil
 }
 
