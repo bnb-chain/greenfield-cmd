@@ -260,7 +260,7 @@ func putObject(ctx *cli.Context) error {
 	if !exists {
 		return fmt.Errorf("upload file not exists")
 	} else if objectSize > int64(maxFileSize) {
-		return fmt.Errorf("upload file larger than 2G ")
+		return fmt.Errorf("upload file larger than 10G ")
 	}
 
 	// Open the referenced file.
