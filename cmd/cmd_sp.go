@@ -98,7 +98,7 @@ func querySP(ctx *cli.Context) error {
 	var findSP bool
 	for _, info := range spList {
 		if info.Endpoint == endpoint {
-			addr = info.GetOperator()
+			addr = info.GetOperatorAccAddress()
 			findSP = true
 		}
 	}
