@@ -11,6 +11,7 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 
 ## Cmd usage
 
+
 Greenfield is still undergoing rapid development iterations, and greenfield-cmd also needs to be continuously updated and adapted. When using it, please do not directly use the master branch or develop branch. If you are using this tool on the Greenfield Testnet, please switch to the latest official release version. 
 To obtain the latest release, please visit the following URL: https://github.com/bnb-chain/greenfield-cmd/releases.
 
