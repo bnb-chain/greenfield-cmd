@@ -94,12 +94,12 @@ func headObject(ctx *cli.Context) error {
 	c, cancelHeadObject := context.WithCancel(globalContext)
 	defer cancelHeadObject()
 
-	objectInfo, err := client.HeadObject(c, bucketName, objectName)
+	objectDetail, err := client.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		fmt.Println("no such object")
 		return nil
 	}
-	parseChainInfo(objectInfo.String(), false)
+	parseChainInfo(objectDetail.ObjectInfo.String(), false)
 	return nil
 }
 

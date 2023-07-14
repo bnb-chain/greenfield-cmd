@@ -2,241 +2,90 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
+	"os"
+	"path/filepath"
 
 	"cosmossdk.io/math"
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	gnfdsdktypes "github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
-// cmdCreatePaymentAccount creates a payment account under the owner
-func cmdCreatePaymentAccount() *cli.Command {
+// cmdImportAccount import the account by private key file
+func cmdImportAccount() *cli.Command {
 	return &cli.Command{
-		Name:      "create",
-		Action:    CreatePaymentAccount,
-		Usage:     "create a payment account",
-		ArgsUsage: "",
+		Name:      "import",
+		Action:    importKey,
+		Usage:     "import the account by the private key file",
+		ArgsUsage: " <privateKeyFile>",
 		Description: `
-Create a payment account
+Import account info from private key file and generate a keystore file to manage user's private key information.
+If no keyfile is specified by --keystore or -k flag, a keystore will be generated at the default path （homedir/.gnfd-cmd/keystore/key.json）
+Users need to set the private key file path which contain the origin private hex string .
 
 Examples:
-# Create a payment account
-$ gnfd-cmd payment-account create`,
+// key.txt contains the origin private hex string 
+$ gnfd-cmd  -k key.json  account import  key.txt `,
 	}
 }
 
-func CreatePaymentAccount(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-	c, createPaymentAccount := context.WithCancel(globalContext)
-	defer createPaymentAccount()
-	acc, err := client.GetDefaultAccount()
-	if err != nil {
-		return toCmdErr(err)
-	}
-	txHash, err := client.CreatePaymentAccount(c, acc.GetAddress().String(), types.TxOption{})
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	err = waitTxnStatus(client, c, txHash, "CreatePaymentAccount")
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("create payment account for %s succ, txHash: %s\n", acc.GetAddress().String(), txHash)
-	return nil
-}
-
-// cmdPaymentDeposit makes deposit from the owner account to the payment account
-func cmdPaymentDeposit() *cli.Command {
-	return &cli.Command{
-		Name:   "deposit",
-		Action: Deposit,
-		Usage:  "deposit into stream(payment) account",
-		Description: `
-Make a deposit into stream(payment) account 
-
-Examples:
-# deposit a stream account
-$ gnfd-cmd payment-account deposit --toAddress 0x.. --amount 12345`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     toAddressFlag,
-				Value:    "",
-				Usage:    "the stream account",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:  amountFlag,
-				Value: "",
-				Usage: "the amount to be deposited",
-			},
-		},
-	}
-}
-
-func Deposit(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	toAddr := ctx.String(toAddressFlag)
-	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
-	if err != nil {
-		return toCmdErr(err)
-	}
-	amountStr := ctx.String(amountFlag)
-	amount, ok := math.NewIntFromString(amountStr)
-	if !ok {
-		return toCmdErr(fmt.Errorf("invalid amount %s", amountStr))
-	}
-	c, deposit := context.WithCancel(globalContext)
-	defer deposit()
-
-	txHash, err := client.Deposit(c, toAddr, amount, types.TxOption{})
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	err = waitTxnStatus(client, c, txHash, "Deposit")
-	if err != nil {
-		return toCmdErr(err)
-	}
-	fmt.Printf("Deposit %s BNB to payment account %s succ, txHash=%s\n", amount.String(), toAddr, txHash)
-	return nil
-}
-
-// cmdPaymentWithdraw makes a withdrawal from payment account to owner account
-func cmdPaymentWithdraw() *cli.Command {
-	return &cli.Command{
-		Name:   "withdraw",
-		Action: Withdraw,
-		Usage:  "withdraw from stream(payment) account",
-		Description: `
-Make a withdrawal from stream(payment) account 
-
-Examples:
-# withdraw from a stream account back to the creator account
-$ gnfd-cmd payment-account withdraw --fromAddress 0x.. --amount 12345`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     fromAddressFlag,
-				Value:    "",
-				Usage:    "the stream account",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:  amountFlag,
-				Value: "",
-				Usage: "the amount to be withdrew",
-			},
-		},
-	}
-}
-
-func Withdraw(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fromAddr := ctx.String(fromAddressFlag)
-	_, err = sdk.AccAddressFromHexUnsafe(fromAddr)
-	if err != nil {
-		return toCmdErr(err)
-	}
-	amountStr := ctx.String(amountFlag)
-	amount, ok := math.NewIntFromString(amountStr)
-	if !ok {
-		return toCmdErr(fmt.Errorf("invalid amount %s", amountStr))
-	}
-	c, deposit := context.WithCancel(globalContext)
-	defer deposit()
-
-	txHash, err := client.Withdraw(c, fromAddr, amount, types.TxOption{})
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	err = waitTxnStatus(client, c, txHash, "Withdraw")
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	fmt.Printf("Withdraw %s from %s succ, txHash=%s\n", amount.String(), fromAddr, txHash)
-	return nil
-}
-
-// cmdListPaymentAccounts list the payment accounts belong to the owner
-func cmdListPaymentAccounts() *cli.Command {
+func cmdListAccount() *cli.Command {
 	return &cli.Command{
 		Name:      "ls",
-		Action:    listPaymentAccounts,
-		Usage:     "list payment accounts of the owner",
-		ArgsUsage: "address of owner",
+		Action:    listAccounts,
+		Usage:     "list account info",
+		ArgsUsage: " ",
 		Description: `
-List payment accounts of the owner.
+list the account info, if the user needs to print the privateKey info, set privateKey flag as true
 
 Examples:
-$ gnfd-cmd payment-account ls `,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  ownerAddressFlag,
-				Value: "",
-				Usage: "indicate a owner's payment accounts to be list, account address can be omitted for current user's accounts listing",
-			},
-		},
+$ gnfd-cmd account ls `,
 	}
 }
 
-func listPaymentAccounts(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
-	if err != nil {
-		return toCmdErr(err)
-	}
+func cmdCreateAccount() *cli.Command {
+	return &cli.Command{
+		Name:      "new",
+		Action:    createAccount,
+		Usage:     "create a new account",
+		ArgsUsage: "",
+		Description: `
+create a new account and store the private key in a keystore file
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+Examples:
+$ gnfd-cmd account new  `,
+	}
+}
 
-	var ownerAddr string
-	ownerAddrStr := ctx.String(ownerAddressFlag)
-	if ownerAddrStr != "" {
-		_, err = sdk.AccAddressFromHexUnsafe(ownerAddrStr)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		ownerAddr = ownerAddrStr
-	} else {
-		acct, err := client.GetDefaultAccount()
-		if err != nil {
-			return toCmdErr(err)
-		}
-		ownerAddr = acct.GetAddress().String()
+func cmdExportAccount() *cli.Command {
+	return &cli.Command{
+		Name:      "export",
+		Action:    exportAccount,
+		Usage:     "export private key info ",
+		ArgsUsage: "",
+		Description: `
+Export a private key from the local keyring file in a encrypted format.
+When both the --unarmored-hex and --unsafe flags are selected, cryptographic
+private key material is exported in an INSECURE fashion that is designed to
+allow users to import their keys in hot wallets. 
+
+Examples:
+$ gnfd-cmd account export --unarmoredHex --unsafe`,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  unsafeFlag,
+				Usage: "indicate export private key in plain text",
+			},
+			&cli.BoolFlag{
+				Name:  unarmoredFlag,
+				Usage: "indicate export private key in plain text",
+			},
+		},
 	}
-	accounts, err := client.GetPaymentAccountsByOwner(c, ownerAddr)
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			fmt.Println("Accounts not exist")
-			return nil
-		}
-		return toCmdErr(err)
-	}
-	if len(accounts) == 0 {
-		fmt.Println("Accounts not exist")
-		return nil
-	}
-	fmt.Println("payment accounts list:")
-	for i, a := range accounts {
-		fmt.Printf("%d: %s \n", i+1, a)
-	}
-	return nil
 }
 
 func cmdGetAccountBalance() *cli.Command {
@@ -289,7 +138,7 @@ func getAccountBalance(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("balance: %s wei%s\n", resp.Amount.String(), gnfdsdktypes.Denom)
+	fmt.Printf("balance: %s wei%s\n", resp.Amount.String(), types.Denom)
 	return nil
 }
 
@@ -319,6 +168,223 @@ $ gnfd-cmd bank transfer --toAddress 0x.. --amount 12345`,
 			},
 		},
 	}
+}
+
+// cmdBridge makes a transfer from Greenfield to BSC
+func cmdBridge() *cli.Command {
+	return &cli.Command{
+		Name:      "bridge",
+		Action:    Bridge,
+		Usage:     "transfer from greenfield to a BSC account",
+		ArgsUsage: "",
+		Description: `
+Create a cross chain transfer from Greenfield to a BSC account
+
+Examples:
+# Make a cross chain transfer to BSC
+$ gnfd-cmd bank bridge --toAddress 0x.. --amount 12345`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     toAddressFlag,
+				Value:    "",
+				Usage:    "the receiver address in BSC",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     amountFlag,
+				Value:    "",
+				Usage:    "the amount of BNB to be sent",
+				Required: true,
+			},
+		},
+	}
+}
+
+func importKey(ctx *cli.Context) error {
+	keyFilePath := ctx.String("keystore")
+	if keyFilePath == "" {
+		homeDir, err := getHomeDir(ctx)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		keyFilePath = filepath.Join(homeDir, DefaultKeyStorePath)
+	}
+
+	if _, err := os.Stat(keyFilePath); err == nil {
+		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
+	} else if !os.IsNotExist(err) {
+		return toCmdErr(err)
+	}
+
+	privateKeyFile := ctx.Args().First()
+	if privateKeyFile == "" {
+		return toCmdErr(errors.New("fail to get the private key file info"))
+	}
+
+	// Load private key from file.
+	privateKey, addr, err := loadKey(privateKeyFile)
+	if err != nil {
+		return toCmdErr(errors.New("failed to load private key: %v" + err.Error()))
+	}
+
+	key := &Key{
+		Address:    addr,
+		PrivateKey: privateKey,
+	}
+
+	// fetch password content
+	password, err := getPassword(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	// encrypt the private key
+	encryptContent, err := EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
+		return toCmdErr(errors.New("failed to create directory %s" + filepath.Dir(keyFilePath)))
+	}
+
+	// store the keystore file
+	if err := os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
+		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
+	}
+
+	fmt.Printf("import account successfully, key address: %s, encrypted key file: %s \n", key.Address, keyFilePath)
+
+	return nil
+}
+
+func listAccounts(ctx *cli.Context) error {
+	keyJson, keyFile, err := loadKeyStoreFile(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	k := new(encryptedKey)
+	if err = json.Unmarshal(keyJson, k); err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("Account: { %s },  Keystore : %s \n", k.Address, keyFile)
+	return nil
+}
+
+func exportAccount(ctx *cli.Context) error {
+	unsafe := ctx.Bool(unsafeFlag)
+	unarmored := ctx.Bool(unarmoredFlag)
+
+	if unarmored && unsafe {
+		privateKey, _, err := parseKeystore(ctx)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		fmt.Println("Private key: ", privateKey)
+		return nil
+	} else if unarmored || unsafe {
+		return fmt.Errorf("the flags %s and %s must be used together", unsafeFlag, unarmoredFlag)
+	}
+
+	keyContent, _, err := loadKeyStoreFile(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	keyJson := new(encryptedKey)
+	if err = json.Unmarshal(keyContent, keyJson); err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Println("Armored key: ", keyJson.Crypto.CipherText)
+
+	return nil
+}
+
+func createAccount(ctx *cli.Context) error {
+	keyFilePath := ctx.String("keystore")
+	if keyFilePath == "" {
+		homeDirname, err := getHomeDir(ctx)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		keyFilePath = filepath.Join(homeDirname, DefaultKeyStorePath)
+	}
+
+	if _, err := os.Stat(keyFilePath); err == nil {
+		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
+	} else if !os.IsNotExist(err) {
+		return toCmdErr(err)
+	}
+
+	account, privateKey, err := sdktypes.NewAccount("gnfd-account")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	key := &Key{
+		Address:    account.GetAddress(),
+		PrivateKey: privateKey,
+	}
+
+	// fetch password content
+	password, err := getPassword(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	// encrypt the private key
+	encryptContent, err := EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
+		return toCmdErr(errors.New("failed to create directory %s" + filepath.Dir(keyFilePath)))
+	}
+
+	// store the keystore file
+	if err := os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
+		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
+	}
+
+	fmt.Printf("create new account: {%s} successfully \n", account.GetAddress())
+	return nil
+}
+
+func Bridge(ctx *cli.Context) error {
+	client, err := NewClient(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, transfer := context.WithCancel(globalContext)
+	defer transfer()
+
+	toAddr := ctx.String(toAddressFlag)
+	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	amountStr := ctx.String(amountFlag)
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
+	}
+	txResp, err := client.TransferOut(c, toAddr, amount, types.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txResp.TxHash, "Bridge")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
+	return nil
 }
 
 func Transfer(ctx *cli.Context) error {
@@ -353,65 +419,22 @@ func Transfer(ctx *cli.Context) error {
 	return nil
 }
 
-// cmdBridge makes a transfer from Greenfield to BSC
-func cmdBridge() *cli.Command {
-	return &cli.Command{
-		Name:      "bridge",
-		Action:    Bridge,
-		Usage:     "transfer from greenfield to a BSC account",
-		ArgsUsage: "",
-		Description: `
-Create a cross chain transfer from Greenfield to a BSC account
-
-Examples:
-# Make a cross chain transfer to BSC
-$ gnfd-cmd bank bridge --toAddress 0x.. --amount 12345`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     toAddressFlag,
-				Value:    "",
-				Usage:    "the receiver address in BSC",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     amountFlag,
-				Value:    "",
-				Usage:    "the amount of BNB to be sent",
-				Required: true,
-			},
-		},
-	}
-}
-
-func Bridge(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+func parseKeystore(ctx *cli.Context) (string, string, error) {
+	keyjson, keyFile, err := loadKeyStoreFile(ctx)
 	if err != nil {
-		return toCmdErr(err)
+		return "", "", toCmdErr(err)
 	}
 
-	c, transfer := context.WithCancel(globalContext)
-	defer transfer()
-
-	toAddr := ctx.String(toAddressFlag)
-	_, err = sdk.AccAddressFromHexUnsafe(toAddr)
+	// fetch password content
+	password, err := getPassword(ctx)
 	if err != nil {
-		return toCmdErr(err)
-	}
-	amountStr := ctx.String(amountFlag)
-	amount, ok := math.NewIntFromString(amountStr)
-	if !ok {
-		return toCmdErr(fmt.Errorf("%s is not valid amount", amount))
-	}
-	txResp, err := client.TransferOut(c, toAddr, amount, gnfdsdktypes.TxOption{})
-	if err != nil {
-		return toCmdErr(err)
+		return "", "", toCmdErr(err)
 	}
 
-	err = waitTxnStatus(client, c, txResp.TxHash, "Bridge")
+	privateKey, err := DecryptKey(keyjson, password)
 	if err != nil {
-		return toCmdErr(err)
+		return "", "", fmt.Errorf("failed to decrypting key: %v \n", err)
 	}
 
-	fmt.Printf("transfer out %s BNB to %s succ, txHash: %s\n", amountStr, toAddr, txResp.TxHash)
-	return nil
+	return privateKey, keyFile, nil
 }

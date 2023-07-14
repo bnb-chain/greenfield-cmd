@@ -55,7 +55,6 @@ $ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io`,
 func ListSP(ctx *cli.Context) error {
 	client, err := NewClient(ctx)
 	if err != nil {
-		fmt.Println("new client err:", err.Error())
 		return toCmdErr(err)
 	}
 
@@ -99,7 +98,7 @@ func querySP(ctx *cli.Context) error {
 	var findSP bool
 	for _, info := range spList {
 		if info.Endpoint == endpoint {
-			addr = info.GetOperator()
+			addr = info.GetOperatorAccAddress()
 			findSP = true
 		}
 	}

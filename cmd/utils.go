@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	maxFileSize      = 2 * 1024 * 1024 * 1024
+	Version          = "v0.0.9-alpha.2"
+	maxFileSize      = 10 * 1024 * 1024 * 1024
 	maxListObjects   = 100
 	publicReadType   = "public-read"
 	privateType      = "private"
@@ -63,7 +64,8 @@ const (
 	folderFlag       = "folder"
 
 	privKeyFileFlag  = "privKeyFile"
-	privKeyFlag      = "privateKey"
+	unsafeFlag       = "unsafe"
+	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
 	homeFlag         = "home"
 	keyStoreFlag     = "keystore"
@@ -83,7 +85,6 @@ const (
 	DefaultConfigPath   = "config/config.toml"
 	DefaultConfigDir    = ".gnfd-cmd"
 	DefaultKeyStorePath = "keystore/key.json"
-	DefaultPasswordPath = "keystore/password/password.txt"
 
 	rpcAddrConfigField = "rpcAddr"
 	chainIdConfigField = "chainId"
@@ -343,14 +344,14 @@ func getPassword(ctx *cli.Context) (string, error) {
 		return strings.TrimRight(string(readContent), "\r\n"), nil
 	}
 
-	fmt.Print("Input Password：")
+	fmt.Print("Please enter a passphrase now:")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
-		fmt.Println("read password ", err)
+		fmt.Println("read password err:", err)
 		return "", err
 	}
 	password := string(bytePassword)
-
+	fmt.Println()
 	return password, nil
 }
 
@@ -474,12 +475,12 @@ func getConfig(ctx *cli.Context) (string, string, string, error) {
 	return config.RpcAddr, config.ChainId, config.Host, nil
 }
 
-func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
+func loadKeyStoreFile(ctx *cli.Context) ([]byte, string, error) {
 	keyfilepath := ctx.String("keystore")
 	if keyfilepath == "" {
 		homeDir, err := getHomeDir(ctx)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		keyfilepath = filepath.Join(homeDir, DefaultKeyStorePath)
 	}
@@ -487,29 +488,10 @@ func loadKeyStoreFile(ctx *cli.Context) ([]byte, error) {
 	// fetch private key from keystore
 	content, err := os.ReadFile(keyfilepath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
+		return nil, "", fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
 	}
 
-	return content, nil
-}
-
-func loadPassWordFile(ctx *cli.Context) (string, error) {
-	passwordFilepath := ctx.String(passwordFileFlag)
-	if passwordFilepath == "" {
-		homeDir, err := getHomeDir(ctx)
-		if err != nil {
-			return "", err
-		}
-		passwordFilepath = filepath.Join(homeDir, DefaultPasswordPath)
-	}
-
-	// fetch password from password file
-	content, err := os.ReadFile(passwordFilepath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read the password at '%s': %v \n", passwordFilepath, err)
-	}
-
-	return string(content), nil
+	return content, keyfilepath, nil
 }
 
 func getHomeDir(ctx *cli.Context) (string, error) {
