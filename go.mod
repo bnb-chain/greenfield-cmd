@@ -5,9 +5,9 @@ go 1.19
 require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/bnb-chain/greenfield v0.2.3-alpha.5
-	github.com/bnb-chain/greenfield-go-sdk v0.2.3-alpha.3.0.20230713142312-3b9432a4f66b
-	github.com/cosmos/cosmos-sdk v0.47.2
+	github.com/bnb-chain/greenfield v0.2.3-0.20230714012924-df6781d93afa
+	github.com/bnb-chain/greenfield-go-sdk v0.2.3-alpha.3.0.20230714015056-339008ab9c31
+	github.com/cosmos/cosmos-sdk v0.47.3
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/urfave/cli/v2 v2.10.2
 	golang.org/x/term v0.8.0
