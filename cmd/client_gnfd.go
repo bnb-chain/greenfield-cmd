@@ -39,7 +39,7 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.Client, error) {
 		err        error
 		privateKey string
 	)
-	if isQueryCmd {
+	if !isQueryCmd {
 		privateKey, _, err = parseKeystore(ctx)
 		if err != nil {
 			return nil, err
