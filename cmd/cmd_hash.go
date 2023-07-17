@@ -39,7 +39,7 @@ func computeHashRoot(ctx *cli.Context) error {
 		return errors.New("file size should less than 5G")
 	}
 
-	gnfdClient, err := NewClient(ctx)
+	gnfdClient, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}

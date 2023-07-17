@@ -110,7 +110,7 @@ $ gnfd-cmd bank balance --address 0x... `,
 }
 
 func getAccountBalance(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -355,7 +355,7 @@ func createAccount(ctx *cli.Context) error {
 }
 
 func Bridge(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -388,7 +388,7 @@ func Bridge(ctx *cli.Context) error {
 }
 
 func Transfer(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
