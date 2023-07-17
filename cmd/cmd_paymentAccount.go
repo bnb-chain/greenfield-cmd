@@ -28,7 +28,7 @@ $ gnfd-cmd payment-account create`,
 }
 
 func CreatePaymentAccount(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -81,7 +81,7 @@ $ gnfd-cmd payment-account deposit --toAddress 0x.. --amount 12345`,
 }
 
 func Deposit(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -141,7 +141,7 @@ $ gnfd-cmd payment-account withdraw --fromAddress 0x.. --amount 12345`,
 }
 
 func Withdraw(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -196,7 +196,7 @@ $ gnfd-cmd payment-account ls `,
 }
 
 func listPaymentAccounts(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}

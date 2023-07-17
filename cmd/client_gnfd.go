@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
+	"github.com/bnb-chain/greenfield-go-sdk/types"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -32,16 +33,23 @@ func showVersion(ctx *cli.Context) error {
 }
 
 // NewClient returns a new greenfield client
-func NewClient(ctx *cli.Context) (client.Client, error) {
-	privateKey, _, err := parseKeystore(ctx)
-	if err != nil {
-		return nil, err
-	}
+func NewClient(ctx *cli.Context, isQueryCmd bool) (client.Client, error) {
+	var (
+		account    *types.Account
+		err        error
+		privateKey string
+	)
+	if isQueryCmd {
+		privateKey, _, err = parseKeystore(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	account, err := sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKey)
-	if err != nil {
-		fmt.Println("new account err", err.Error())
-		return nil, err
+		account, err = sdktypes.NewAccountFromPrivateKey("gnfd-account", privateKey)
+		if err != nil {
+			fmt.Println("new account err", err.Error())
+			return nil, err
+		}
 	}
 
 	rpcAddr, chainId, host, err := getConfig(ctx)
@@ -50,7 +58,6 @@ func NewClient(ctx *cli.Context) (client.Client, error) {
 	}
 
 	var cli client.Client
-
 	if host != "" {
 		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host})
 	} else {

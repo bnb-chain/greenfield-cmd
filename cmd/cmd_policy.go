@@ -163,7 +163,7 @@ func deletePolicy(ctx *cli.Context) error {
 }
 
 func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.Statement, policyType ResourceType) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.
 }
 
 func handleDeletePolicy(ctx *cli.Context, resource string, policyType ResourceType) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return err
 	}

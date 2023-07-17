@@ -109,7 +109,7 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -160,7 +160,7 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -231,7 +231,7 @@ func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
 }
 
 func mirrorGroup(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}

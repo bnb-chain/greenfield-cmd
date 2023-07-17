@@ -53,7 +53,7 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -90,7 +90,7 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
