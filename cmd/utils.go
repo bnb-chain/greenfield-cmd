@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	Version          = "v0.0.9-alpha.2"
+	Version          = "v0.0.9-alpha.3"
 	maxFileSize      = 10 * 1024 * 1024 * 1024
 	maxListObjects   = 100
 	publicReadType   = "public-read"
@@ -96,6 +96,8 @@ const (
 	// resumable download & upload
 	partSizeFlag        = "partSize"
 	resumableUploadFlag = "resumableUpload"
+
+	operatorAddressLen = 42
 )
 
 var (

@@ -51,7 +51,7 @@ func computeHashRoot(ctx *cli.Context) error {
 	}
 	defer fReader.Close()
 
-	hashes, size, _, err := gnfdClient.ComputeHashRoots(fReader)
+	hashes, size, _, err := gnfdClient.ComputeHashRoots(fReader, false)
 	if err != nil {
 		fmt.Println("compute hash root fail:", err.Error())
 		return toCmdErr(err)
