@@ -53,7 +53,7 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -90,7 +90,7 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -109,7 +109,7 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("quota info:\n charged quota:%d \nfree quota:%d \n consumed quota:%d \n",
+	fmt.Printf("quota info:\n charged quota:%d \n free quota:%d \n consumed quota:%d \n",
 		quotaInfo.ReadQuotaSize, quotaInfo.SPFreeReadQuotaSize, quotaInfo.ReadConsumedSize)
 	return nil
 }

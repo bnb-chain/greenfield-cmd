@@ -281,7 +281,7 @@ func putObject(ctx *cli.Context) error {
 		objectName = filepath.Base(filePath)
 	}
 
-	gnfdClient, err := NewClient(ctx)
+	gnfdClient, err := NewClient(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -395,7 +395,7 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	gnfdClient, err := NewClient(ctx)
+	gnfdClient, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -470,7 +470,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	cli, err := NewClient(ctx)
+	cli, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -502,7 +502,7 @@ func listObjects(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -551,7 +551,7 @@ func createFolder(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -596,7 +596,7 @@ func updateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -646,7 +646,7 @@ func getUploadInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -688,7 +688,7 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 }
 
 func mirrorObject(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, false)
 	if err != nil {
 		return toCmdErr(err)
 	}

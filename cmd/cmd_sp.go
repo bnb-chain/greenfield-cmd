@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/bnb-chain/greenfield-go-sdk/client"
+	sptypes "github.com/bnb-chain/greenfield/x/sp/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -53,7 +56,7 @@ $ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io`,
 }
 
 func ListSP(ctx *cli.Context) error {
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -79,32 +82,20 @@ func querySP(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return errors.New("the args should be one , please set the sp endpoint")
 	}
-	endpoint := ctx.Args().Get(0)
+	// sp addr could be an endpoint or sp operator address
+	spAddressInfo := ctx.Args().Get(0)
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelQuerySP := context.WithCancel(globalContext)
+	defer cancelQuerySP()
 
-	spList, err := client.ListStorageProviders(c, false)
+	addr, err := getSPAddr(spAddressInfo, client, c)
 	if err != nil {
-		return toCmdErr(errors.New("fail to get SP info"))
-	}
-
-	var addr sdk.AccAddress
-	var findSP bool
-	for _, info := range spList {
-		if info.Endpoint == endpoint {
-			addr = info.GetOperatorAccAddress()
-			findSP = true
-		}
-	}
-
-	if !findSP {
-		return toCmdErr(errors.New("fail to get SP info"))
+		return toCmdErr(err)
 	}
 
 	spInfo, err := client.GetStorageProviderInfo(c, addr)
@@ -123,35 +114,22 @@ func getQuotaPrice(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return errors.New("the args should be one , please set the sp endpoint")
 	}
-	endpoint := ctx.Args().Get(0)
+	spAddressInfo := ctx.Args().Get(0)
 
-	client, err := NewClient(ctx)
+	client, err := NewClient(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	c, cancelGetPrice := context.WithCancel(globalContext)
+	defer cancelGetPrice()
 
-	spList, err := client.ListStorageProviders(c, false)
+	spAddr, err := getSPAddr(spAddressInfo, client, c)
 	if err != nil {
-		return toCmdErr(errors.New("fail to get SP info"))
+		return err
 	}
 
-	var spAddressStr string
-	var findSP bool
-	for _, info := range spList {
-		if info.Endpoint == endpoint {
-			spAddressStr = info.GetOperatorAddress()
-			findSP = true
-		}
-	}
-
-	if !findSP {
-		return toCmdErr(errors.New("fail to get SP info"))
-	}
-
-	price, err := client.GetStoragePrice(c, spAddressStr)
+	price, err := client.GetStoragePrice(c, spAddr.String())
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -170,5 +148,38 @@ func getQuotaPrice(ctx *cli.Context) error {
 
 	fmt.Println("get bucket read quota price:", quotaPrice, " wei/byte")
 	fmt.Println("get bucket storage price:", storagePrice, " wei/byte")
+	fmt.Println("get bucket free quota:", price.FreeReadQuota)
 	return nil
+}
+
+func getSPAddr(spAddressInfo string, cli client.Client, c context.Context) (sdk.AccAddress, error) {
+	var addr sdk.AccAddress
+	var err error
+	var spList []sptypes.StorageProvider
+	// the input sp info is operator address
+	if len(spAddressInfo) == operatorAddressLen && strings.HasPrefix(spAddressInfo, "0x") {
+		addr, err = sdk.AccAddressFromHexUnsafe(spAddressInfo)
+		if err != nil {
+			return nil, fmt.Errorf("the sp address %s is invalid", spAddressInfo)
+		}
+	} else {
+		// the input sp info is a http endpoint
+		spList, err = cli.ListStorageProviders(c, false)
+		if err != nil {
+			return nil, errors.New("fail to get SP info")
+		}
+
+		// if the command input the sp operator address
+		var findSP bool
+		for _, info := range spList {
+			if info.Endpoint == spAddressInfo {
+				addr = info.GetOperatorAccAddress()
+				findSP = true
+			}
+		}
+		if !findSP {
+			return nil, errors.New("fail to get SP info, the input endpoint is invalid")
+		}
+	}
+	return addr, nil
 }
