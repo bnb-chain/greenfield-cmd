@@ -271,8 +271,16 @@ func listBuckets(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	bucketListRes, err := client.ListBuckets(c, sdktypes.EndPointOptions{})
+	spInfo, err := client.ListStorageProviders(c, true)
+	if err != nil {
+		fmt.Println("fail to get SP info to list bucket:", err.Error())
+		return nil
+	}
 
+	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{ShowRemovedBucket: false, EndPointOptions: &sdktypes.EndPointOptions{
+		Endpoint:  spInfo[0].Endpoint,
+		SPAddress: "",
+	}})
 	if err != nil {
 		return toCmdErr(err)
 	}
