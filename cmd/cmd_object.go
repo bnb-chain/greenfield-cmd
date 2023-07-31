@@ -514,7 +514,16 @@ func listObjects(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{})
+	spInfo, err := client.ListStorageProviders(c, true)
+	if err != nil {
+		fmt.Println("fail to get SP info to list object:", err.Error())
+		return nil
+	}
+
+	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false, EndPointOptions: &sdktypes.EndPointOptions{
+		Endpoint:  spInfo[0].Endpoint,
+		SPAddress: "",
+	}})
 	if err != nil {
 		return toCmdErr(err)
 	}
