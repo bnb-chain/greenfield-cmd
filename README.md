@@ -89,9 +89,6 @@ All the other commands need to run with -k if the keystore is not on the default
 
 #### Init Account
 
-
-##### Import Key
-
 Users can use "account import [keyfile]" to generate the keystore.  Before importing the key and generate keystore, you should export your private key from MetaMask and write it into a local keyfile as plaintext.
 
 ```
@@ -104,9 +101,8 @@ The keystore will be generated in the path "keystore/key.json" under the home di
 and it is also the default path to load keystore when running other commands.
 Password info is also needed to run the command. The terminal will prompt user to enter the password information.
 Users can also specify the password file path by using the "--passwordfile".
-Users are responsible for managing and securely storing their password information. If the password is lost, it is needed will need to re-import the key.
+Users are responsible for keeping their password information. If the password is lost, it is needed will need to re-import the key.
 
-##### New Account
 
 The "account new" command can be used to create a new account for executing commands. However, please note that after creating the account, you need to transfer token to the address of this account before you can send transactions or use storage-related functions.
 ```
@@ -114,7 +110,6 @@ The "account new" command can be used to create a new account for executing comm
 gnfd-cmd account account new
 ```
 
-##### Display Account
 Users can use "account export" or "account ls" to display the keystore information of account.
 ```
 // list the account info
