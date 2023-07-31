@@ -75,7 +75,7 @@ gnfd-cmd [command-name][subcommand-name] -h
 
 ### Precautions
 
-1. The user need to use "account import" or "account new" command to init the keystore before running other commands. The "import" command imports account info from private key file and generate a keystore to manage user's private key and the "new" command a new account and store the private key in a keystore.The content of the keystore is the encrypted private key information.
+1. The user need to use "account import" or "account new" command to init the keystore before running other commands. The "import" command imports account info from private key file and generate a keystore to manage user's private key and the "new" command create a new account with the keystore.The content of the keystore is the encrypted private key information.
 All the other commands need to run with -k if the keystore is not on the default path.
 
 2. The operator account should have enough balance before sending request to greenfield.
@@ -108,7 +108,6 @@ gnfd-cmd account import key.txt
 
 ##### New Account
 
-Users can also use "account new" to init the account.  
 The "account new" command can be used to create a new account for executing commands. However, please note that after creating the account, you need to transfer token to the address of this account before you can send transactions or use storage-related functions.
 ```
 // new account and generate keystore key.json
@@ -116,10 +115,12 @@ gnfd-cmd account account new
 ```
 
 ##### Display Account
-Users can use "account export" or "account ls" to display the keystore information of account
+Users can use "account export" or "account ls" to display the keystore information of account.
 ```
-// display the account info
+// list the account info
 gnfd-cmd account ls
+// export the account key info
+gnfd-cmd account export --unarmoredHex --unsafe
 ```
 
 #### Bank Operations
