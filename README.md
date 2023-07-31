@@ -91,20 +91,20 @@ All the other commands need to run with -k if the keystore is not on the default
 
 
 ##### Import Key
-Before importing the key and generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
-Users can use "account import <keyfile>" to generate the keystore.  The keyfile indicates the private key plaintext file.
-The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
-and it is also the default path to load keystore when running other commands.
-Password info is also needed to run the command. The terminal will prompt user to enter the password information.
-Users can also specify the password file path by using the "--passwordfile".
-Users are responsible for managing and securely storing their password information. If the password is lost, they will need to re-import the key.
+Users can use "account import [keyfile]" to generate the keystore.  Before importing the key and generate keystore, you should export your private key from MetaMask and write it into a local keyfile as plaintext.
 
 ```
 // import private key and generate keystore key.json
 // The key.txt contain the plaintext private key. After the keystore file has been generated, user can delete the private key file key.txt.
 gnfd-cmd account import key.txt
 ```
+
+The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
+and it is also the default path to load keystore when running other commands.
+Password info is also needed to run the command. The terminal will prompt user to enter the password information.
+Users can also specify the password file path by using the "--passwordfile".
+Users are responsible for managing and securely storing their password information. If the password is lost, it is needed will need to re-import the key.
 
 ##### New Account
 
