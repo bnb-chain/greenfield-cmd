@@ -47,7 +47,7 @@ run command with "-c filepath" to set the custom config file.
 
 #### Get help
 
-The commands support different kinds of commands, including bucket,object,group,bank,policy,sp,payment-account and keystore.
+The commands support different kinds of commands, including bucket,object,group,bank,policy,sp,payment-account and account.
 ```
 // get help for supporing commands and basic command format
 gnfd-cmd -h
@@ -58,7 +58,8 @@ gnfd-cmd -h
    policy           support object,bucket and group policy operation functions
    payment-account  support the payment account operation functions
    sp               support the storage provider operation functions
-   keystore         support the keystore operation functions
+   account          support the keystore operation functions
+   version          print version info
 
 ```
 
@@ -74,7 +75,7 @@ gnfd-cmd [command-name][subcommand-name] -h
 
 ### Precautions
 
-1. The user need to use "keystore create" command to generate a keystore file first. The content of the keystore is the encrypted private key information.
+1. The user need to use "account import" or "account new" command to init the keystore before running other commands. The "import" command imports account info from private key file and generate a keystore to manage user's private key and the "new" command a new account and store the private key in a keystore.The content of the keystore is the encrypted private key information.
 All the other commands need to run with -k if the keystore is not on the default path.
 
 2. The operator account should have enough balance before sending request to greenfield.
@@ -86,30 +87,42 @@ All the other commands need to run with -k if the keystore is not on the default
 
 ### Examples
 
-#### Generate Keystore
+#### Init Account
 
-Before generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
 
-Users can use "keystore generate" to generate the key file with the flag "--privKeyFile" which indicates the private key plaintext file .
+##### Import Key
+Before importing the key and generate keystore, you should export your private key from MetaMask and write it into a local file as plaintext.
+
+Users can use "account import <keyfile>" to generate the keystore.  The keyfile indicates the private key plaintext file.
 The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
 and it is also the default path to load keystore when running other commands.
-Password info is also needed to run the command. The terminal will prompt user to enter the password information. After the terminal obtains user's password information,
-the password file will store in the path "keystore/password/password.txt" under the home directory of the system or the directory set by "-home".
+Password info is also needed to run the command. The terminal will prompt user to enter the password information.
 Users can also specify the password file path by using the "--passwordfile".
+Users are responsible for managing and securely storing their password information. If the password is lost, they will need to re-import the key.
 
 ```
-// generate keystore key.json, key.txt contain the plaintext private key
-// After the keystore file has been generated, user can delete the private key file key.txt.
-gnfd-cmd keystore generate --privKeyFile key.txt 
+// import private key and generate keystore key.json
+// The key.txt contain the plaintext private key. After the keystore file has been generated, user can delete the private key file key.txt.
+gnfd-cmd account import key.txt
 ```
 
-Users can use "keystore inspect" to display the keystore information include publicKey, address and privateKey.
+##### New Account
+
+Users can also use "account new" to init the account.  
+The "account new" command can be used to create a new account for executing commands. However, please note that after creating the account, you need to transfer token to the address of this account before you can send transactions or use storage-related functions.
 ```
-// display the keystore info
-gnfd-cmd keystore inspect --privateKey true
+// new account and generate keystore key.json
+gnfd-cmd account account new
 ```
 
-#### Account Operations
+##### Display Account
+Users can use "account export" or "account ls" to display the keystore information of account
+```
+// display the account info
+gnfd-cmd account ls
+```
+
+#### Bank Operations
 ```
 // transfer to an account in Greenfield
 gnfd-cmd bank transfer --toAddress 0xF678C3734F0EcDCC56cDE2df2604AC1f8477D55d --amount 12345
@@ -160,12 +173,7 @@ the file-path should replace by the file path of local system.
 ```
 gnfd-cmd object put --contentType "text/xml" --visibility private file-path gnfd://gnfd-bucket/gnfd-object
 ```
-if the object name has not been set, the command will use the file name as object name. If you need upload a file to the folder, you need to run "object put" command with "--folder" flag.
-
-The tool also support create a folder on bucket by "object create-folder" command.
-```
-gnfd-cmd object create-folder gnfd://gnfd-bucket/testfolder
-```
+if the object name has not been set, the command will use the file name as object name. 
 
 (2) download object
 
