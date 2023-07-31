@@ -277,7 +277,7 @@ func listBuckets(ctx *cli.Context) error {
 		return nil
 	}
 
-	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{false, &sdktypes.EndPointOptions{
+	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{ShowRemovedBucket: false, EndPointOptions: &sdktypes.EndPointOptions{
 		Endpoint:  spInfo[0].Endpoint,
 		SPAddress: "",
 	}})
