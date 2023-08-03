@@ -141,7 +141,7 @@ func headGroup(ctx *cli.Context) error {
 	c, cancelHeadGroup := context.WithCancel(globalContext)
 	defer cancelHeadGroup()
 
-	groupOwner, err := getGroupOwner(ctx, client)
+	groupOwner, err := getGroupOwner(ctx)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -176,7 +176,7 @@ func headGroupMember(ctx *cli.Context) error {
 	c, cancelHeadBucket := context.WithCancel(globalContext)
 	defer cancelHeadBucket()
 
-	groupOwner, err := getGroupOwner(ctx, client)
+	groupOwner, err := getGroupOwner(ctx)
 	if err != nil {
 		return toCmdErr(err)
 	}

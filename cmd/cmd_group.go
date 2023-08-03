@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	"cosmossdk.io/math"
-	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	"github.com/urfave/cli/v2"
@@ -140,7 +140,7 @@ func createGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	groupOwner, err := getGroupOwner(ctx, client)
+	groupOwner, err := getGroupOwner(ctx)
 	if err == nil {
 		info, err := client.HeadGroup(c, groupName, groupOwner)
 		if err == nil {
@@ -186,7 +186,7 @@ func updateGroupMember(ctx *cli.Context) error {
 		removeGroupMembers = []string{removeMembersInfo}
 	}
 
-	groupOwner, err := getGroupOwner(ctx, client)
+	groupOwner, err := getGroupOwner(ctx)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -215,19 +215,24 @@ func updateGroupMember(ctx *cli.Context) error {
 	return nil
 }
 
-func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
+func getGroupOwner(ctx *cli.Context) (string, error) {
 	groupOwnerAddrStr := ctx.String(groupOwnerFlag)
 
 	if groupOwnerAddrStr != "" {
 		return groupOwnerAddrStr, nil
 	}
 
-	acc, err := client.GetDefaultAccount()
+	keyJson, _, err := loadKeyStoreFile(ctx)
 	if err != nil {
-		return "", toCmdErr(err)
+		return "", err
 	}
 
-	return acc.GetAddress().String(), nil
+	k := new(encryptedKey)
+	if err = json.Unmarshal(keyJson, k); err != nil {
+		return "", err
+	}
+
+	return k.Address, nil
 }
 
 func mirrorGroup(ctx *cli.Context) error {
