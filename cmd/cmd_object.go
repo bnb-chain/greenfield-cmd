@@ -51,11 +51,6 @@ $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 				},
 				Usage: "set visibility of the object",
 			},
-			&cli.StringFlag{
-				Name:  folderFlag,
-				Value: "",
-				Usage: "indicate folder in bucket to which the object will be uploaded",
-			},
 			&cli.Uint64Flag{
 				Name:  partSizeFlag,
 				Value: 16 * 1024 * 1024,
@@ -68,38 +63,6 @@ $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 				Usage: "indicate whether need to enable resumeable upload. Resumable upload refers to the process of uploading " +
 					"a file in multiple parts, where each part is uploaded separately.This allows the upload to be resumed from " +
 					"where it left off in case of interruptions or failures, rather than starting the entire upload process from the beginning.",
-			},
-		},
-	}
-}
-
-// cmdCreateFolder create a folder in bucket
-func cmdCreateFolder() *cli.Command {
-	return &cli.Command{
-		Name:      "create-folder",
-		Action:    createFolder,
-		Usage:     "create a folder in bucket",
-		ArgsUsage: " OBJECT-URL ",
-		Description: `
-Create a folder in bucket, you can set the prefix of folder by --prefix.
-Notice that folder is actually an special object.
-
-Examples:
-# create folder called gnfd-folder
-$ gnfd-cmd object create-folder gnfd://gnfd-bucket/gnfd-folder`,
-		Flags: []cli.Flag{
-			&cli.GenericFlag{
-				Name: visibilityFlag,
-				Value: &CmdEnumValue{
-					Enum:    []string{publicReadType, privateType, inheritType},
-					Default: inheritType,
-				},
-				Usage: "set visibility of the object",
-			},
-			&cli.StringFlag{
-				Name:  objectPrefix,
-				Value: "",
-				Usage: "The prefix of the folder to be created",
 			},
 		},
 	}
@@ -247,38 +210,60 @@ $ gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
 
 // putObject upload the payload of file, finish the third stage of putObject
 func putObject(ctx *cli.Context) error {
-	if ctx.NArg() != 2 {
-		return toCmdErr(fmt.Errorf("args number should be 2"))
+	if ctx.NArg() != 1 && ctx.NArg() != 2 {
+		return toCmdErr(fmt.Errorf("args number error"))
 	}
 
-	// read the local file payload
-	filePath := ctx.Args().Get(0)
-	exists, objectSize, err := pathExists(filePath)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("upload file not exists")
-	} else if objectSize > int64(maxFileSize) {
-		return fmt.Errorf("upload file larger than 10G ")
-	}
+	var (
+		uploadFolder                     = false
+		bucketName, objectName, filePath string
+		fileReader                       io.Reader
+		objectSize                       int64
+		err                              error
+	)
 
-	// Open the referenced file.
-	fileReader, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer fileReader.Close()
-
-	urlInfo := ctx.Args().Get(1)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		bucketName = ParseBucket(urlInfo)
-		if bucketName == "" {
-			return toCmdErr(errors.New("fail to parse bucket name"))
+	if ctx.NArg() == 1 {
+		urlInfo := ctx.Args().Get(0)
+		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
+		if err != nil {
+			return toCmdErr(err)
 		}
-		// if the object name has not been set, set the file name as object name
-		objectName = filepath.Base(filePath)
+		if strings.HasSuffix(objectName, "/") {
+			uploadFolder = true
+		} else {
+			return toCmdErr(errors.New("no file path to upload and fail to parse the folder name"))
+		}
+	} else {
+		// read the local file payload
+		filePath = ctx.Args().Get(0)
+		exists, objectSize, err := pathExists(filePath)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("upload file not exists")
+		} else if objectSize > int64(maxFileSize) {
+			return fmt.Errorf("upload file larger than 10G ")
+		}
+
+		// Open the referenced file.
+		file, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		fileReader = file
+
+		urlInfo := ctx.Args().Get(1)
+		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
+		if err != nil {
+			bucketName = ParseBucket(urlInfo)
+			if bucketName == "" {
+				return toCmdErr(errors.New("fail to parse bucket name"))
+			}
+			// if the object name has not been set, set the file name as object name
+			objectName = filepath.Base(filePath)
+		}
 	}
 
 	gnfdClient, err := NewClient(ctx, false)
@@ -308,11 +293,6 @@ func putObject(ctx *cli.Context) error {
 		opts.Visibility = visibityTypeVal
 	}
 
-	folderName := ctx.String(folderFlag)
-	if folderName != "" {
-		objectName = folderName + "/" + objectName
-	}
-
 	// set second sp address if provided by user
 	if secondarySPAccs != "" {
 		secondarySplist := strings.Split(secondarySPAccs, ",")
@@ -327,11 +307,20 @@ func putObject(ctx *cli.Context) error {
 	var txnHash string
 	// if err==nil, object exist on chain, no need to createObject
 	if err != nil {
-		txnHash, err = gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
-		if err != nil {
-			return toCmdErr(err)
+		if uploadFolder {
+			txnHash, err = gnfdClient.CreateFolder(c, bucketName, objectName, opts)
+			if err != nil {
+				return toCmdErr(err)
+			}
+		} else {
+			txnHash, err = gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+			if err != nil {
+				return toCmdErr(err)
+			}
 		}
 		fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
+	} else {
+		fmt.Printf("object %s already exist \n", objectName)
 	}
 
 	if objectSize == 0 {
@@ -520,10 +509,11 @@ func listObjects(ctx *cli.Context) error {
 		return nil
 	}
 
-	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false, EndPointOptions: &sdktypes.EndPointOptions{
-		Endpoint:  spInfo[0].Endpoint,
-		SPAddress: "",
-	}})
+	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+		EndPointOptions: &sdktypes.EndPointOptions{
+			Endpoint:  spInfo[0].Endpoint,
+			SPAddress: "",
+		}})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -547,51 +537,6 @@ func listObjects(ctx *cli.Context) error {
 
 	return nil
 
-}
-
-func createFolder(ctx *cli.Context) error {
-	if ctx.NArg() != 1 {
-		return toCmdErr(fmt.Errorf("args number should be 1"))
-	}
-
-	urlInfo := ctx.Args().Get(0)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	client, err := NewClient(ctx, false)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	c, cancelList := context.WithCancel(globalContext)
-	defer cancelList()
-
-	opts := sdktypes.CreateObjectOptions{}
-
-	visibity := ctx.Generic(visibilityFlag)
-	if visibity != "" {
-		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
-		if typeErr != nil {
-			return typeErr
-		}
-		opts.Visibility = visibityTypeVal
-	}
-
-	objectName = objectName + "/"
-	prefix := ctx.String(objectPrefix)
-	if prefix != "" {
-		objectName = prefix + "/" + objectName
-	}
-
-	txnHash, err := client.CreateFolder(c, bucketName, objectName, opts)
-	if err != nil {
-		return toCmdErr(ErrBucketNotExist)
-	}
-
-	fmt.Printf("create folder: %s successfully, txnHash is %s \n", objectName, txnHash)
-	return nil
 }
 
 func updateObject(ctx *cli.Context) error {
