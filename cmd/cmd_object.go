@@ -123,6 +123,13 @@ List Objects of the bucket, including object name, object id, object status
 
 Examples:
 $ gnfd-cmd object ls gnfd://gnfd-bucket`,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  recursiveFlag,
+				Value: false,
+				Usage: "performed on all files or objects under the specified directory or prefix in a recursive way",
+			},
+		},
 	}
 }
 
@@ -486,7 +493,7 @@ func listObjects(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("args number should be one"))
 	}
 
-	bucketName, err := getBucketNameByUrl(ctx)
+	bucketName, prefixName, err := ParseBucketAndPrefix(ctx.Args().Get(0))
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -509,30 +516,55 @@ func listObjects(ctx *cli.Context) error {
 		return nil
 	}
 
-	listObjectsRes, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
-		EndPointOptions: &sdktypes.EndPointOptions{
-			Endpoint:  spInfo[0].Endpoint,
-			SPAddress: "",
-		}})
+	supportRecursive := ctx.Bool(recursiveFlag)
+
+	var listResult sdktypes.ListObjectsResult
+	if !supportRecursive {
+		listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+			Delimiter: "/",
+			Prefix:    prefixName,
+			EndPointOptions: &sdktypes.EndPointOptions{
+				Endpoint:  spInfo[0].Endpoint,
+				SPAddress: "",
+			}})
+	} else {
+		listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+			Prefix: prefixName,
+			EndPointOptions: &sdktypes.EndPointOptions{
+				Endpoint:  spInfo[0].Endpoint,
+				SPAddress: "",
+			}})
+	}
+
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	if len(listObjectsRes.Objects) == 0 {
+	if len(listResult.Objects) == 0 && len(listResult.CommonPrefixes) == 0 {
 		fmt.Println("no objects")
 		return nil
 	}
 
 	listNum := 0
-	for _, object := range listObjectsRes.Objects {
+	for _, object := range listResult.Objects {
 		listNum++
 		if listNum > maxListObjects {
 			return nil
 		}
 		info := object.ObjectInfo
-		if !object.Removed {
-			fmt.Printf("object name: %s , object id:%s, object status:%s \n", info.ObjectName, info.Id, info.ObjectStatus)
+		location, _ := time.LoadLocation("Asia/Shanghai")
+		t := time.Unix(info.CreateAt, 0).In(location)
+
+		fmt.Printf("%s %15d %s \n", t.Format(iso8601DateFormat), info.PayloadSize, info.ObjectName)
+	}
+
+	for _, prefix := range listResult.CommonPrefixes {
+		listNum++
+		if listNum > maxListObjects {
+			return nil
 		}
+
+		fmt.Printf("%s %15s %s \n", strings.Repeat(" ", len(iso8601DateFormat)), "PRE", prefix)
 	}
 
 	return nil
