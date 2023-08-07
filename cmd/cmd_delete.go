@@ -14,7 +14,7 @@ import (
 // cmdDelBucket delete an existed Bucket, the bucket must be empty
 func cmdDelBucket() *cli.Command {
 	return &cli.Command{
-		Name:      "delete",
+		Name:      "rm",
 		Action:    deleteBucket,
 		Usage:     "delete an existed bucket",
 		ArgsUsage: "BUCKET-URL",
@@ -23,23 +23,23 @@ Send a deleteBucket txn to greenfield chain, the bucket must be empty before del
 
 Examples:
 # Delete an existed bucket called gnfd-bucket
-$ gnfd-cmd bucket delete gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd bucket rm gnfd://gnfd-bucket/gnfd-object`,
 	}
 }
 
 // cmdDelObject delete an existed object in bucket
 func cmdDelObject() *cli.Command {
 	return &cli.Command{
-		Name:      "delete",
+		Name:      "rm",
 		Action:    deleteObject,
-		Usage:     "delete an existed object",
-		ArgsUsage: "BUCKET-URL",
+		Usage:     "delete existed object",
+		ArgsUsage: "OBJECT-URL",
 		Description: `
 Send a deleteObject txn to greenfield chain
 
 Examples:
 # Delete an existed object called gnfd-object
-$ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object rm gnfd://gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  recursiveFlag,
@@ -53,7 +53,7 @@ $ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object`,
 // cmdDelGroup delete an existed group
 func cmdDelGroup() *cli.Command {
 	return &cli.Command{
-		Name:      "delete",
+		Name:      "rm",
 		Action:    deleteGroup,
 		Usage:     "delete an existed group",
 		ArgsUsage: "GROUP-NAME",
@@ -62,7 +62,7 @@ Send a deleteGroup txn to greenfield chain
 
 Examples:
 # Delete an existed group
-$ gnfd-cmd group delete group-name`,
+$ gnfd-cmd group rm group-name`,
 	}
 }
 
@@ -131,7 +131,6 @@ func deleteObject(ctx *cli.Context) error {
 		if !strings.HasSuffix(foldName, "/") {
 			foldName = objectName + "/"
 		}
-
 		listResult, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
 			Prefix: foldName})
 
@@ -148,7 +147,6 @@ func deleteObject(ctx *cli.Context) error {
 			// no need to return err if some objects failed
 			deleteObjectAndWaitTxn(client, c, bucketName, object.ObjectInfo.ObjectName)
 		}
-
 	} else {
 		err = deleteObjectAndWaitTxn(client, c, bucketName, objectName)
 		if err != nil {
