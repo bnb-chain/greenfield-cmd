@@ -510,30 +510,17 @@ func listObjects(ctx *cli.Context) error {
 		return toCmdErr(ErrBucketNotExist)
 	}
 
-	spInfo, err := client.ListStorageProviders(c, true)
-	if err != nil {
-		fmt.Println("fail to get SP info to list object:", err.Error())
-		return nil
-	}
-
 	supportRecursive := ctx.Bool(recursiveFlag)
 
 	var listResult sdktypes.ListObjectsResult
 	if !supportRecursive {
 		listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
 			Delimiter: "/",
-			Prefix:    prefixName,
-			EndPointOptions: &sdktypes.EndPointOptions{
-				Endpoint:  spInfo[0].Endpoint,
-				SPAddress: "",
-			}})
+			Prefix:    prefixName})
 	} else {
+		fmt.Println("prefix:", prefixName)
 		listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
-			Prefix: prefixName,
-			EndPointOptions: &sdktypes.EndPointOptions{
-				Endpoint:  spInfo[0].Endpoint,
-				SPAddress: "",
-			}})
+			Prefix: prefixName})
 	}
 
 	if err != nil {

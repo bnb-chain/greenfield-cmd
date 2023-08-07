@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -37,6 +40,13 @@ Send a deleteObject txn to greenfield chain
 Examples:
 # Delete an existed object called gnfd-object
 $ gnfd-cmd object delete gnfd://gnfd-bucket/gnfd-object`,
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  recursiveFlag,
+				Value: false,
+				Usage: "performed on all files or objects under the specified directory or prefix in a recursive way",
+			},
+		},
 	}
 }
 
@@ -76,7 +86,7 @@ func deleteBucket(ctx *cli.Context) error {
 
 	_, err = client.HeadBucket(c, bucketName)
 	if err != nil {
-		return toCmdErr(ErrBucketNotExist)
+		fmt.Printf("bucket %s not exist or already deleted\n", bucketName)
 	}
 
 	txnHash, err := client.DeleteBucket(c, bucketName, sdktypes.DeleteBucketOption{TxOpts: &TxnOptionWithSyncMode})
@@ -113,25 +123,57 @@ func deleteObject(ctx *cli.Context) error {
 
 	c, cancelDelObject := context.WithCancel(globalContext)
 	defer cancelDelObject()
+	supportRecursive := ctx.Bool(recursiveFlag)
 
-	_, err = client.HeadObject(c, bucketName, objectName)
-	if err != nil {
-		return toCmdErr(ErrObjectNotExist)
+	// if it is a folder and set the --recursive flag , list all the objects and delete them one by one
+	if supportRecursive {
+		foldName := objectName
+		if !strings.HasSuffix(foldName, "/") {
+			foldName = objectName + "/"
+		}
+
+		listResult, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+			Prefix: foldName})
+
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		if len(listResult.Objects) == 0 {
+			return toCmdErr(errors.New("no objects to delete in the folder"))
+		}
+
+		// TODO use one txn to broadcast multi delete object messages
+		for _, object := range listResult.Objects {
+			// no need to return err if some objects failed
+			deleteObjectAndWaitTxn(client, c, bucketName, object.ObjectInfo.ObjectName)
+		}
+
+	} else {
+		err = deleteObjectAndWaitTxn(client, c, bucketName, objectName)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		fmt.Printf("delete: gnfd:// %s/ %s\n", bucketName, objectName)
 	}
 
-	txnHash, err := client.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &TxnOptionWithSyncMode})
+	return nil
+}
+
+func deleteObjectAndWaitTxn(cli client.Client, c context.Context, bucketName, objectName string) error {
+	txnHash, err := cli.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
-		fmt.Println("delete object error:", err.Error())
+		fmt.Printf("failed to delele object %s err:%v\n", objectName, err)
 		return err
 	}
 
-	err = waitTxnStatus(client, c, txnHash, "DeleteObject")
+	err = waitTxnStatus(cli, c, txnHash, "DeleteObject")
 	if err != nil {
-		return toCmdErr(err)
+		return err
 	}
 
-	fmt.Printf("delete object %s successfully, txn hash:%s \n",
-		objectName, txnHash)
+	fmt.Printf("deleted: %s\n", objectName)
 	return nil
 }
 
