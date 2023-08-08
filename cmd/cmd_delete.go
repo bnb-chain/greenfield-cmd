@@ -109,11 +109,29 @@ func deleteObject(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return toCmdErr(fmt.Errorf("args number more than one"))
 	}
+	var (
+		deleteAll              bool
+		bucketName, objectName string
+		err                    error
+		paramErr               error
+		listResult             sdktypes.ListObjectsResult
+	)
 
 	urlInfo := ctx.Args().Get(0)
-	bucketName, objectName, err := getObjAndBucketNames(urlInfo)
+	bucketName, objectName, err = getObjAndBucketNames(urlInfo)
+	supportRecursive := ctx.Bool(recursiveFlag)
 	if err != nil {
-		return toCmdErr(err)
+		// if delete all the object in a recursive way, just need to parse bucket name
+		if supportRecursive {
+			bucketName, paramErr = getBucketNameByUrl(ctx)
+			if paramErr != nil {
+				return toCmdErr(err)
+			} else {
+				deleteAll = true
+			}
+		} else {
+			return toCmdErr(err)
+		}
 	}
 
 	client, err := NewClient(ctx, false)
@@ -123,17 +141,20 @@ func deleteObject(ctx *cli.Context) error {
 
 	c, cancelDelObject := context.WithCancel(globalContext)
 	defer cancelDelObject()
-	supportRecursive := ctx.Bool(recursiveFlag)
 
 	// if it is a folder and set the --recursive flag , list all the objects and delete them one by one
 	if supportRecursive {
-		foldName := objectName
-		if !strings.HasSuffix(foldName, "/") {
-			foldName = objectName + "/"
+		if !deleteAll {
+			foldName := objectName
+			if !strings.HasSuffix(foldName, "/") {
+				foldName = objectName + "/"
+			}
+			listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+				Prefix: foldName})
+		} else {
+			// list all the objects in the bucket
+			listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false})
 		}
-		listResult, err := client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
-			Prefix: foldName})
-
 		if err != nil {
 			return toCmdErr(err)
 		}
@@ -152,8 +173,6 @@ func deleteObject(ctx *cli.Context) error {
 		if err != nil {
 			return toCmdErr(err)
 		}
-
-		fmt.Printf("delete: gnfd:// %s/ %s\n", bucketName, objectName)
 	}
 
 	return nil
@@ -168,10 +187,11 @@ func deleteObjectAndWaitTxn(cli client.Client, c context.Context, bucketName, ob
 
 	err = waitTxnStatus(cli, c, txnHash, "DeleteObject")
 	if err != nil {
+		fmt.Printf("failed to delete object %s err:%v\n", objectName, err)
 		return err
 	}
 
-	fmt.Printf("deleted: %s\n", objectName)
+	fmt.Printf("delete: %s\n", objectName)
 	return nil
 }
 
