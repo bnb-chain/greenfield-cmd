@@ -158,10 +158,7 @@ func deleteObject(ctx *cli.Context) error {
 		}
 
 	} else {
-		err = deleteObjectAndWaitTxn(client, c, bucketName, objectName)
-		if err != nil {
-			return toCmdErr(err)
-		}
+		deleteObjectAndWaitTxn(client, c, bucketName, objectName)
 	}
 
 	return nil
@@ -185,11 +182,11 @@ func deleteObjectByPage(cli client.Client, c context.Context, bucketName, prefix
 
 		// TODO use one txn to broadcast multi delete object messages
 		for _, object := range listResult.Objects {
-			// no need to return err if some objects failed
+			// no need to return err if some objects delete failed
 			deleteObjectAndWaitTxn(cli, c, bucketName, object.ObjectInfo.ObjectName)
 		}
 
-		if listResult.IsTruncated == false {
+		if !listResult.IsTruncated {
 			break
 		}
 
@@ -198,21 +195,20 @@ func deleteObjectByPage(cli client.Client, c context.Context, bucketName, prefix
 	return nil
 }
 
-func deleteObjectAndWaitTxn(cli client.Client, c context.Context, bucketName, objectName string) error {
+func deleteObjectAndWaitTxn(cli client.Client, c context.Context, bucketName, objectName string) {
 	txnHash, err := cli.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		fmt.Printf("failed to delele object %s err:%v\n", objectName, err)
-		return err
+		return
 	}
 
 	err = waitTxnStatus(cli, c, txnHash, "DeleteObject")
 	if err != nil {
-		fmt.Printf("failed to delete object %s err:%v\n", objectName, err)
-		return err
+		fmt.Printf("failed to query the txn of deleting object %s, err:%v\n", objectName, err)
+		return
 	}
 
 	fmt.Printf("delete: %s\n", objectName)
-	return nil
 }
 
 // deleteGroup send the deleteGroup msg to greenfield

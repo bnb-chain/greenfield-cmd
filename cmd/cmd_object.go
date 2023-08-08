@@ -548,7 +548,7 @@ func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixNa
 			return toCmdErr(err)
 		}
 		printListResult(listResult)
-		if listResult.IsTruncated == false {
+		if listResult.IsTruncated {
 			break
 		}
 
@@ -558,20 +558,15 @@ func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixNa
 }
 
 func printListResult(listResult sdktypes.ListObjectsResult) {
-	listNum := 0
 	for _, object := range listResult.Objects {
-		listNum++
-
 		info := object.ObjectInfo
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(info.CreateAt, 0).In(location)
 
 		fmt.Printf("%s %15d %s \n", t.Format(iso8601DateFormat), info.PayloadSize, info.ObjectName)
 	}
-
+	// list the folders
 	for _, prefix := range listResult.CommonPrefixes {
-		listNum++
-
 		fmt.Printf("%s %15s %s \n", strings.Repeat(" ", len(iso8601DateFormat)), "PRE", prefix)
 	}
 
