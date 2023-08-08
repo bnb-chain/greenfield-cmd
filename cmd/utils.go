@@ -98,6 +98,8 @@ const (
 	resumableUploadFlag = "resumableUpload"
 
 	operatorAddressLen = 42
+	exitStatus         = "GRACEFUL_EXITING"
+	StatusSPrefix      = "STATUS_"
 )
 
 var (
