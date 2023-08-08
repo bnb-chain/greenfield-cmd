@@ -116,16 +116,6 @@ func createGroup(ctx *cli.Context) error {
 
 	opts := sdktypes.CreateGroupOptions{}
 
-	initMembersInfo := ctx.String(initMemberFlag)
-	// set group init members if provided by user
-	if initMembersInfo != "" {
-		addrList, err := parseAddrList(initMembersInfo)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		opts.InitGroupMember = addrList
-	}
-
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 
 	c, cancelCreateGroup := context.WithCancel(globalContext)
