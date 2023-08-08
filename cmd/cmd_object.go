@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	"github.com/bnb-chain/greenfield-go-sdk/client"
 	"github.com/bnb-chain/greenfield/sdk/types"
 
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
@@ -227,10 +228,12 @@ func putObject(ctx *cli.Context) error {
 		fileReader                       io.Reader
 		objectSize                       int64
 		err                              error
+		exists                           bool
+		urlInfo                          string
 	)
 
 	if ctx.NArg() == 1 {
-		urlInfo := ctx.Args().Get(0)
+		urlInfo = ctx.Args().Get(0)
 		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
 		if err != nil {
 			return toCmdErr(err)
@@ -238,12 +241,12 @@ func putObject(ctx *cli.Context) error {
 		if strings.HasSuffix(objectName, "/") {
 			uploadFolder = true
 		} else {
-			return toCmdErr(errors.New("no file path to upload and fail to parse the folder name"))
+			return toCmdErr(errors.New("no file path to upload, if you need create a folder, the folder name should be end with /"))
 		}
 	} else {
 		// read the local file payload
 		filePath = ctx.Args().Get(0)
-		exists, objectSize, err := pathExists(filePath)
+		exists, objectSize, err = pathExists(filePath)
 		if err != nil {
 			return err
 		}
@@ -261,7 +264,7 @@ func putObject(ctx *cli.Context) error {
 		defer file.Close()
 		fileReader = file
 
-		urlInfo := ctx.Args().Get(1)
+		urlInfo = ctx.Args().Get(1)
 		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
 		if err != nil {
 			bucketName = ParseBucket(urlInfo)
@@ -325,7 +328,8 @@ func putObject(ctx *cli.Context) error {
 				return toCmdErr(err)
 			}
 		}
-		fmt.Printf("create object %s on chain finish, txn Hash: %s\n", objectName, txnHash)
+		fmt.Printf("object %s created on chain \n", objectName)
+		fmt.Println("transaction hash:", txnHash)
 	} else {
 		fmt.Printf("object %s already exist \n", objectName)
 	}
@@ -371,7 +375,7 @@ func putObject(ctx *cli.Context) error {
 
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
-				fmt.Printf("put object %s successfully \n", objectName)
+				fmt.Printf("upload: %s to %s \n", objectName, urlInfo)
 				return nil
 			}
 		}
@@ -511,33 +515,53 @@ func listObjects(ctx *cli.Context) error {
 	}
 
 	supportRecursive := ctx.Bool(recursiveFlag)
-
-	var listResult sdktypes.ListObjectsResult
-	if !supportRecursive {
-		listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
-			Delimiter: "/",
-			Prefix:    prefixName})
-	} else {
-		fmt.Println("prefix:", prefixName)
-		listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
-			Prefix: prefixName})
-	}
-
+	err = listObjectByPage(client, c, bucketName, prefixName, supportRecursive)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	if len(listResult.Objects) == 0 && len(listResult.CommonPrefixes) == 0 {
-		fmt.Println("no objects")
-		return nil
-	}
+	return nil
 
+}
+
+func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixName string, isRecursive bool) error {
+	var (
+		listResult        sdktypes.ListObjectsResult
+		continuationToken string
+		err               error
+	)
+
+	for {
+		if isRecursive {
+			listResult, err = cli.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+				MaxKeys:           defaultMaxKey,
+				ContinuationToken: continuationToken,
+				Prefix:            prefixName})
+		} else {
+			listResult, err = cli.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+				Delimiter:         "/",
+				MaxKeys:           defaultMaxKey,
+				ContinuationToken: continuationToken,
+				Prefix:            prefixName})
+		}
+		if err != nil {
+			return toCmdErr(err)
+		}
+		printListResult(listResult)
+		if listResult.IsTruncated == false {
+			break
+		}
+
+		continuationToken = listResult.NextContinuationToken
+	}
+	return nil
+}
+
+func printListResult(listResult sdktypes.ListObjectsResult) {
 	listNum := 0
 	for _, object := range listResult.Objects {
 		listNum++
-		if listNum > maxListObjects {
-			return nil
-		}
+
 		info := object.ObjectInfo
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(info.CreateAt, 0).In(location)
@@ -547,14 +571,9 @@ func listObjects(ctx *cli.Context) error {
 
 	for _, prefix := range listResult.CommonPrefixes {
 		listNum++
-		if listNum > maxListObjects {
-			return nil
-		}
 
 		fmt.Printf("%s %15s %s \n", strings.Repeat(" ", len(iso8601DateFormat)), "PRE", prefix)
 	}
-
-	return nil
 
 }
 

@@ -100,6 +100,7 @@ const (
 	operatorAddressLen = 42
 	exitStatus         = "GRACEFUL_EXITING"
 	StatusSPrefix      = "STATUS_"
+	defaultMaxKey      = 500
 )
 
 var (

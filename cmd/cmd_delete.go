@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -112,9 +111,9 @@ func deleteObject(ctx *cli.Context) error {
 	var (
 		deleteAll              bool
 		bucketName, objectName string
+		prefixName             string
 		err                    error
 		paramErr               error
-		listResult             sdktypes.ListObjectsResult
 	)
 
 	urlInfo := ctx.Args().Get(0)
@@ -142,32 +141,22 @@ func deleteObject(ctx *cli.Context) error {
 	c, cancelDelObject := context.WithCancel(globalContext)
 	defer cancelDelObject()
 
-	// if it is a folder and set the --recursive flag , list all the objects and delete them one by one
 	if supportRecursive {
 		if !deleteAll {
-			foldName := objectName
-			if !strings.HasSuffix(foldName, "/") {
-				foldName = objectName + "/"
+			// if it is a folder and set the --recursive flag , list all the objects and delete them one by one
+			prefixName = objectName
+			if !strings.HasSuffix(prefixName, "/") {
+				prefixName = objectName + "/"
 			}
-			listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
-				Prefix: foldName})
+			err = deleteObjectByPage(client, c, bucketName, prefixName)
 		} else {
-			// list all the objects in the bucket
-			listResult, err = client.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false})
+			// list all the objects in the bucket and delete them
+			err = deleteObjectByPage(client, c, bucketName, prefixName)
 		}
 		if err != nil {
 			return toCmdErr(err)
 		}
 
-		if len(listResult.Objects) == 0 {
-			return toCmdErr(errors.New("no objects to delete in the folder"))
-		}
-
-		// TODO use one txn to broadcast multi delete object messages
-		for _, object := range listResult.Objects {
-			// no need to return err if some objects failed
-			deleteObjectAndWaitTxn(client, c, bucketName, object.ObjectInfo.ObjectName)
-		}
 	} else {
 		err = deleteObjectAndWaitTxn(client, c, bucketName, objectName)
 		if err != nil {
@@ -175,6 +164,37 @@ func deleteObject(ctx *cli.Context) error {
 		}
 	}
 
+	return nil
+}
+
+func deleteObjectByPage(cli client.Client, c context.Context, bucketName, prefixName string) error {
+	var (
+		listResult        sdktypes.ListObjectsResult
+		continuationToken string
+		err               error
+	)
+
+	for {
+		listResult, err = cli.ListObjects(c, bucketName, sdktypes.ListObjectsOptions{ShowRemovedObject: false,
+			MaxKeys:           defaultMaxKey,
+			ContinuationToken: continuationToken,
+			Prefix:            prefixName})
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		// TODO use one txn to broadcast multi delete object messages
+		for _, object := range listResult.Objects {
+			// no need to return err if some objects failed
+			deleteObjectAndWaitTxn(cli, c, bucketName, object.ObjectInfo.ObjectName)
+		}
+
+		if listResult.IsTruncated == false {
+			break
+		}
+
+		continuationToken = listResult.NextContinuationToken
+	}
 	return nil
 }
 
