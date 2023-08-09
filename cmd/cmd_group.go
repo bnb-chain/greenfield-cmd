@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"cosmossdk.io/math"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -25,13 +27,6 @@ Create a new group
 
 Examples:
 $ gnfd-cmd group create group-name`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  initMemberFlag,
-				Value: "",
-				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
-			},
-		},
 	}
 }
 
@@ -64,6 +59,12 @@ $ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. group-name`,
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
+			},
+			&cli.Int64Flag{
+				Name:     groupMemberExpireFlag,
+				Value:    0,
+				Usage:    "set the expire timestamp for the addMember, it will apply to all the add members",
+				Required: false,
 			},
 		},
 	}
@@ -115,16 +116,6 @@ func createGroup(ctx *cli.Context) error {
 	}
 
 	opts := sdktypes.CreateGroupOptions{}
-
-	initMembersInfo := ctx.String(initMemberFlag)
-	// set group init members if provided by user
-	if initMembersInfo != "" {
-		addrList, err := parseAddrList(initMembersInfo)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		opts.InitGroupMember = addrList
-	}
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 
@@ -191,6 +182,18 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	expireTimestamp := ctx.Int64(expireTimeFlag)
+	// set default expire timestamp
+	if expireTimestamp == 0 {
+		expireTimestamp = storageTypes.MaxTimeStamp.Unix()
+	}
+
+	addMemberNum := len(addGroupMembers)
+	expireTimeList := make([]time.Time, addMemberNum)
+	for i := 0; i < len(addGroupMembers); i++ {
+		expireTimeList[i] = time.Unix(expireTimestamp, 0)
+	}
+
 	c, cancelUpdateGroup := context.WithCancel(globalContext)
 	defer cancelUpdateGroup()
 
@@ -200,7 +203,7 @@ func updateGroupMember(ctx *cli.Context) error {
 	}
 
 	txOpts := &types.TxOption{Mode: &SyncBroadcastMode}
-	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
+	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers, expireTimeList,
 		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
 		return toCmdErr(err)
