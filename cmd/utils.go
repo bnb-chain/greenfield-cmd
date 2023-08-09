@@ -45,6 +45,7 @@ const (
 	recursiveFlag         = "recursive"
 	addMemberFlag         = "addMembers"
 	removeMemberFlag      = "removeMembers"
+	renewMemberFlag       = "renewMembers"
 	groupOwnerFlag        = "groupOwner"
 	groupMemberExpireFlag = "expireTime"
 	groupIDFlag           = "groupId"
