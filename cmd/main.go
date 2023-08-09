@@ -101,7 +101,7 @@ func main() {
 			},
 			{
 				Name:  "group",
-				Usage: "support the group operation functions, including create/update/delete/head/head-member/mirror",
+				Usage: "support the group operation functions, including create/update/delete/head/head-member/mirror/renew",
 				Subcommands: []*cli.Command{
 					cmdCreateGroup(),
 					cmdUpdateGroup(),
@@ -109,6 +109,7 @@ func main() {
 					cmdHeadGroupMember(),
 					cmdDelGroup(),
 					cmdMirrorGroup(),
+					cmdRenewGroup(),
 				},
 			},
 

@@ -27,39 +27,40 @@ import (
 )
 
 const (
-	Version          = "v0.0.9"
-	maxFileSize      = 10 * 1024 * 1024 * 1024
-	publicReadType   = "public-read"
-	privateType      = "private"
-	inheritType      = "inherit"
-	effectAllow      = "allow"
-	effectDeny       = "deny"
-	primarySPFlag    = "primarySP"
-	chargeQuotaFlag  = "chargedQuota"
-	visibilityFlag   = "visibility"
-	paymentFlag      = "paymentAddress"
-	secondarySPFlag  = "secondarySPs"
-	contentTypeFlag  = "contentType"
-	startOffsetFlag  = "start"
-	endOffsetFlag    = "end"
-	recursiveFlag    = "recursive"
-	initMemberFlag   = "initMembers"
-	addMemberFlag    = "addMembers"
-	removeMemberFlag = "removeMembers"
-	groupOwnerFlag   = "groupOwner"
-	groupIDFlag      = "groupId"
-	granteeFlag      = "grantee"
-	actionsFlag      = "actions"
-	effectFlag       = "effect"
-	expireTimeFlag   = "expire"
-	IdFlag           = "id"
+	Version               = "v0.0.9"
+	maxFileSize           = 10 * 1024 * 1024 * 1024
+	publicReadType        = "public-read"
+	privateType           = "private"
+	inheritType           = "inherit"
+	effectAllow           = "allow"
+	effectDeny            = "deny"
+	primarySPFlag         = "primarySP"
+	chargeQuotaFlag       = "chargedQuota"
+	visibilityFlag        = "visibility"
+	paymentFlag           = "paymentAddress"
+	secondarySPFlag       = "secondarySPs"
+	contentTypeFlag       = "contentType"
+	startOffsetFlag       = "start"
+	endOffsetFlag         = "end"
+	recursiveFlag         = "recursive"
+	addMemberFlag         = "addMembers"
+	removeMemberFlag      = "removeMembers"
+	renewMemberFlag       = "renewMembers"
+	groupOwnerFlag        = "groupOwner"
+	groupMemberExpireFlag = "expireTime"
+	groupIDFlag           = "groupId"
+	granteeFlag           = "grantee"
+	actionsFlag           = "actions"
+	effectFlag            = "effect"
+	expireTimeFlag        = "expire"
+	IdFlag                = "id"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
 	toAddressFlag    = "toAddress"
 	fromAddressFlag  = "fromAddress"
 	amountFlag       = "amount"
-	
+
 	unsafeFlag       = "unsafe"
 	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
@@ -196,19 +197,6 @@ func getGroupNameByUrl(ctx *cli.Context) (string, error) {
 	}
 
 	return ctx.Args().Get(0), nil
-}
-
-func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
-	addresses := strings.Split(addrInfo, ",")
-	addrList := make([]sdk.AccAddress, len(addresses))
-	var err error
-	for idx, addr := range addresses {
-		addrList[idx], err = sdk.AccAddressFromHexUnsafe(addr)
-		if err != nil {
-			return nil, toCmdErr(err)
-		}
-	}
-	return addrList, nil
 }
 
 func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) {
