@@ -283,7 +283,7 @@ func renewGroupMember(ctx *cli.Context) error {
 
 	expireTimestamp := ctx.Int64(expireTimeFlag)
 	if expireTimestamp < time.Now().Unix() {
-		toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
+		return toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
 	}
 
 	memberNum := len(renewGroupMembers)
