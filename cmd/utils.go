@@ -29,7 +29,6 @@ import (
 const (
 	Version          = "v0.0.9"
 	maxFileSize      = 10 * 1024 * 1024 * 1024
-	maxListObjects   = 5000
 	publicReadType   = "public-read"
 	privateType      = "private"
 	inheritType      = "inherit"
@@ -60,10 +59,7 @@ const (
 	toAddressFlag    = "toAddress"
 	fromAddressFlag  = "fromAddress"
 	amountFlag       = "amount"
-	objectPrefix     = "prefix"
-	folderFlag       = "folder"
-
-	privKeyFileFlag  = "privKeyFile"
+	
 	unsafeFlag       = "unsafe"
 	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
