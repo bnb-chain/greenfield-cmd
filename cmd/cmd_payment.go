@@ -79,7 +79,8 @@ func buyQuotaForBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("buy quota for bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
+	fmt.Printf("buy quota for bucket: %s \n", bucketName)
+	fmt.Println("transaction hash: ", txnHash)
 	return nil
 }
 

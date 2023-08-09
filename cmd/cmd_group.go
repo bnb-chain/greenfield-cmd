@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"cosmossdk.io/math"
-	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -25,13 +28,6 @@ Create a new group
 
 Examples:
 $ gnfd-cmd group create group-name`,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  initMemberFlag,
-				Value: "",
-				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
-			},
-		},
 	}
 }
 
@@ -48,7 +44,7 @@ and remove members list at the same time.
 You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
-$ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. group-name`,
+$ gnfd-cmd group update --groupOwner 0x.. --addMembers 0x.. group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  addMemberFlag,
@@ -64,6 +60,45 @@ $ gnfd-cmd group update-group --groupOwner 0x.. --addMembers 0x.. group-name`,
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
+			},
+			&cli.Int64Flag{
+				Name:     groupMemberExpireFlag,
+				Value:    0,
+				Usage:    "set the expire timestamp for the addMember, it will apply to all the add members",
+				Required: false,
+			},
+		},
+	}
+}
+
+// cmdUpdateGroup add or delete group member to the group
+func cmdRenewGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "renew",
+		Action:    renewGroupMember,
+		Usage:     "update the expire time of group member",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+renew expiration time of a list of group members 
+You need also set group owner using --groupOwner if you are not the owner of the group.
+
+Examples:
+$ gnfd-cmd group renew --groupOwner 0x.. --renewMembers 0x..  --expireTime 1691569957 group-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  renewMemberFlag,
+				Value: "",
+				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
+			},
+			&cli.StringFlag{
+				Name:  groupOwnerFlag,
+				Value: "",
+				Usage: "need set the owner address if you are not the owner of the group",
+			},
+			&cli.Int64Flag{
+				Name:  groupMemberExpireFlag,
+				Value: 0,
+				Usage: "set the expire timestamp for the addMember, it will apply to all the add members",
 			},
 		},
 	}
@@ -116,16 +151,6 @@ func createGroup(ctx *cli.Context) error {
 
 	opts := sdktypes.CreateGroupOptions{}
 
-	initMembersInfo := ctx.String(initMemberFlag)
-	// set group init members if provided by user
-	if initMembersInfo != "" {
-		addrList, err := parseAddrList(initMembersInfo)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		opts.InitGroupMember = addrList
-	}
-
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 
 	c, cancelCreateGroup := context.WithCancel(globalContext)
@@ -140,17 +165,17 @@ func createGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	groupOwner, err := getGroupOwner(ctx, client)
+	groupOwner, err := getGroupOwner(ctx)
 	if err == nil {
 		info, err := client.HeadGroup(c, groupName, groupOwner)
 		if err == nil {
-			fmt.Printf("create group: %s succ, txn hash:%s, group id: %s \n", groupName, txnHash, info.Id.String())
+			fmt.Printf("make_group: %s \ntransaction hash: %s\ngroup id: %s \n",
+				groupName, txnHash, info.Id.String())
 			return nil
 		}
 	}
 
-	fmt.Printf("create group: %s succ, txn hash:%s \n", groupName, txnHash)
-
+	fmt.Printf("make_group: %s \ntransaction hash: %s\n", groupName, txnHash)
 	return nil
 }
 
@@ -186,9 +211,21 @@ func updateGroupMember(ctx *cli.Context) error {
 		removeGroupMembers = []string{removeMembersInfo}
 	}
 
-	groupOwner, err := getGroupOwner(ctx, client)
+	groupOwner, err := getGroupOwner(ctx)
 	if err != nil {
 		return toCmdErr(err)
+	}
+
+	expireTimestamp := ctx.Int64(expireTimeFlag)
+	// set default expire timestamp
+	if expireTimestamp == 0 {
+		expireTimestamp = storageTypes.MaxTimeStamp.Unix()
+	}
+
+	addMemberNum := len(addGroupMembers)
+	expireTimeList := make([]time.Time, addMemberNum)
+	for i := 0; i < addMemberNum; i++ {
+		expireTimeList[i] = time.Unix(expireTimestamp, 0)
 	}
 
 	c, cancelUpdateGroup := context.WithCancel(globalContext)
@@ -200,7 +237,7 @@ func updateGroupMember(ctx *cli.Context) error {
 	}
 
 	txOpts := &types.TxOption{Mode: &SyncBroadcastMode}
-	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
+	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers, expireTimeList,
 		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
 	if err != nil {
 		return toCmdErr(err)
@@ -211,23 +248,91 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)
+	fmt.Printf("update_group: %s \ntransaction hash: %s\n", groupName, txnHash)
 	return nil
 }
 
-func getGroupOwner(ctx *cli.Context, client client.Client) (string, error) {
+func renewGroupMember(ctx *cli.Context) error {
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	renewMembersInfo := ctx.String(renewMemberFlag)
+
+	if renewMembersInfo == "" {
+		return toCmdErr(errors.New("fail to get members to renew"))
+	}
+
+	var renewGroupMembers []string
+	if strings.Contains(renewMembersInfo, ",") {
+		renewGroupMembers = strings.Split(renewMembersInfo, ",")
+	} else if renewMembersInfo != "" {
+		renewGroupMembers = []string{renewMembersInfo}
+	}
+
+	groupOwner, err := getGroupOwner(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	expireTimestamp := ctx.Int64(expireTimeFlag)
+	if expireTimestamp < time.Now().Unix() {
+		return toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
+	}
+
+	memberNum := len(renewGroupMembers)
+	expireTimeList := make([]time.Time, memberNum)
+	for i := 0; i < memberNum; i++ {
+		expireTimeList[i] = time.Unix(expireTimestamp, 0)
+	}
+
+	c, cancelUpdateGroup := context.WithCancel(globalContext)
+	defer cancelUpdateGroup()
+
+	_, err = client.HeadGroup(c, groupName, groupOwner)
+	if err != nil {
+		return toCmdErr(ErrGroupNotExist)
+	}
+
+	txnHash, err := client.RenewGroupMember(c, groupOwner, groupName, renewGroupMembers, expireTimeList,
+		sdktypes.RenewGroupMemberOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txnHash, "renewGroupMember")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	fmt.Printf("renew_group: %s \ntransaction hash: %s\n", groupName, txnHash)
+	return nil
+}
+
+func getGroupOwner(ctx *cli.Context) (string, error) {
 	groupOwnerAddrStr := ctx.String(groupOwnerFlag)
 
 	if groupOwnerAddrStr != "" {
 		return groupOwnerAddrStr, nil
 	}
 
-	acc, err := client.GetDefaultAccount()
+	keyJson, _, err := loadKeyStoreFile(ctx)
 	if err != nil {
-		return "", toCmdErr(err)
+		return "", err
 	}
 
-	return acc.GetAddress().String(), nil
+	k := new(encryptedKey)
+	if err = json.Unmarshal(keyJson, k); err != nil {
+		return "", err
+	}
+
+	return k.Address, nil
 }
 
 func mirrorGroup(ctx *cli.Context) error {
@@ -249,6 +354,7 @@ func mirrorGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("mirror group succ, txHash: %s\n", txResp.TxHash)
+
+	fmt.Printf("mirror_group: %s \ntransaction hash: %s\n", groupName, txResp.TxHash)
 	return nil
 }

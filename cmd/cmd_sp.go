@@ -70,11 +70,29 @@ func ListSP(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Println("SP list:")
-	for id, info := range spInfo {
-		fmt.Println(fmt.Sprintf("sp[%d]: operator-address:%s, endpoint:%s,"+
-			" Status:%s", id, info.OperatorAddress, info.Endpoint, info.Status))
+	if len(spInfo) == 0 {
+		return nil
 	}
+
+	var nameMaxLen int
+	var endpointMaxLen int
+	for _, info := range spInfo {
+		lengthOfName := len(info.Description.GetMoniker())
+		if lengthOfName > nameMaxLen {
+			nameMaxLen = lengthOfName
+		}
+		if len(info.Endpoint) > endpointMaxLen {
+			endpointMaxLen = len(info.Endpoint)
+		}
+	}
+
+	format := fmt.Sprintf("%%-%ds %%-%ds %%-%ds %%-%ds  \n", nameMaxLen, operatorAddressLen, endpointMaxLen, len(exitStatus))
+
+	fmt.Printf(format, "name", "operator address", "endpoint", "status")
+	for _, info := range spInfo {
+		fmt.Printf(format, info.Description.GetMoniker(), info.OperatorAddress, info.Endpoint, info.Status.String()[len(StatusSPrefix):])
+	}
+
 	return nil
 }
 

@@ -253,7 +253,7 @@ func importKey(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
 	}
 
-	fmt.Printf("import account successfully, key address: %s, encrypted key file: %s \n", key.Address, keyFilePath)
+	fmt.Printf("key address: %s, encrypted key file: %s \n", key.Address, keyFilePath)
 
 	return nil
 }
@@ -350,7 +350,7 @@ func createAccount(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
 	}
 
-	fmt.Printf("create new account: {%s} successfully \n", account.GetAddress())
+	fmt.Printf("created new account: {%s} \n", account.GetAddress())
 	return nil
 }
 

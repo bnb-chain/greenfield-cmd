@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.0-alpha.1
+
+FEATURES
+* [#75](https://github.com/bnb-chain/greenfield-cmd/pull/75)  update go-sdk and greenfield version, add expire time to group member and support renew group cmd
+
+REFACTOR
+* [#72](https://github.com/bnb-chain/greenfield-cmd/pull/72)  refactor: improve list , delete cmd and the return format
+
 ## v0.0.9
 
 FEATURES

@@ -27,43 +27,40 @@ import (
 )
 
 const (
-	Version          = "v0.0.9"
-	maxFileSize      = 10 * 1024 * 1024 * 1024
-	maxListObjects   = 100
-	publicReadType   = "public-read"
-	privateType      = "private"
-	inheritType      = "inherit"
-	effectAllow      = "allow"
-	effectDeny       = "deny"
-	primarySPFlag    = "primarySP"
-	chargeQuotaFlag  = "chargedQuota"
-	visibilityFlag   = "visibility"
-	paymentFlag      = "paymentAddress"
-	secondarySPFlag  = "secondarySPs"
-	contentTypeFlag  = "contentType"
-	startOffsetFlag  = "start"
-	endOffsetFlag    = "end"
-	initMemberFlag   = "initMembers"
-	addMemberFlag    = "addMembers"
-	removeMemberFlag = "removeMembers"
-	groupOwnerFlag   = "groupOwner"
-	headMemberFlag   = "headMember"
-	groupIDFlag      = "groupId"
-	granteeFlag      = "grantee"
-	actionsFlag      = "actions"
-	effectFlag       = "effect"
-	expireTimeFlag   = "expire"
-	IdFlag           = "id"
+	Version               = "v0.0.9"
+	maxFileSize           = 10 * 1024 * 1024 * 1024
+	publicReadType        = "public-read"
+	privateType           = "private"
+	inheritType           = "inherit"
+	effectAllow           = "allow"
+	effectDeny            = "deny"
+	primarySPFlag         = "primarySP"
+	chargeQuotaFlag       = "chargedQuota"
+	visibilityFlag        = "visibility"
+	paymentFlag           = "paymentAddress"
+	secondarySPFlag       = "secondarySPs"
+	contentTypeFlag       = "contentType"
+	startOffsetFlag       = "start"
+	endOffsetFlag         = "end"
+	recursiveFlag         = "recursive"
+	addMemberFlag         = "addMembers"
+	removeMemberFlag      = "removeMembers"
+	renewMemberFlag       = "renewMembers"
+	groupOwnerFlag        = "groupOwner"
+	groupMemberExpireFlag = "expireTime"
+	groupIDFlag           = "groupId"
+	granteeFlag           = "grantee"
+	actionsFlag           = "actions"
+	effectFlag            = "effect"
+	expireTimeFlag        = "expire"
+	IdFlag                = "id"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
 	toAddressFlag    = "toAddress"
 	fromAddressFlag  = "fromAddress"
 	amountFlag       = "amount"
-	objectPrefix     = "prefix"
-	folderFlag       = "folder"
 
-	privKeyFileFlag  = "privKeyFile"
 	unsafeFlag       = "unsafe"
 	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
@@ -98,6 +95,9 @@ const (
 	resumableUploadFlag = "resumableUpload"
 
 	operatorAddressLen = 42
+	exitStatus         = "GRACEFUL_EXITING"
+	StatusSPrefix      = "STATUS_"
+	defaultMaxKey      = 500
 )
 
 var (
@@ -167,7 +167,7 @@ func parseChainInfo(info string, isBucketInfo bool) {
 			timestamp, _ := strconv.ParseInt(timeInfo[1], 10, 64)
 			location, _ := time.LoadLocation("Asia/Shanghai")
 			t := time.Unix(timestamp, 0).In(location)
-			info = timeInfo[0] + ":" + t.Format(iso8601DateFormatSecond)
+			info = timeInfo[0] + ":" + t.Format(iso8601DateFormat)
 		}
 		if strings.Contains(info, "checksums:") {
 			hashInfo := strings.Split(info, ":")
@@ -197,19 +197,6 @@ func getGroupNameByUrl(ctx *cli.Context) (string, error) {
 	}
 
 	return ctx.Args().Get(0), nil
-}
-
-func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
-	addresses := strings.Split(addrInfo, ",")
-	addrList := make([]sdk.AccAddress, len(addresses))
-	var err error
-	for idx, addr := range addresses {
-		addrList[idx], err = sdk.AccAddressFromHexUnsafe(addr)
-		if err != nil {
-			return nil, toCmdErr(err)
-		}
-	}
-	return addrList, nil
 }
 
 func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) {
