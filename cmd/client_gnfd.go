@@ -12,7 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const iso8601DateFormatSecond = "2006-01-02T15:04:05Z"
+const iso8601DateFormat = "2006-01-02 15:04:05"
 
 func cmdShowVersion() *cli.Command {
 	return &cli.Command{
@@ -82,6 +82,21 @@ func ParseBucketAndObject(urlPath string) (string, string, error) {
 
 	if index <= -1 {
 		return "", "", errors.New("url not right, can not parse bucket name and object name")
+	}
+
+	return urlPath[:index], urlPath[index+1:], nil
+}
+
+// ParseBucketAndPrefix parse the bucket-name, if prefix exist, return the prefix as well
+func ParseBucketAndPrefix(urlPath string) (string, string, error) {
+	if strings.Contains(urlPath, "gnfd://") {
+		urlPath = urlPath[len("gnfd://"):]
+	}
+
+	index := strings.Index(urlPath, "/")
+
+	if index <= -1 {
+		return urlPath, "", nil
 	}
 
 	return urlPath[:index], urlPath[index+1:], nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"cosmossdk.io/math"
 
@@ -163,7 +164,6 @@ func createBucket(ctx *cli.Context) error {
 			return toCmdErr(errors.New("fail to get primary sp address"))
 		}
 		primarySpAddrStr = spInfo[0].GetOperatorAddress()
-		fmt.Println("choose primary sp:", spInfo[0].GetEndpoint())
 	}
 
 	opts := sdktypes.CreateBucketOptions{}
@@ -192,7 +192,8 @@ func createBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("create bucket %s succ, txn hash: %s\n", bucketName, txnHash)
+	fmt.Printf("make_bucket: %s \n", bucketName)
+	fmt.Println("transaction hash: ", txnHash)
 	return nil
 }
 
@@ -286,15 +287,16 @@ func listBuckets(ctx *cli.Context) error {
 	}
 
 	if len(bucketListRes.Buckets) == 0 {
-		fmt.Println("no buckets")
 		return nil
 	}
 
-	fmt.Println("bucket list:")
 	for _, bucket := range bucketListRes.Buckets {
 		info := bucket.BucketInfo
+
+		location, _ := time.LoadLocation("Asia/Shanghai")
+		t := time.Unix(info.CreateAt, 0).In(location)
 		if !bucket.Removed {
-			fmt.Printf("bucket name: %s, bucket id: %s \n", info.BucketName, info.Id)
+			fmt.Printf("%s  %s\n", t.Format(iso8601DateFormat), info.BucketName)
 		}
 	}
 	return nil

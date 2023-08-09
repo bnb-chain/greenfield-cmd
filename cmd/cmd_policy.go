@@ -80,7 +80,7 @@ $ gnfd-cmd policy put --groupId 111 --actions get,delete grn:o::gnfd-bucket/gnfd
 
 func cmdDelPolicy() *cli.Command {
 	return &cli.Command{
-		Name:      "delete",
+		Name:      "rm",
 		Action:    deletePolicy,
 		Usage:     "delete policy of principal",
 		ArgsUsage: " RESOURCE-URL",
@@ -94,7 +94,7 @@ the resource url can be the follow types:
 3) grn:g:owneraddress:groupname, it indicates the group policy
 
 Examples:
-$ gnfd-cmd policy delete --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
+$ gnfd-cmd policy rm --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:  groupIDFlag,

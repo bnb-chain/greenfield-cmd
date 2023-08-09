@@ -29,7 +29,6 @@ import (
 const (
 	Version          = "v0.0.9"
 	maxFileSize      = 10 * 1024 * 1024 * 1024
-	maxListObjects   = 100
 	publicReadType   = "public-read"
 	privateType      = "private"
 	inheritType      = "inherit"
@@ -43,11 +42,11 @@ const (
 	contentTypeFlag  = "contentType"
 	startOffsetFlag  = "start"
 	endOffsetFlag    = "end"
+	recursiveFlag    = "recursive"
 	initMemberFlag   = "initMembers"
 	addMemberFlag    = "addMembers"
 	removeMemberFlag = "removeMembers"
 	groupOwnerFlag   = "groupOwner"
-	headMemberFlag   = "headMember"
 	groupIDFlag      = "groupId"
 	granteeFlag      = "grantee"
 	actionsFlag      = "actions"
@@ -60,10 +59,7 @@ const (
 	toAddressFlag    = "toAddress"
 	fromAddressFlag  = "fromAddress"
 	amountFlag       = "amount"
-	objectPrefix     = "prefix"
-	folderFlag       = "folder"
-
-	privKeyFileFlag  = "privKeyFile"
+	
 	unsafeFlag       = "unsafe"
 	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
@@ -98,6 +94,9 @@ const (
 	resumableUploadFlag = "resumableUpload"
 
 	operatorAddressLen = 42
+	exitStatus         = "GRACEFUL_EXITING"
+	StatusSPrefix      = "STATUS_"
+	defaultMaxKey      = 500
 )
 
 var (
@@ -167,7 +166,7 @@ func parseChainInfo(info string, isBucketInfo bool) {
 			timestamp, _ := strconv.ParseInt(timeInfo[1], 10, 64)
 			location, _ := time.LoadLocation("Asia/Shanghai")
 			t := time.Unix(timestamp, 0).In(location)
-			info = timeInfo[0] + ":" + t.Format(iso8601DateFormatSecond)
+			info = timeInfo[0] + ":" + t.Format(iso8601DateFormat)
 		}
 		if strings.Contains(info, "checksums:") {
 			hashInfo := strings.Split(info, ":")

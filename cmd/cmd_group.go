@@ -144,13 +144,13 @@ func createGroup(ctx *cli.Context) error {
 	if err == nil {
 		info, err := client.HeadGroup(c, groupName, groupOwner)
 		if err == nil {
-			fmt.Printf("create group: %s succ, txn hash:%s, group id: %s \n", groupName, txnHash, info.Id.String())
+			fmt.Printf("make_group: %s \ntransaction hash: %s\ngroup id: %s \n",
+				groupName, txnHash, info.Id.String())
 			return nil
 		}
 	}
 
-	fmt.Printf("create group: %s succ, txn hash:%s \n", groupName, txnHash)
-
+	fmt.Printf("make_group: %s \ntransaction hash: %s\n", groupName, txnHash)
 	return nil
 }
 
@@ -211,7 +211,7 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("update group: %s succ, txn hash:%s \n", groupName, txnHash)
+	fmt.Printf("update_group: %s \ntransaction hash: %s\n", groupName, txnHash)
 	return nil
 }
 
@@ -254,6 +254,7 @@ func mirrorGroup(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Printf("mirror group succ, txHash: %s\n", txResp.TxHash)
+
+	fmt.Printf("mirror_group: %s \ntransaction hash: %s\n", groupName, txResp.TxHash)
 	return nil
 }

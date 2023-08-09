@@ -94,7 +94,6 @@ func main() {
 					cmdCancelObjects(),
 					cmdListObjects(),
 					cmdCalHash(),
-					cmdCreateFolder(),
 					cmdUpdateObject(),
 					cmdGetUploadProgress(),
 					cmdMirrorObject(),
