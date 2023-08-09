@@ -5,8 +5,8 @@ go 1.20
 require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/bnb-chain/greenfield v0.2.3
-	github.com/bnb-chain/greenfield-go-sdk v0.2.3-alpha.3.0.20230808100125-f1687a5d407b
+	github.com/bnb-chain/greenfield v0.2.4-alpha.1
+	github.com/bnb-chain/greenfield-go-sdk v0.2.4-alpha.1
 	github.com/cosmos/cosmos-sdk v0.47.3
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/urfave/cli/v2 v2.10.2
@@ -25,7 +25,7 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
-	github.com/bnb-chain/greenfield-common/go v0.0.0-20230720022901-7e7158fd397d // indirect
+	github.com/bnb-chain/greenfield-common/go v0.0.0-20230809025353-fd0519705054 // indirect
 	github.com/btcsuite/btcd v0.23.3 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.2 // indirect
@@ -149,8 +149,6 @@ require (
 replace (
 	cosmossdk.io/api => github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20230425074444-eb5869b05fe9
 	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20230425074444-eb5869b05fe9
-	github.com/bnb-chain/greenfield => github.com/bnb-chain/greenfield v0.2.3-0.20230808080725-3bec088c264c
-	github.com/bnb-chain/greenfield-go-sdk => github.com/bnb-chain/greenfield-go-sdk v0.2.3-alpha.3.0.20230808101524-d4d3304d35ad
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.23.0
 	github.com/cometbft/cometbft => github.com/bnb-chain/greenfield-cometbft v0.0.2
 	github.com/cometbft/cometbft-db => github.com/bnb-chain/greenfield-cometbft-db v0.8.1-alpha.1
