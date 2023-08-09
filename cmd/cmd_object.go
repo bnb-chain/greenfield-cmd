@@ -329,7 +329,7 @@ func putObject(ctx *cli.Context) error {
 			}
 		}
 		fmt.Printf("object %s created on chain \n", objectName)
-		fmt.Println("transaction hash:", txnHash)
+		fmt.Println("transaction hash: ", txnHash)
 	} else {
 		fmt.Printf("object %s already exist \n", objectName)
 	}
@@ -453,7 +453,7 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("download object %s successfully, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+	fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }
@@ -618,7 +618,8 @@ func updateObject(ctx *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("update object visibility successfully, latest object visibility:%s\n", objectDetail.ObjectInfo.GetVisibility().String())
+	fmt.Printf("update object visibility finished, latest object visibility:%s\n", objectDetail.ObjectInfo.GetVisibility().String())
+	fmt.Println("transaction hash: ", txnHash)
 	return nil
 }
 

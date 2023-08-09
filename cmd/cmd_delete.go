@@ -98,8 +98,8 @@ func deleteBucket(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-
-	fmt.Printf("delete bucket: %s successfully, txn hash: %s\n", bucketName, txnHash)
+	
+	fmt.Printf("delete_bucket: %s \ntransaction hash: %s\n", bucketName, txnHash)
 	return nil
 }
 
@@ -239,6 +239,6 @@ func deleteGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("delete group: %s successfully, txn hash: %s \n", groupName, txnHash)
+	fmt.Printf("delete_group: %s \ntransaction hash: %s\n", groupName, txnHash)
 	return nil
 }

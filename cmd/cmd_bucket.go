@@ -193,7 +193,7 @@ func createBucket(ctx *cli.Context) error {
 	}
 
 	fmt.Printf("make_bucket: %s \n", bucketName)
-	fmt.Println("transaction hash:", txnHash)
+	fmt.Println("transaction hash: ", txnHash)
 	return nil
 }
 
