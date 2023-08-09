@@ -283,7 +283,7 @@ func renewGroupMember(ctx *cli.Context) error {
 
 	expireTimestamp := ctx.Int64(expireTimeFlag)
 	if expireTimestamp < time.Now().Unix() {
-		return toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
+		toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
 	}
 
 	memberNum := len(renewGroupMembers)
@@ -299,10 +299,9 @@ func renewGroupMember(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(ErrGroupNotExist)
 	}
-
-	txOpts := &types.TxOption{Mode: &SyncBroadcastMode}
+	
 	txnHash, err := client.RenewGroupMember(c, groupOwner, groupName, renewGroupMembers, expireTimeList,
-		sdktypes.RenewGroupMemberOption{TxOpts: txOpts})
+		sdktypes.RenewGroupMemberOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
