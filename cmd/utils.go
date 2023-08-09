@@ -198,19 +198,6 @@ func getGroupNameByUrl(ctx *cli.Context) (string, error) {
 	return ctx.Args().Get(0), nil
 }
 
-func parseAddrList(addrInfo string) ([]sdk.AccAddress, error) {
-	addresses := strings.Split(addrInfo, ",")
-	addrList := make([]sdk.AccAddress, len(addresses))
-	var err error
-	for idx, addr := range addresses {
-		addrList[idx], err = sdk.AccAddressFromHexUnsafe(addr)
-		if err != nil {
-			return nil, toCmdErr(err)
-		}
-	}
-	return addrList, nil
-}
-
 func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) {
 	if grantee == "" && groupId == 0 {
 		return "", errors.New("group id or account need to be set")
