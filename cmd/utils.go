@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -501,4 +502,29 @@ func getHomeDir(ctx *cli.Context) (string, error) {
 		return ctx.String(homeFlag), nil
 	}
 	return "", errors.New("home flag should not be empty")
+}
+
+func getUserAddress(ctx *cli.Context) (string, error) {
+	var userAddress string
+	var err error
+	flagAddr := ctx.String(addressFlag)
+	if flagAddr != "" {
+		_, err = sdk.AccAddressFromHexUnsafe(flagAddr)
+		if err != nil {
+			return "", toCmdErr(err)
+		}
+		userAddress = flagAddr
+	} else {
+		keyJson, _, err := loadKeyStoreFile(ctx)
+		if err != nil {
+			return "", toCmdErr(err)
+		}
+
+		k := new(encryptedKey)
+		if err = json.Unmarshal(keyJson, k); err != nil {
+			return "", toCmdErr(errors.New("failed to get account info: " + err.Error()))
+		}
+		userAddress = k.Address
+	}
+	return userAddress, nil
 }

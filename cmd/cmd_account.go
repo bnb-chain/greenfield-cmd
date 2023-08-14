@@ -118,20 +118,9 @@ func getAccountBalance(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	var addr string
-	flagAddr := ctx.String(addressFlag)
-	if flagAddr != "" {
-		_, err = sdk.AccAddressFromHexUnsafe(flagAddr)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		addr = flagAddr
-	} else {
-		acct, err := client.GetDefaultAccount()
-		if err != nil {
-			return toCmdErr(err)
-		}
-		addr = acct.GetAddress().String()
+	addr, err := getUserAddress(ctx)
+	if err != nil {
+		return err
 	}
 
 	resp, err := client.GetAccountBalance(c, addr)
