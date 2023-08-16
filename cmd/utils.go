@@ -98,6 +98,8 @@ const (
 	exitStatus         = "GRACEFUL_EXITING"
 	StatusSPrefix      = "STATUS_"
 	defaultMaxKey      = 500
+
+	noBalanceErr = "key not found"
 )
 
 var (
@@ -149,6 +151,9 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 }
 
 func toCmdErr(err error) error {
+	if strings.Contains(err.Error(), noBalanceErr) {
+		fmt.Println("The operator account have no balance, please transfer token to your account")
+	}
 	fmt.Printf("run command error: %s\n", err.Error())
 	return nil
 }
