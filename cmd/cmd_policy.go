@@ -204,7 +204,7 @@ func listPolicy(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	return handleDeletePolicy(ctx, resource, resourceType)
+	return handleListPolicy(ctx, resource, resourceType)
 }
 
 func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.Statement, policyType ResourceType) error {
