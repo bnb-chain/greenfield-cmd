@@ -499,9 +499,9 @@ func listBelongGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	groupOwner, err := getGroupOwner(ctx)
+	groupMemberAddr, err := getUserAddress(ctx)
 	if err != nil {
-		return toCmdErr(err)
+		return err
 	}
 
 	c, cancelListGroup := context.WithCancel(globalContext)
@@ -510,7 +510,7 @@ func listBelongGroup(ctx *cli.Context) error {
 	initStartKey := ""
 	for {
 		groupList, err := client.ListGroupsByAccount(c,
-			sdktypes.GroupsPaginationOptions{Limit: maxListMemberNum, Account: groupOwner, StartAfter: initStartKey})
+			sdktypes.GroupsPaginationOptions{Limit: maxListMemberNum, Account: groupMemberAddr, StartAfter: initStartKey})
 		if err != nil {
 			return toCmdErr(err)
 		}
