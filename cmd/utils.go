@@ -99,7 +99,8 @@ const (
 	StatusSPrefix      = "STATUS_"
 	defaultMaxKey      = 500
 
-	noBalanceErr = "key not found"
+	noBalanceErr     = "key not found"
+	maxListMemberNum = 1000
 )
 
 var (
