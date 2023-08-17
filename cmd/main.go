@@ -110,6 +110,9 @@ func main() {
 					cmdDelGroup(),
 					cmdMirrorGroup(),
 					cmdRenewGroup(),
+					cmdListGroup(),
+					cmdListGroupMember(),
+					cmdListGroupBelong(),
 				},
 			},
 
