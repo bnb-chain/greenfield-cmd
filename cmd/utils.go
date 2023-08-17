@@ -156,8 +156,9 @@ func getVisibilityType(visibility string) (storageTypes.VisibilityType, error) {
 func toCmdErr(err error) error {
 	if strings.Contains(err.Error(), noBalanceErr) {
 		fmt.Println("The operator account have no balance, please transfer token to your account")
+	} else {
+		fmt.Printf("run command error: %s\n", err.Error())
 	}
-	fmt.Printf("run command error: %s\n", err.Error())
 	return nil
 }
 

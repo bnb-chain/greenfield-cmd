@@ -140,7 +140,7 @@ func cmdListGroup() *cli.Command {
 		Usage:     "list  groups owned by the specified user",
 		ArgsUsage: "GROUP-NAME",
 		Description: `
- Returns a list of groups owned by the specified user,
+Returns a list of groups owned by the specified user
 You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
@@ -407,7 +407,6 @@ func renewGroupMember(ctx *cli.Context) error {
 }
 
 // listGroupMember returns a list of members contained within the group specified by the group id
-// The user's expiration time has already elapsed will not be listed
 func listGroupMember(ctx *cli.Context) error {
 	groupName, err := getGroupNameByUrl(ctx)
 	if err != nil {
@@ -442,7 +441,7 @@ func listGroupMember(ctx *cli.Context) error {
 
 		printListMemberResult(memberList)
 		memberNum := len(memberList.Groups)
-		if memberNum != maxListMemberNum {
+		if memberNum < maxListMemberNum {
 			break
 		}
 
@@ -488,7 +487,7 @@ func listGroup(ctx *cli.Context) error {
 
 		printListGroupResult(groupList)
 		memberNum := len(groupList.Groups)
-		if memberNum != maxListMemberNum {
+		if memberNum < maxListMemberNum {
 			break
 		}
 
@@ -523,7 +522,7 @@ func listBelongGroup(ctx *cli.Context) error {
 
 		printListGroupResult(groupList)
 		memberNum := len(groupList.Groups)
-		if memberNum != maxListMemberNum {
+		if memberNum < maxListMemberNum {
 			break
 		}
 
@@ -538,6 +537,7 @@ func printListMemberResult(listResult *sdktypes.GroupMembersResult) {
 		if member.Removed {
 			continue
 		}
+
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(member.CreateTime, 0).In(location)
 
