@@ -14,6 +14,7 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -144,12 +145,36 @@ func cmdListGroup() *cli.Command {
 You need also set group owner using --groupOwner if you are not the owner of the group.
 
 Examples:
-$ gnfd-cmd group ls`,
+$ gnfd-cmd group --groupOwner ls`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     groupOwnerFlag,
 				Value:    "",
 				Usage:    "need set the owner address if you are not the owner of the group",
+				Required: false,
+			},
+		},
+	}
+}
+
+// cmdListGroupBelong returns a list of all groups that the user has joined
+func cmdListGroupBelong() *cli.Command {
+	return &cli.Command{
+		Name:      "ls-belong",
+		Action:    listBelongGroup,
+		Usage:     "list groups which the specified user has joined",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+Returns list of all groups that the account has joined
+You need also set the account address using --address if you are not the account
+
+Examples:
+$ gnfd-cmd group --address ls-belong`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     addressFlag,
+				Value:    "",
+				Usage:    "set the address of the group member",
 				Required: false,
 			},
 		},
@@ -435,9 +460,20 @@ func listGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	groupOwner, err := getGroupOwner(ctx)
-	if err != nil {
-		return toCmdErr(err)
+	var groupAccount string
+	addrFlag := ctx.String(addressFlag)
+	if addrFlag != "" {
+		_, err = sdk.AccAddressFromHexUnsafe(addrFlag)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		groupAccount = addrFlag
+	} else {
+		acct, err := client.GetDefaultAccount()
+		if err != nil {
+			return toCmdErr(err)
+		}
+		groupAccount = acct.GetAddress().String()
 	}
 
 	c, cancelListGroup := context.WithCancel(globalContext)
@@ -446,7 +482,42 @@ func listGroup(ctx *cli.Context) error {
 	initStartKey := ""
 	for {
 		groupList, err := client.ListGroupsByOwner(c,
-			sdktypes.GroupsOwnerPaginationOptions{Limit: maxListMemberNum, Owner: groupOwner, StartAfter: initStartKey})
+			sdktypes.GroupsOwnerPaginationOptions{Limit: maxListMemberNum, Owner: groupAccount, StartAfter: initStartKey})
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		printListGroupResult(groupList)
+		memberNum := len(groupList.Groups)
+		if memberNum != maxListMemberNum {
+			break
+		}
+
+		initStartKey = groupList.Groups[memberNum-1].Group.Id.String()
+	}
+
+	return nil
+}
+
+// listBelongGroup returns a list of all groups that the user has joined
+func listBelongGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupMemberAddr, err := getUserAddress(ctx)
+	if err != nil {
+		return err
+	}
+
+	c, cancelListGroup := context.WithCancel(globalContext)
+	defer cancelListGroup()
+
+	initStartKey := ""
+	for {
+		groupList, err := client.ListGroupsByAccount(c,
+			sdktypes.GroupsPaginationOptions{Limit: maxListMemberNum, Account: groupMemberAddr, StartAfter: initStartKey})
 		if err != nil {
 			return toCmdErr(err)
 		}
