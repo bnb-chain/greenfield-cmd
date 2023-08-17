@@ -131,6 +131,7 @@ func main() {
 				Subcommands: []*cli.Command{
 					cmdPutPolicy(),
 					cmdDelPolicy(),
+					cmdListPolicy(),
 				},
 			},
 

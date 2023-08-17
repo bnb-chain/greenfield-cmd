@@ -117,7 +117,7 @@ func cmdListPolicy() *cli.Command {
 		Usage:     "list policy of principal",
 		ArgsUsage: " RESOURCE-URL",
 		Description: `
-The command is used to set the object policy of the grantee or group-id.
+The command is used to list the policy of the grantee or group-id.
 It required to set grantee account or group-id by --grantee or --groupId.
 
 the resource url can be the follow types:
