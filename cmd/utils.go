@@ -54,6 +54,7 @@ const (
 	effectFlag            = "effect"
 	expireTimeFlag        = "expire"
 	IdFlag                = "id"
+	DestChainIdFlag       = "destChainId"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"

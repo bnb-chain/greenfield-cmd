@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"strconv"
 	"strings"
 	"time"
@@ -166,12 +167,18 @@ Mirror a group as NFT to BSC
 
 Examples:
 # Mirror a group using group id
-$ gnfd-cmd group mirror --id 1
+$ gnfd-cmd group mirror --destChainId 97 --id 1
 
 # Mirror a group using group name
-$ gnfd-cmd group mirror --groupName yourGroupName
+$ gnfd-cmd group mirror --destChainId 97 --groupName yourGroupName
 `,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     DestChainIdFlag,
+				Value:    "",
+				Usage:    "target chain id",
+				Required: true,
+			},
 			&cli.StringFlag{
 				Name:     IdFlag,
 				Value:    "",
@@ -501,21 +508,20 @@ func getGroupOwner(ctx *cli.Context) (string, error) {
 }
 
 func mirrorGroup(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
-	if err != nil {
-		return toCmdErr(err)
-	}
+	destChainId := ctx.Int64(DestChainIdFlag)
 	id := math.NewUint(0)
 	if ctx.String(IdFlag) != "" {
 		id = math.NewUintFromString(ctx.String(IdFlag))
 	}
-
 	groupName := ctx.String(groupNameFlag)
-
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	txResp, err := client.MirrorGroup(c, id, groupName, types.TxOption{})
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	txResp, err := client.MirrorGroup(c, sdk.ChainID(destChainId), id, groupName, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
