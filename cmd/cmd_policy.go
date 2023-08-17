@@ -110,6 +110,38 @@ $ gnfd-cmd policy rm --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
 	}
 }
 
+func cmdListPolicy() *cli.Command {
+	return &cli.Command{
+		Name:      "ls",
+		Action:    listPolicy,
+		Usage:     "list policy of principal",
+		ArgsUsage: " RESOURCE-URL",
+		Description: `
+The command is used to set the object policy of the grantee or group-id.
+It required to set grantee account or group-id by --grantee or --groupId.
+
+the resource url can be the follow types:
+1) grn:b::bucketname, it indicates the bucket policy
+2) grn:o::bucketname/objectname, it indicates the object policy
+3) grn:g:owneraddress:groupname, it indicates the group policy
+
+Examples:
+$ gnfd-cmd policy rm --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  groupIDFlag,
+				Value: 0,
+				Usage: "the group id of the group",
+			},
+			&cli.StringFlag{
+				Name:  granteeFlag,
+				Value: "",
+				Usage: "the address hex string of the grantee",
+			},
+		},
+	}
+}
+
 func putPolicy(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return toCmdErr(fmt.Errorf("args number should be one"))
@@ -150,6 +182,19 @@ func putPolicy(ctx *cli.Context) error {
 }
 
 func deletePolicy(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	resource := ctx.Args().Get(0)
+	resourceType, err := parseResourceType(resource)
+	if err != nil {
+		return err
+	}
+	return handleDeletePolicy(ctx, resource, resourceType)
+}
+
+func listPolicy(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return toCmdErr(fmt.Errorf("args number should be one"))
 	}
@@ -261,6 +306,46 @@ func handleDeletePolicy(ctx *cli.Context, resource string, policyType ResourceTy
 		if err != nil {
 			return toCmdErr(err)
 		}
+	}
+
+	return nil
+}
+
+func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return err
+	}
+	//groupId := ctx.Uint64(groupIDFlag)
+	grantee := ctx.String(granteeFlag)
+
+	if policyType == BucketResourceType {
+		bucketName, err := parseBucketResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		printBucketPolicy(ctx, client, bucketName)
+	} else if policyType == ObjectResourceType {
+		bucketName, objectName, err := parseObjectResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		printObjectPolicy(ctx, client, bucketName, objectName)
+	} else if policyType == GroupResourceType {
+		_, groupName, err := parseGroupResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		c, cancelGetPolicy := context.WithCancel(globalContext)
+		defer cancelGetPolicy()
+
+		policyInfo, err := client.GetGroupPolicy(c, groupName, grantee)
+		if err == nil {
+			fmt.Printf("latest group policy info:  \n %s\n", policyInfo.String())
+		}
+
 	}
 
 	return nil
