@@ -325,7 +325,7 @@ func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType
 		if err != nil {
 			return toCmdErr(err)
 		}
-		err = listBucketPolicy(ctx, client, bucketName)
+		err = listBucketPolicy(ctx, client, bucketName, resource)
 		if err != nil {
 			return toCmdErr(err)
 		}
@@ -335,7 +335,7 @@ func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType
 			return toCmdErr(err)
 		}
 
-		err = listObjectPolicy(ctx, client, bucketName, objectName)
+		err = listObjectPolicy(ctx, client, bucketName, objectName, resource)
 		if err != nil {
 			return toCmdErr(err)
 		}
@@ -353,8 +353,7 @@ func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType
 			return toCmdErr(err)
 		}
 
-		resourceName := "group:" + groupName
-		listPolicyInfo(0, grantee, resourceName, *policyInfo)
+		listPolicyInfo(0, grantee, resource, *policyInfo)
 	}
 
 	return nil
@@ -529,7 +528,7 @@ func printObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNa
 	}
 }
 
-func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectName string) error {
+func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectName, resourceName string) error {
 	// get the latest policy from chain
 	groupId := ctx.Uint64(groupIDFlag)
 	grantee := ctx.String(granteeFlag)
@@ -545,7 +544,7 @@ func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNam
 	if err != nil {
 		return err
 	}
-	resourceName := greenfieldPrefix + bucketName + "/" + objectName
+
 	listPolicyInfo(groupId, grantee, resourceName, *policyInfo)
 	return nil
 }
@@ -569,7 +568,7 @@ func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {
 	}
 }
 
-func listBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) error {
+func listBucketPolicy(ctx *cli.Context, cli client.Client, bucketName, resourceName string) error {
 	c, cancelPolicy := context.WithCancel(globalContext)
 	defer cancelPolicy()
 
@@ -586,8 +585,7 @@ func listBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) er
 	if err != nil {
 		return err
 	}
-
-	resourceName := greenfieldPrefix + bucketName
+	
 	listPolicyInfo(groupId, grantee, resourceName, *policyInfo)
 	return nil
 }
