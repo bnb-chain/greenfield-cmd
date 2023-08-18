@@ -28,9 +28,8 @@ import (
 )
 
 const (
-	Version               = "v0.0.9"
+	Version               = "v0.1.0-alpha.2"
 	maxFileSize           = 10 * 1024 * 1024 * 1024
-	greenfieldPrefix      = "gnfd://"
 	publicReadType        = "public-read"
 	privateType           = "private"
 	inheritType           = "inherit"
