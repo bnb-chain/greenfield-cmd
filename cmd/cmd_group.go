@@ -525,8 +525,7 @@ func listBelongGroup(ctx *cli.Context) error {
 }
 
 func printListMemberResult(listResult *sdktypes.GroupMembersResult) {
-	var format string
-	format = fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat), operatorAddressLen, len(iso8601DateFormat))
+	format := fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat), operatorAddressLen, len(iso8601DateFormat))
 	fmt.Printf(format, "create-time", "member", "expire-time")
 
 	for _, member := range listResult.Groups {
@@ -547,8 +546,7 @@ func printListMemberResult(listResult *sdktypes.GroupMembersResult) {
 }
 
 func printListGroupResult(listResult *sdktypes.GroupsResult) {
-	var format string
-	format = fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat)+3, 20, 10)
+	format := fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat)+3, 20, 10)
 	fmt.Printf(format, "create-time", "group-name", "id")
 
 	for _, group := range listResult.Groups {
