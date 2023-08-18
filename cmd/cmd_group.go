@@ -525,6 +525,10 @@ func listBelongGroup(ctx *cli.Context) error {
 }
 
 func printListMemberResult(listResult *sdktypes.GroupMembersResult) {
+	var format string
+	format = fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat), operatorAddressLen, len(iso8601DateFormat))
+	fmt.Printf(format, "create-time", "member", "expire-time")
+
 	for _, member := range listResult.Groups {
 		if member.Removed {
 			continue
@@ -533,11 +537,20 @@ func printListMemberResult(listResult *sdktypes.GroupMembersResult) {
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(member.CreateTime, 0).In(location)
 
-		fmt.Printf("%s %45s \n", t.Format(iso8601DateFormat), member.AccountID)
+		expireTime, err := strconv.ParseInt(member.ExpirationTime, 10, 64)
+		if err != nil {
+			expireTime = 0
+		}
+
+		fmt.Printf(format, t.Format(iso8601DateFormat), member.AccountID, time.Unix(expireTime, 0).In(location).Format(iso8601DateFormat))
 	}
 }
 
 func printListGroupResult(listResult *sdktypes.GroupsResult) {
+	var format string
+	format = fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat)+3, 20, 10)
+	fmt.Printf(format, "create-time", "group-name", "id")
+
 	for _, group := range listResult.Groups {
 		if group.Removed {
 			continue
@@ -545,7 +558,7 @@ func printListGroupResult(listResult *sdktypes.GroupsResult) {
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(group.CreateTime, 0).In(location)
 
-		fmt.Printf("%s %30s id: %d\n", t.Format(iso8601DateFormat), group.Group.GroupName, group.Group.Id)
+		fmt.Printf(format, t.Format(iso8601DateFormat), group.Group.GroupName, strconv.FormatUint(group.Group.Id, 10))
 	}
 }
 

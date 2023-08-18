@@ -631,9 +631,9 @@ func listPolicyInfo(groupId uint64, grantee, resourceName string, policyInfo per
 		actionName := getActionStr(statement.GetActions())
 		effectName := statement.GetEffect().String()[len("EFFECT_"):]
 		if groupId > 0 {
-			fmt.Printf(format, "groupID:"+strconv.FormatUint(groupId, 10), actionName, effectName, resourceName)
+			fmt.Printf(format, "groupID-"+strconv.FormatUint(groupId, 10), actionName, effectName, resourceName)
 		} else {
-			fmt.Printf(format, "grantee:"+grantee, actionName, effectName, resourceName)
+			fmt.Printf(format, ""+grantee, actionName, effectName, resourceName)
 		}
 	}
 }
