@@ -118,20 +118,9 @@ func getAccountBalance(ctx *cli.Context) error {
 	c, cancelCreateBucket := context.WithCancel(globalContext)
 	defer cancelCreateBucket()
 
-	var addr string
-	flagAddr := ctx.String(addressFlag)
-	if flagAddr != "" {
-		_, err = sdk.AccAddressFromHexUnsafe(flagAddr)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		addr = flagAddr
-	} else {
-		acct, err := client.GetDefaultAccount()
-		if err != nil {
-			return toCmdErr(err)
-		}
-		addr = acct.GetAddress().String()
+	addr, err := getUserAddress(ctx)
+	if err != nil {
+		return err
 	}
 
 	resp, err := client.GetAccountBalance(c, addr)
@@ -201,6 +190,11 @@ $ gnfd-cmd bank bridge --toAddress 0x.. --amount 12345`,
 }
 
 func importKey(ctx *cli.Context) error {
+	privateKeyFile := ctx.Args().First()
+	if privateKeyFile == "" {
+		return toCmdErr(errors.New("fail to get the private key file info"))
+	}
+
 	keyFilePath := ctx.String("keystore")
 	if keyFilePath == "" {
 		homeDir, err := getHomeDir(ctx)
@@ -214,11 +208,6 @@ func importKey(ctx *cli.Context) error {
 		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
 	} else if !os.IsNotExist(err) {
 		return toCmdErr(err)
-	}
-
-	privateKeyFile := ctx.Args().First()
-	if privateKeyFile == "" {
-		return toCmdErr(errors.New("fail to get the private key file info"))
 	}
 
 	// Load private key from file.

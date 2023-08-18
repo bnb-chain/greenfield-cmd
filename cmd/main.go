@@ -110,6 +110,9 @@ func main() {
 					cmdDelGroup(),
 					cmdMirrorGroup(),
 					cmdRenewGroup(),
+					cmdListGroup(),
+					cmdListGroupMember(),
+					cmdListGroupBelong(),
 				},
 			},
 
@@ -128,6 +131,7 @@ func main() {
 				Subcommands: []*cli.Command{
 					cmdPutPolicy(),
 					cmdDelPolicy(),
+					cmdListPolicy(),
 				},
 			},
 

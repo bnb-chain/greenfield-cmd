@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,6 +111,38 @@ $ gnfd-cmd policy rm --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
 	}
 }
 
+func cmdListPolicy() *cli.Command {
+	return &cli.Command{
+		Name:      "ls",
+		Action:    listPolicy,
+		Usage:     "list policy of principal",
+		ArgsUsage: " RESOURCE-URL",
+		Description: `
+The command is used to list the policy of the grantee or group-id.
+It required to set grantee account or group-id by --grantee or --groupId.
+
+the resource url can be the follow types:
+1) grn:b::bucketname, it indicates the bucket policy
+2) grn:o::bucketname/objectname, it indicates the object policy
+3) grn:g:owneraddress:groupname, it indicates the group policy
+
+Examples:
+$ gnfd-cmd policy rm --groupId 111  grn:o::gnfd-bucket/gnfd-object`,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  groupIDFlag,
+				Value: 0,
+				Usage: "the group id of the group",
+			},
+			&cli.StringFlag{
+				Name:  granteeFlag,
+				Value: "",
+				Usage: "the address hex string of the grantee",
+			},
+		},
+	}
+}
+
 func putPolicy(ctx *cli.Context) error {
 	if ctx.NArg() != 1 {
 		return toCmdErr(fmt.Errorf("args number should be one"))
@@ -160,6 +193,19 @@ func deletePolicy(ctx *cli.Context) error {
 		return err
 	}
 	return handleDeletePolicy(ctx, resource, resourceType)
+}
+
+func listPolicy(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	resource := ctx.Args().Get(0)
+	resourceType, err := parseResourceType(resource)
+	if err != nil {
+		return err
+	}
+	return handleListPolicy(ctx, resource, resourceType)
 }
 
 func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.Statement, policyType ResourceType) error {
@@ -261,6 +307,53 @@ func handleDeletePolicy(ctx *cli.Context, resource string, policyType ResourceTy
 		if err != nil {
 			return toCmdErr(err)
 		}
+	}
+
+	return nil
+}
+
+func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return err
+	}
+	//groupId := ctx.Uint64(groupIDFlag)
+	grantee := ctx.String(granteeFlag)
+
+	if policyType == BucketResourceType {
+		bucketName, err := parseBucketResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		err = listBucketPolicy(ctx, client, bucketName, resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	} else if policyType == ObjectResourceType {
+		bucketName, objectName, err := parseObjectResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		err = listObjectPolicy(ctx, client, bucketName, objectName, resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	} else if policyType == GroupResourceType {
+		_, groupName, err := parseGroupResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		c, cancelGetPolicy := context.WithCancel(globalContext)
+		defer cancelGetPolicy()
+
+		policyInfo, err := client.GetGroupPolicy(c, groupName, grantee)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		listPolicyInfo(0, grantee, resource, *policyInfo)
 	}
 
 	return nil
@@ -435,6 +528,27 @@ func printObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNa
 	}
 }
 
+func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectName, resourceName string) error {
+	// get the latest policy from chain
+	groupId := ctx.Uint64(groupIDFlag)
+	grantee := ctx.String(granteeFlag)
+	c, cancelPolicy := context.WithCancel(globalContext)
+	defer cancelPolicy()
+	var policyInfo *permTypes.Policy
+	var err error
+	if groupId > 0 {
+		policyInfo, err = cli.GetObjectPolicyOfGroup(c, bucketName, objectName, groupId)
+	} else {
+		policyInfo, err = cli.GetObjectPolicy(c, bucketName, objectName, grantee)
+	}
+	if err != nil {
+		return err
+	}
+
+	listPolicyInfo(groupId, grantee, resourceName, *policyInfo)
+	return nil
+}
+
 func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {
 	c, cancelPolicy := context.WithCancel(globalContext)
 	defer cancelPolicy()
@@ -454,6 +568,28 @@ func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {
 	}
 }
 
+func listBucketPolicy(ctx *cli.Context, cli client.Client, bucketName, resourceName string) error {
+	c, cancelPolicy := context.WithCancel(globalContext)
+	defer cancelPolicy()
+
+	groupId := ctx.Uint64(groupIDFlag)
+	grantee := ctx.String(granteeFlag)
+
+	var policyInfo *permTypes.Policy
+	var err error
+	if groupId > 0 {
+		policyInfo, err = cli.GetBucketPolicyOfGroup(c, bucketName, groupId)
+	} else {
+		policyInfo, err = cli.GetBucketPolicy(c, bucketName, grantee)
+	}
+	if err != nil {
+		return err
+	}
+	
+	listPolicyInfo(groupId, grantee, resourceName, *policyInfo)
+	return nil
+}
+
 func parseResourceType(resource string) (ResourceType, error) {
 	var resourceType ResourceType
 	if strings.HasPrefix(resource, BucketResourcePrefix) {
@@ -466,4 +602,36 @@ func parseResourceType(resource string) (ResourceType, error) {
 		return -1, toCmdErr(errors.New("invalid resource name"))
 	}
 	return resourceType, nil
+}
+
+func getActionStr(actions []permTypes.ActionType) string {
+	var action string
+	for id, typeName := range actions {
+		if id == 0 {
+			action += typeName.String()[len("ACTION_"):]
+		} else {
+			action += "," + typeName.String()[len("ACTION_"):]
+		}
+	}
+	return action
+}
+
+func listPolicyInfo(groupId uint64, grantee, resourceName string, policyInfo permTypes.Policy) {
+	var format string
+	if groupId > 0 {
+		format = fmt.Sprintf("%%-%ds %%-%ds %%-%ds %%-%ds  \n", 15, 40, 10, 20)
+	} else {
+		format = fmt.Sprintf("%%-%ds %%-%ds %%-%ds %%-%ds  \n", operatorAddressLen+10, 40, 10, 20)
+	}
+
+	fmt.Printf(format, "principal", "actions", "effect", "resource")
+	for _, statement := range policyInfo.Statements {
+		actionName := getActionStr(statement.GetActions())
+		effectName := statement.GetEffect().String()[len("EFFECT_"):]
+		if groupId > 0 {
+			fmt.Printf(format, "groupID-"+strconv.FormatUint(groupId, 10), actionName, effectName, resourceName)
+		} else {
+			fmt.Printf(format, ""+grantee, actionName, effectName, resourceName)
+		}
+	}
 }

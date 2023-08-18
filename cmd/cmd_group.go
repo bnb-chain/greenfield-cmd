@@ -13,6 +13,7 @@ import (
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -86,19 +87,94 @@ Examples:
 $ gnfd-cmd group renew --groupOwner 0x.. --renewMembers 0x..  --expireTime 1691569957 group-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  renewMemberFlag,
-				Value: "",
-				Usage: "indicate the init member addr string list, input like addr1,addr2,addr3",
+				Name:     renewMemberFlag,
+				Value:    "",
+				Usage:    "indicate the init member addr string list, input like addr1,addr2,addr3",
+				Required: true,
 			},
 			&cli.StringFlag{
-				Name:  groupOwnerFlag,
-				Value: "",
-				Usage: "need set the owner address if you are not the owner of the group",
+				Name:     groupOwnerFlag,
+				Value:    "",
+				Usage:    "need set the owner address if you are not the owner of the group",
+				Required: false,
 			},
 			&cli.Int64Flag{
-				Name:  groupMemberExpireFlag,
-				Value: 0,
-				Usage: "set the expire timestamp for the addMember, it will apply to all the add members",
+				Name:     groupMemberExpireFlag,
+				Value:    0,
+				Usage:    "set the expire timestamp for the addMember, it will apply to all the add members",
+				Required: false,
+			},
+		},
+	}
+}
+
+// cmdListGroupMember is the command to list members info of the particular group.
+func cmdListGroupMember() *cli.Command {
+	return &cli.Command{
+		Name:      "ls-member",
+		Action:    listGroupMember,
+		Usage:     "list the members which contained within the group",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+List the members of the specific group
+You need also set group owner using --groupOwner if you are not the owner of the group.
+
+Examples:
+$ gnfd-cmd group ls-member group-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     groupOwnerFlag,
+				Value:    "",
+				Usage:    "need set the owner address if you are not the owner of the group",
+				Required: false,
+			},
+		},
+	}
+}
+
+// cmdListGroup is the command to list members info of the particular group.
+func cmdListGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "ls",
+		Action:    listGroup,
+		Usage:     "list  groups owned by the specified user",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+Returns a list of groups owned by the specified user
+You need also set group owner using --groupOwner if you are not the owner of the group.
+
+Examples:
+$ gnfd-cmd group --groupOwner ls`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     groupOwnerFlag,
+				Value:    "",
+				Usage:    "need set the owner address if you are not the owner of the group",
+				Required: false,
+			},
+		},
+	}
+}
+
+// cmdListGroupBelong returns a list of all groups that the user has joined
+func cmdListGroupBelong() *cli.Command {
+	return &cli.Command{
+		Name:      "ls-belong",
+		Action:    listBelongGroup,
+		Usage:     "list groups which the specified user has joined",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+Returns list of all groups that the account has joined
+You need also set the account address using --address if you are not the account
+
+Examples:
+$ gnfd-cmd group ls-belong --address`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     addressFlag,
+				Value:    "",
+				Usage:    "set the address of the group member",
+				Required: false,
 			},
 		},
 	}
@@ -115,12 +191,18 @@ Mirror a group as NFT to BSC
 
 Examples:
 # Mirror a group using group id
-$ gnfd-cmd group mirror --id 1
+$ gnfd-cmd group mirror --destChainId 97 --id 1
 
 # Mirror a group using group name
-$ gnfd-cmd group mirror --groupName yourGroupName
+$ gnfd-cmd group mirror --destChainId 97 --groupName yourGroupName
 `,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     DestChainIdFlag,
+				Value:    "",
+				Usage:    "target chain id",
+				Required: true,
+			},
 			&cli.StringFlag{
 				Name:     IdFlag,
 				Value:    "",
@@ -216,18 +298,6 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	expireTimestamp := ctx.Int64(expireTimeFlag)
-	// set default expire timestamp
-	if expireTimestamp == 0 {
-		expireTimestamp = storageTypes.MaxTimeStamp.Unix()
-	}
-
-	addMemberNum := len(addGroupMembers)
-	expireTimeList := make([]time.Time, addMemberNum)
-	for i := 0; i < addMemberNum; i++ {
-		expireTimeList[i] = time.Unix(expireTimestamp, 0)
-	}
-
 	c, cancelUpdateGroup := context.WithCancel(globalContext)
 	defer cancelUpdateGroup()
 
@@ -236,9 +306,27 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	txOpts := &types.TxOption{Mode: &SyncBroadcastMode}
-	txnHash, err := client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers, expireTimeList,
-		sdktypes.UpdateGroupMemberOption{TxOpts: txOpts})
+	expireTimestamp := ctx.Int64(groupMemberExpireFlag)
+
+	if expireTimestamp != 0 && expireTimestamp < time.Now().Unix() {
+		return toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
+	}
+
+	var txnHash string
+	if expireTimestamp > 0 && len(addGroupMembers) > 0 {
+		addMemberNum := len(addGroupMembers)
+		expireTimeList := make([]*time.Time, addMemberNum)
+		for i := 0; i < addMemberNum; i++ {
+			t := time.Unix(expireTimestamp, 0)
+			expireTimeList[i] = &t
+		}
+		txnHash, err = client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
+			sdktypes.UpdateGroupMemberOption{ExpirationTime: expireTimeList})
+	} else if expireTimestamp == 0 {
+		txnHash, err = client.UpdateGroupMember(c, groupName, groupOwner, addGroupMembers, removeGroupMembers,
+			sdktypes.UpdateGroupMemberOption{})
+	}
+
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -264,7 +352,6 @@ func renewGroupMember(ctx *cli.Context) error {
 	}
 
 	renewMembersInfo := ctx.String(renewMemberFlag)
-
 	if renewMembersInfo == "" {
 		return toCmdErr(errors.New("fail to get members to renew"))
 	}
@@ -281,15 +368,19 @@ func renewGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	expireTimestamp := ctx.Int64(expireTimeFlag)
+	expireTimestamp := ctx.Int64(groupMemberExpireFlag)
 	if expireTimestamp < time.Now().Unix() {
 		return toCmdErr(errors.New("expire stamp should be more than" + strconv.Itoa(int(time.Now().Unix()))))
+	} else if expireTimestamp == 0 {
+		// set default expire timestamp
+		expireTimestamp = storageTypes.MaxTimeStamp.Unix()
 	}
 
 	memberNum := len(renewGroupMembers)
-	expireTimeList := make([]time.Time, memberNum)
+	expireTimeList := make([]*time.Time, memberNum)
 	for i := 0; i < memberNum; i++ {
-		expireTimeList[i] = time.Unix(expireTimestamp, 0)
+		t := time.Unix(expireTimestamp, 0)
+		expireTimeList[i] = &t
 	}
 
 	c, cancelUpdateGroup := context.WithCancel(globalContext)
@@ -300,8 +391,8 @@ func renewGroupMember(ctx *cli.Context) error {
 		return toCmdErr(ErrGroupNotExist)
 	}
 
-	txnHash, err := client.RenewGroupMember(c, groupOwner, groupName, renewGroupMembers, expireTimeList,
-		sdktypes.RenewGroupMemberOption{})
+	txnHash, err := client.RenewGroupMember(c, groupOwner, groupName, renewGroupMembers,
+		sdktypes.RenewGroupMemberOption{ExpirationTime: expireTimeList})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -313,6 +404,160 @@ func renewGroupMember(ctx *cli.Context) error {
 
 	fmt.Printf("renew_group: %s \ntransaction hash: %s\n", groupName, txnHash)
 	return nil
+}
+
+// listGroupMember returns a list of members contained within the group specified by the group id
+func listGroupMember(ctx *cli.Context) error {
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupOwner, err := getGroupOwner(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelListGroup := context.WithCancel(globalContext)
+	defer cancelListGroup()
+
+	groupInfo, err := client.HeadGroup(c, groupName, groupOwner)
+	if err != nil {
+		return toCmdErr(ErrGroupNotExist)
+	}
+
+	initStartKey := ""
+	for {
+		memberList, err := client.ListGroupMembers(c, int64(groupInfo.Id.Uint64()),
+			sdktypes.GroupMembersPaginationOptions{Limit: maxListMemberNum, StartAfter: initStartKey})
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		printListMemberResult(memberList)
+		memberNum := len(memberList.Groups)
+		if memberNum < maxListMemberNum {
+			break
+		}
+
+		initStartKey = memberList.Groups[memberNum-1].AccountID
+	}
+
+	return nil
+}
+
+// listGroup returns a list of groups owned by the specified user
+func listGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupOwner, err := getGroupOwner(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelListGroup := context.WithCancel(globalContext)
+	defer cancelListGroup()
+
+	initStartKey := ""
+	for {
+		groupList, err := client.ListGroupsByOwner(c,
+			sdktypes.GroupsOwnerPaginationOptions{Limit: maxListMemberNum, Owner: groupOwner, StartAfter: initStartKey})
+
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		printListGroupResult(groupList)
+		memberNum := len(groupList.Groups)
+		if memberNum < maxListMemberNum {
+			break
+		}
+
+		id := groupList.Groups[memberNum-1].Group.Id
+		initStartKey = strconv.FormatUint(id, 10)
+	}
+
+	return nil
+}
+
+// listBelongGroup returns a list of all groups that the user has joined
+func listBelongGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupMemberAddr, err := getUserAddress(ctx)
+	if err != nil {
+		return err
+	}
+
+	c, cancelListGroup := context.WithCancel(globalContext)
+	defer cancelListGroup()
+
+	initStartKey := ""
+	for {
+		groupList, err := client.ListGroupsByAccount(c,
+			sdktypes.GroupsPaginationOptions{Limit: maxListMemberNum, Account: groupMemberAddr, StartAfter: initStartKey})
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		printListGroupResult(groupList)
+		memberNum := len(groupList.Groups)
+		if memberNum < maxListMemberNum {
+			break
+		}
+
+		id := groupList.Groups[memberNum-1].Group.Id
+		initStartKey = strconv.FormatUint(id, 10)
+	}
+
+	return nil
+}
+
+func printListMemberResult(listResult *sdktypes.GroupMembersResult) {
+	format := fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat), operatorAddressLen, len(iso8601DateFormat))
+	fmt.Printf(format, "create-time", "member", "expire-time")
+
+	for _, member := range listResult.Groups {
+		if member.Removed {
+			continue
+		}
+
+		location, _ := time.LoadLocation("Asia/Shanghai")
+		t := time.Unix(member.CreateTime, 0).In(location)
+
+		expireTime, err := strconv.ParseInt(member.ExpirationTime, 10, 64)
+		if err != nil {
+			expireTime = 0
+		}
+
+		fmt.Printf(format, t.Format(iso8601DateFormat), member.AccountID, time.Unix(expireTime, 0).In(location).Format(iso8601DateFormat))
+	}
+}
+
+func printListGroupResult(listResult *sdktypes.GroupsResult) {
+	format := fmt.Sprintf("%%-%ds %%-%ds %%-%ds  \n", len(iso8601DateFormat)+3, 20, 10)
+	fmt.Printf(format, "create-time", "group-name", "id")
+
+	for _, group := range listResult.Groups {
+		if group.Removed {
+			continue
+		}
+		location, _ := time.LoadLocation("Asia/Shanghai")
+		t := time.Unix(group.CreateTime, 0).In(location)
+
+		fmt.Printf(format, t.Format(iso8601DateFormat), group.Group.GroupName, strconv.FormatUint(group.Group.Id, 10))
+	}
 }
 
 func getGroupOwner(ctx *cli.Context) (string, error) {
@@ -336,21 +581,20 @@ func getGroupOwner(ctx *cli.Context) (string, error) {
 }
 
 func mirrorGroup(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
-	if err != nil {
-		return toCmdErr(err)
-	}
+	destChainId := ctx.Int64(DestChainIdFlag)
 	id := math.NewUint(0)
 	if ctx.String(IdFlag) != "" {
 		id = math.NewUintFromString(ctx.String(IdFlag))
 	}
-
 	groupName := ctx.String(groupNameFlag)
-
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	txResp, err := client.MirrorGroup(c, id, groupName, types.TxOption{})
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	txResp, err := client.MirrorGroup(c, sdk.ChainID(destChainId), id, groupName, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
