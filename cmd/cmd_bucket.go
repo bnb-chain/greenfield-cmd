@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"time"
 
 	"cosmossdk.io/math"
@@ -119,12 +120,18 @@ Mirror a bucket as NFT to BSC
 
 Examples:
 # Mirror a bucket using bucket id
-$ gnfd-cmd bucket mirror --id 1
+$ gnfd-cmd bucket mirror --destChainId 97 --id 1
 
 # Mirror a bucket using bucket name
-$ gnfd-cmd bucket mirror --bucketName yourBucketName
+$ gnfd-cmd bucket mirror --destChainId 97 --bucketName yourBucketName
 `,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     DestChainIdFlag,
+				Value:    "",
+				Usage:    "target chain id",
+				Required: true,
+			},
 			&cli.StringFlag{
 				Name:     IdFlag,
 				Value:    "",
@@ -308,18 +315,17 @@ func mirrorBucket(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-
 	id := math.NewUint(0)
 	if ctx.String(IdFlag) != "" {
 		id = math.NewUintFromString(ctx.String(IdFlag))
 	}
-
+	destChainId := ctx.Int64(DestChainIdFlag)
 	bucketName := ctx.String(bucketNameFlag)
 
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	txResp, err := client.MirrorBucket(c, id, bucketName, types.TxOption{})
+	txResp, err := client.MirrorBucket(c, sdk.ChainID(destChainId), id, bucketName, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}

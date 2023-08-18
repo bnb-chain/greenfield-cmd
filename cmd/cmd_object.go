@@ -188,12 +188,18 @@ Mirror a object as NFT to BSC
 
 Examples:
 # Mirror a object using object id
-$ gnfd-cmd object mirror --id 1
+$ gnfd-cmd object mirror --destChainId 97 --id 1
 
 # Mirror a object using bucket and object name
-$ gnfd-cmd object mirror --bucketName yourBucketName --objectName yourObjectName
+$ gnfd-cmd object mirror --destChainId 97 --bucketName yourBucketName --objectName yourObjectName
 `,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     DestChainIdFlag,
+				Value:    "",
+				Usage:    "target chain id",
+				Required: true,
+			},
 			&cli.StringFlag{
 				Name:     IdFlag,
 				Value:    "",
@@ -375,7 +381,7 @@ func putObject(ctx *cli.Context) error {
 
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
-				fmt.Printf("upload: %s to %s \n", objectName, urlInfo)
+				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
 				return nil
 			}
 		}
@@ -684,14 +690,13 @@ func mirrorObject(ctx *cli.Context) error {
 	if ctx.String(IdFlag) != "" {
 		id = math.NewUintFromString(ctx.String(IdFlag))
 	}
-
+	destChainId := ctx.Int64(DestChainIdFlag)
 	bucketName := ctx.String(bucketNameFlag)
 	objectName := ctx.String(objectNameFlag)
-
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	txResp, err := client.MirrorObject(c, id, bucketName, objectName, types.TxOption{})
+	txResp, err := client.MirrorObject(c, sdk.ChainID(destChainId), id, bucketName, objectName, types.TxOption{})
 	if err != nil {
 		return toCmdErr(err)
 	}
