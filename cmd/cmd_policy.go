@@ -349,8 +349,8 @@ func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType
 		defer cancelGetPolicy()
 
 		policyInfo, err := client.GetGroupPolicy(c, groupName, grantee)
-		if err == nil {
-			fmt.Printf("latest group policy info:  \n %s\n", policyInfo.String())
+		if err != nil {
+			return toCmdErr(err)
 		}
 
 		resourceName := "group:" + groupName

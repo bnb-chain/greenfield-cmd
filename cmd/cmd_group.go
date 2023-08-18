@@ -168,7 +168,7 @@ Returns list of all groups that the account has joined
 You need also set the account address using --address if you are not the account
 
 Examples:
-$ gnfd-cmd group --address ls-belong`,
+$ gnfd-cmd group ls-belong --address`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     addressFlag,
@@ -481,7 +481,8 @@ func listGroup(ctx *cli.Context) error {
 			break
 		}
 
-		initStartKey = groupList.Groups[memberNum-1].Group.Id.String()
+		id := groupList.Groups[memberNum-1].Group.Id
+		initStartKey = strconv.FormatUint(id, 10)
 	}
 
 	return nil
@@ -516,7 +517,8 @@ func listBelongGroup(ctx *cli.Context) error {
 			break
 		}
 
-		initStartKey = groupList.Groups[memberNum-1].Group.Id.String()
+		id := groupList.Groups[memberNum-1].Group.Id
+		initStartKey = strconv.FormatUint(id, 10)
 	}
 
 	return nil
@@ -543,7 +545,7 @@ func printListGroupResult(listResult *sdktypes.GroupsResult) {
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(group.CreateTime, 0).In(location)
 
-		fmt.Printf("%s %30s id:%d\n", t.Format(iso8601DateFormat), group.Group.GroupName, group.Group.Id.Uint64())
+		fmt.Printf("%s %30s id: %d\n", t.Format(iso8601DateFormat), group.Group.GroupName, group.Group.Id)
 	}
 }
 
