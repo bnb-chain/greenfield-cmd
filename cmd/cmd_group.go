@@ -458,20 +458,9 @@ func listGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	var groupAccount string
-	addrFlag := ctx.String(addressFlag)
-	if addrFlag != "" {
-		_, err = sdk.AccAddressFromHexUnsafe(addrFlag)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		groupAccount = addrFlag
-	} else {
-		acct, err := client.GetDefaultAccount()
-		if err != nil {
-			return toCmdErr(err)
-		}
-		groupAccount = acct.GetAddress().String()
+	groupOwner, err := getGroupOwner(ctx)
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	c, cancelListGroup := context.WithCancel(globalContext)
@@ -480,7 +469,8 @@ func listGroup(ctx *cli.Context) error {
 	initStartKey := ""
 	for {
 		groupList, err := client.ListGroupsByOwner(c,
-			sdktypes.GroupsOwnerPaginationOptions{Limit: maxListMemberNum, Owner: groupAccount, StartAfter: initStartKey})
+			sdktypes.GroupsOwnerPaginationOptions{Limit: maxListMemberNum, Owner: groupOwner, StartAfter: initStartKey})
+
 		if err != nil {
 			return toCmdErr(err)
 		}

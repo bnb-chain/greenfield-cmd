@@ -381,7 +381,7 @@ func putObject(ctx *cli.Context) error {
 
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
-				fmt.Printf("upload: %s to %s \n", objectName, urlInfo)
+				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
 				return nil
 			}
 		}
