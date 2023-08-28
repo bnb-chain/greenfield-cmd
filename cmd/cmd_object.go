@@ -627,7 +627,6 @@ func listObjects(ctx *cli.Context) error {
 	}
 
 	return nil
-
 }
 
 func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixName string, isRecursive bool) error {
@@ -654,6 +653,7 @@ func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixNa
 			return toCmdErr(err)
 		}
 
+		printListResult(listResult)
 		if !listResult.IsTruncated {
 			break
 		}

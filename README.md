@@ -180,6 +180,28 @@ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object file-path
 The filepath can be a specific file path, a directory path, or not set at all. 
 If not set, the command will download the content to a file with the same name as the object name in the current directory. If it is set as a directory, the command will download the object file into the directory.
 
+(3) create empty folder
+
+Please note that the object name corresponding to the folder needs to start with "/" as suffix
+```
+gnfd-cmd object put gnfd://gnfd-bucket/folder/
+```
+
+(4) upload local folder 
+
+To upload a local folder (including all the files in it), you can use --recursive flag and specify the local folder path
+```
+gnfd-cmd object put --recursive local-folder-path gnfd://gnfd-bucket/
+```
+
+(5) upload multiple files
+
+To upload multiple files by one command, you can specify all the file paths that need to be uploaded in gnfd://bucket-name
+```
+gnfd-cmd object put  filepath1 filepath2 ...  gnfd://gnfd-bucket/
+```
+
+
 #### Group Operations
 
 The group commands is used to create group, update group members, delete group and query group info.
