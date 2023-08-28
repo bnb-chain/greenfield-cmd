@@ -264,6 +264,11 @@ gnfd-cmd bucket ls
 // list objects of the bucket
 gnfd-cmd object ls gnfd://gnfd-bucket
 
+// list objects of the bucket in a recursive way
+gnfd-cmd object ls --recursive gnfd://gnfd-bucket
+
+// list the objects by prefix 
+gnfd-cmd object ls --recursive gnfd://gnfd-bucket/prefixName
 ```
 #### Delete Operations
 ```
