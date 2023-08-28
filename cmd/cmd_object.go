@@ -25,14 +25,17 @@ func cmdPutObj() *cli.Command {
 		Name:      "put",
 		Action:    putObject,
 		Usage:     "create object on chain and upload payload of object to SP",
-		ArgsUsage: "[filePath] OBJECT-URL",
+		ArgsUsage: "[filePath]...  OBJECT-URL",
 		Description: `
 Send createObject txn to chain and upload the payload of object to the storage provider.
-The command need to pass the file path inorder to compute hash roots on client
+The command need to pass the file path inorder to compute hash roots on client.
+Note that the  uploading with recursive flag only support folder.
 
 Examples:
 # create object and upload file to storage provider, the corresponding object is gnfd-object
-$ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
+$ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object,
+# upload the files inside the folders
+$ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -64,6 +67,11 @@ $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object`,
 				Usage: "indicate whether need to enable resumeable upload. Resumable upload refers to the process of uploading " +
 					"a file in multiple parts, where each part is uploaded separately.This allows the upload to be resumed from " +
 					"where it left off in case of interruptions or failures, rather than starting the entire upload process from the beginning.",
+			},
+			&cli.BoolFlag{
+				Name:  recursiveFlag,
+				Value: false,
+				Usage: "performed on all files or objects under the specified directory or prefix in a recursive way",
 			},
 		},
 	}
@@ -224,71 +232,154 @@ $ gnfd-cmd object mirror --destChainId 97 --bucketName yourBucketName --objectNa
 
 // putObject upload the payload of file, finish the third stage of putObject
 func putObject(ctx *cli.Context) error {
-	if ctx.NArg() != 1 && ctx.NArg() != 2 {
+	if ctx.NArg() < 1 {
 		return toCmdErr(fmt.Errorf("args number error"))
 	}
 
 	var (
-		uploadFolder                     = false
+		isUploadSingleFolder             bool
 		bucketName, objectName, filePath string
-		fileReader                       io.Reader
 		objectSize                       int64
 		err                              error
-		exists                           bool
 		urlInfo                          string
 	)
-
-	if ctx.NArg() == 1 {
-		urlInfo = ctx.Args().Get(0)
-		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		if strings.HasSuffix(objectName, "/") {
-			uploadFolder = true
-		} else {
-			return toCmdErr(errors.New("no file path to upload, if you need create a folder, the folder name should be end with /"))
-		}
-	} else {
-		// read the local file payload
-		filePath = ctx.Args().Get(0)
-		exists, objectSize, err = pathExists(filePath)
-		if err != nil {
-			return err
-		}
-		if !exists {
-			return fmt.Errorf("upload file not exists")
-		} else if objectSize > int64(maxFileSize) {
-			return fmt.Errorf("upload file larger than 10G ")
-		}
-
-		// Open the referenced file.
-		file, err := os.Open(filePath)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		fileReader = file
-
-		urlInfo = ctx.Args().Get(1)
-		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
-		if err != nil {
-			bucketName = ParseBucket(urlInfo)
-			if bucketName == "" {
-				return toCmdErr(errors.New("fail to parse bucket name"))
-			}
-			// if the object name has not been set, set the file name as object name
-			objectName = filepath.Base(filePath)
-		}
-	}
 
 	gnfdClient, err := NewClient(ctx, false)
 	if err != nil {
 		return err
 	}
 
-	c, cancelCreateBucket := context.WithCancel(globalContext)
-	defer cancelCreateBucket()
+	supportRecursive := ctx.Bool(recursiveFlag)
+
+	if ctx.NArg() == 1 {
+		// upload an empty folder
+		urlInfo = ctx.Args().Get(0)
+		bucketName, objectName, err = getObjAndBucketNames(urlInfo)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		if strings.HasSuffix(objectName, "/") {
+			isUploadSingleFolder = true
+		} else {
+			return toCmdErr(errors.New("no file path to upload, if you need create a folder, the folder name should be end with /"))
+		}
+
+		if err = uploadFile(bucketName, objectName, filePath, urlInfo, ctx, gnfdClient, isUploadSingleFolder, true, 0); err != nil {
+			return toCmdErr(err)
+		}
+
+	} else {
+		// upload files in folder in a recursive way
+		if supportRecursive {
+			urlInfo = ctx.Args().Get(1)
+			if err = uploadFolder(urlInfo, ctx, gnfdClient); err != nil {
+				return toCmdErr(err)
+			}
+			return nil
+		}
+
+		filePathList := make([]string, 0)
+		argNum := ctx.Args().Len()
+		for i := 0; i < argNum-1; i++ {
+			filePathList = append(filePathList, ctx.Args().Get(i))
+		}
+
+		var needUploadMutiFiles bool
+		if len(filePathList) > 1 {
+			needUploadMutiFiles = true
+		}
+
+		// upload multiple files
+		if needUploadMutiFiles {
+			urlInfo = ctx.Args().Get(argNum - 1)
+			bucketName = ParseBucket(urlInfo)
+			if bucketName == "" {
+				return toCmdErr(errors.New("fail to parse bucket name"))
+			}
+
+			for idx, fileName := range filePathList {
+				nameList := strings.Split(fileName, "/")
+				objectName = nameList[len(nameList)-1]
+				objectSize, err = parseFileByArg(ctx, idx)
+				if err != nil {
+					return toCmdErr(err)
+				}
+
+				if err = uploadFile(bucketName, objectName, fileName, urlInfo, ctx, gnfdClient, false, false, objectSize); err != nil {
+					fmt.Println("upload object:", objectName, "err", err)
+				}
+			}
+		} else {
+			// upload single file
+			objectSize, err = parseFileByArg(ctx, 0)
+			if err != nil {
+				return toCmdErr(err)
+			}
+			urlInfo = ctx.Args().Get(1)
+			bucketName, objectName, err = getObjAndBucketNames(urlInfo)
+			if err != nil {
+				bucketName = ParseBucket(urlInfo)
+				if bucketName == "" {
+					return toCmdErr(errors.New("fail to parse bucket name"))
+				}
+				// if the object name has not been set, set the file name as object name
+				objectName = filepath.Base(filePathList[0])
+			}
+			if err = uploadFile(bucketName, objectName, filePathList[0], urlInfo, ctx, gnfdClient, false, true, objectSize); err != nil {
+				return toCmdErr(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// uploadFolder upload folder and the files inside to bucket in a recursive way
+func uploadFolder(urlInfo string, ctx *cli.Context,
+	gnfdClient client.Client) error {
+	// upload folder with recursive flag
+	bucketName := ParseBucket(urlInfo)
+	if bucketName == "" {
+		return errors.New("fail to parse bucket name")
+	}
+
+	folderName := ctx.Args().Get(0)
+	fileInfo, err := os.Stat(folderName)
+	if err != nil {
+		return err
+	}
+
+	if !fileInfo.IsDir() {
+		return errors.New("failed to parse folder path with recursive flag")
+	}
+	fileInfos := make([]os.FileInfo, 0)
+	filePaths := make([]string, 0)
+	listFolderErr := filepath.Walk(folderName, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			fileInfos = append(fileInfos, info)
+			filePaths = append(filePaths, path)
+		}
+		return nil
+	})
+
+	if listFolderErr != nil {
+		return listFolderErr
+	}
+	// upload folder
+	for id, info := range fileInfos {
+		//	pathList := strings.Split(info.Name(), "/")
+		objectName := filePaths[id]
+		if uploadErr := uploadFile(bucketName, objectName, filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
+			fmt.Printf("failed to upload object: %s, error:%v \n", objectName, uploadErr)
+		}
+	}
+
+	return nil
+}
+
+func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
+	gnfdClient client.Client, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
+	fmt.Println("uploading file path:", filePath, "object name:", objectName)
 
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
@@ -319,23 +410,34 @@ func putObject(ctx *cli.Context) error {
 		opts.SecondarySPAccs = addrList
 	}
 
-	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	c, cancelPutObject := context.WithCancel(globalContext)
+	defer cancelPutObject()
+
+	_, err := gnfdClient.HeadObject(c, bucketName, objectName)
 	var txnHash string
 	// if err==nil, object exist on chain, no need to createObject
 	if err != nil {
-		if uploadFolder {
+		if uploadSigleFolder {
 			txnHash, err = gnfdClient.CreateFolder(c, bucketName, objectName, opts)
 			if err != nil {
 				return toCmdErr(err)
 			}
 		} else {
-			txnHash, err = gnfdClient.CreateObject(c, bucketName, objectName, fileReader, opts)
+			// Open the referenced file.
+			file, err := os.Open(filePath)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			txnHash, err = gnfdClient.CreateObject(c, bucketName, objectName, file, opts)
 			if err != nil {
 				return toCmdErr(err)
 			}
 		}
-		fmt.Printf("object %s created on chain \n", objectName)
-		fmt.Println("transaction hash: ", txnHash)
+		if printTxnHash {
+			fmt.Printf("object %s created on chain \n", objectName)
+			fmt.Println("transaction hash: ", txnHash)
+		}
 	} else {
 		fmt.Printf("object %s already exist \n", objectName)
 	}
@@ -361,8 +463,7 @@ func putObject(ctx *cli.Context) error {
 
 	if err = gnfdClient.PutObject(c, bucketName, objectName,
 		objectSize, reader, opt); err != nil {
-		fmt.Println("put object fail:", err.Error())
-		return nil
+		return toCmdErr(err)
 	}
 
 	// Check if object is sealed
@@ -374,9 +475,9 @@ func putObject(ctx *cli.Context) error {
 		case <-timeout:
 			return toCmdErr(errors.New("object not sealed after 15 seconds"))
 		case <-ticker.C:
-			headObjOutput, err := gnfdClient.HeadObject(c, bucketName, objectName)
-			if err != nil {
-				return err
+			headObjOutput, queryErr := gnfdClient.HeadObject(c, bucketName, objectName)
+			if queryErr != nil {
+				return queryErr
 			}
 
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
@@ -386,7 +487,6 @@ func putObject(ctx *cli.Context) error {
 			}
 		}
 	}
-
 }
 
 // getObject download the object payload from sp
@@ -553,8 +653,8 @@ func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixNa
 		if err != nil {
 			return toCmdErr(err)
 		}
-		printListResult(listResult)
-		if listResult.IsTruncated {
+
+		if !listResult.IsTruncated {
 			break
 		}
 
@@ -665,7 +765,7 @@ func pathExists(path string) (bool, int64, error) {
 
 	if err == nil {
 		if stat.IsDir() {
-			return false, 0, fmt.Errorf("not support upload dir")
+			return false, 0, fmt.Errorf("not support upload dir without recursive flag")
 		}
 		return true, stat.Size(), nil
 	}
