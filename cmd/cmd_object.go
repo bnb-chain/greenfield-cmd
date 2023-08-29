@@ -379,7 +379,6 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
 	gnfdClient client.Client, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
-	fmt.Println("uploading file path:", filePath, "object name:", objectName)
 
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
