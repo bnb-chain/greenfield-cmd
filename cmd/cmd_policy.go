@@ -532,6 +532,10 @@ func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNam
 	// get the latest policy from chain
 	groupId := ctx.Uint64(groupIDFlag)
 	grantee := ctx.String(granteeFlag)
+
+	if groupId == 0 && grantee == "" {
+		return toCmdErr(errors.New("failed to parse group id or grantee info"))
+	}
 	c, cancelPolicy := context.WithCancel(globalContext)
 	defer cancelPolicy()
 	var policyInfo *permTypes.Policy
@@ -585,7 +589,7 @@ func listBucketPolicy(ctx *cli.Context, cli client.Client, bucketName, resourceN
 	if err != nil {
 		return err
 	}
-	
+
 	listPolicyInfo(groupId, grantee, resourceName, *policyInfo)
 	return nil
 }

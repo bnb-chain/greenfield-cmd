@@ -21,7 +21,7 @@ To obtain the latest release, please visit the following URL: https://github.com
 git clone https://github.com/bnb-chain/greenfield-cmd.git
 cd greenfield-cmd
 # Find the latest release here: https://github.com/bnb-chain/greenfield-cmd/releases
-git checkout -b branch-name v0.0.9
+git checkout -b branch-name v0.1.0
 make build
 cd build
 ./gnfd-cmd -h
@@ -34,7 +34,7 @@ When running commands that interact with the greenfield, if there is no config/c
 the tool will generate the config/config.toml file automatically which is consistent with the testnet configuration under the path.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
-For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
+For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://docs.bnbchain.org/greenfield-docs/docs/api/endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
@@ -180,6 +180,30 @@ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object file-path
 The filepath can be a specific file path, a directory path, or not set at all. 
 If not set, the command will download the content to a file with the same name as the object name in the current directory. If it is set as a directory, the command will download the object file into the directory.
 
+(3) create empty folder
+
+Please note that the object name corresponding to the folder needs to end with "/" as suffix
+```
+gnfd-cmd object put gnfd://gnfd-bucket/folder/
+```
+
+(4) upload local folder 
+
+To upload a local folder (including all the files in it), you can use --recursive flag and specify the local folder path
+```
+gnfd-cmd object put --recursive local-folder-path gnfd://gnfd-bucket
+```
+
+(5) upload multiple files
+
+To upload multiple files by one command, you can specify all the file paths that need to be uploaded one by one. 
+The files will be uploaded to the same bucket.
+
+```
+gnfd-cmd object put  filepath1 filepath2 ...  gnfd://gnfd-bucket
+```
+
+
 #### Group Operations
 
 The group commands is used to create group, update group members, delete group and query group info.
@@ -242,6 +266,11 @@ gnfd-cmd bucket ls
 // list objects of the bucket
 gnfd-cmd object ls gnfd://gnfd-bucket
 
+// list objects of the bucket in a recursive way
+gnfd-cmd object ls --recursive gnfd://gnfd-bucket
+
+// list the objects by prefix 
+gnfd-cmd object ls --recursive gnfd://gnfd-bucket/prefixName
 ```
 #### Delete Operations
 ```

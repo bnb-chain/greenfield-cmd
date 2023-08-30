@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	Version               = "v0.1.0-alpha.2"
+	Version               = "v0.1.0"
 	maxFileSize           = 10 * 1024 * 1024 * 1024
 	publicReadType        = "public-read"
 	privateType           = "private"
@@ -522,4 +522,17 @@ func getUserAddress(ctx *cli.Context) (string, error) {
 		userAddress = k.Address
 	}
 	return userAddress, nil
+}
+
+func parseFileByArg(ctx *cli.Context, argIndex int) (int64, error) {
+	exists, objectSize, err := pathExists(ctx.Args().Get(argIndex))
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, fmt.Errorf("upload file not exists")
+	} else if objectSize > int64(maxFileSize) {
+		return 0, fmt.Errorf("upload file larger than 10G ")
+	}
+	return objectSize, nil
 }
