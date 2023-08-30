@@ -21,7 +21,7 @@ To obtain the latest release, please visit the following URL: https://github.com
 git clone https://github.com/bnb-chain/greenfield-cmd.git
 cd greenfield-cmd
 # Find the latest release here: https://github.com/bnb-chain/greenfield-cmd/releases
-git checkout -b branch-name v0.0.9
+git checkout -b branch-name v0.1.0
 make build
 cd build
 ./gnfd-cmd -h
@@ -182,7 +182,7 @@ If not set, the command will download the content to a file with the same name a
 
 (3) create empty folder
 
-Please note that the object name corresponding to the folder needs to start with "/" as suffix
+Please note that the object name corresponding to the folder needs to end with "/" as suffix
 ```
 gnfd-cmd object put gnfd://gnfd-bucket/folder/
 ```
@@ -191,14 +191,16 @@ gnfd-cmd object put gnfd://gnfd-bucket/folder/
 
 To upload a local folder (including all the files in it), you can use --recursive flag and specify the local folder path
 ```
-gnfd-cmd object put --recursive local-folder-path gnfd://gnfd-bucket/
+gnfd-cmd object put --recursive local-folder-path gnfd://gnfd-bucket
 ```
 
 (5) upload multiple files
 
-To upload multiple files by one command, you can specify all the file paths that need to be uploaded in gnfd://bucket-name
+To upload multiple files by one command, you can specify all the file paths that need to be uploaded one by one. 
+The files will be uploaded to the same bucket.
+
 ```
-gnfd-cmd object put  filepath1 filepath2 ...  gnfd://gnfd-bucket/
+gnfd-cmd object put  filepath1 filepath2 ...  gnfd://gnfd-bucket
 ```
 
 
