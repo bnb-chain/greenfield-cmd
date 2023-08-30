@@ -34,7 +34,7 @@ When running commands that interact with the greenfield, if there is no config/c
 the tool will generate the config/config.toml file automatically which is consistent with the testnet configuration under the path.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
-For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://greenfield.bnbchain.org/docs/guide/resources.html#rpc-endpoints).
+For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://docs.bnbchain.org/greenfield-docs/docs/api/endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
 ```
 rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
