@@ -1,11 +1,14 @@
 # Changelog
 
+## v0.1.0
+
+FEATURES
+* [#83](https://github.com/bnb-chain/greenfield-cmd/pull/83)  support uploading multiple files or folder by one command 
 
 ## v0.1.0-alpha.2
 
 FEATURES
 * [#80](https://github.com/bnb-chain/greenfield-cmd/pull/80) update depenency and support group new API, including "group ls ", "group ls-member", "group ls-belong" and "policy ls"
-
 
 ## v0.1.0-alpha.1
 
