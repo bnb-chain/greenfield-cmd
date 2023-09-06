@@ -110,7 +110,8 @@ func getQuotaInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("quota info:\n charged quota:%d \n free quota:%d \n consumed quota:%d \n free consumed quota: %d \n",
+	fmt.Printf("quota info:\n charged quota:%d \n free quota:%d \n consumed charged quota:%d \n consumed free quota: %d \n",
 		quotaInfo.ReadQuotaSize, quotaInfo.SPFreeReadQuotaSize, quotaInfo.ReadConsumedSize, quotaInfo.FreeConsumedSize)
+
 	return nil
 }
