@@ -74,6 +74,11 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Value: false,
 				Usage: "performed on all files or objects under the specified directory or prefix in a recursive way",
 			},
+			&cli.BoolFlag{
+				Name:  bypassSealFlag,
+				Value: false,
+				Usage: "if set this flag as true, it will not wait for the file to be sealed after the uploading is completed.",
+			},
 		},
 	}
 }
@@ -400,6 +405,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	partSize := ctx.Uint64(partSizeFlag)
 	resumableUpload := ctx.Bool(resumableFlag)
 
+	bypassSeal := ctx.Bool(bypassSealFlag)
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
@@ -480,20 +486,29 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		return toCmdErr(err)
 	}
 
-	// Check if object is sealed
-	timeout := time.After(15 * time.Second)
-	ticker := time.NewTicker(2 * time.Second)
+	if bypassSeal {
+		fmt.Printf("upload %s to %s \n", objectName, urlInfo)
+		return nil
+	}
 
+	// Check if object is sealed
+	timeout := time.After(1 * time.Hour)
+	ticker := time.NewTicker(3 * time.Second)
+	count := 0
+	fmt.Println("sealing...")
 	for {
 		select {
 		case <-timeout:
 			return toCmdErr(errors.New("object not sealed after 15 seconds"))
 		case <-ticker.C:
+			count++
 			headObjOutput, queryErr := gnfdClient.HeadObject(c, bucketName, objectName)
 			if queryErr != nil {
 				return queryErr
 			}
-
+			if count%10 == 0 {
+				fmt.Println("sealing...")
+			}
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
