@@ -399,7 +399,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
 	gnfdClient client.Client, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
-
+	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
@@ -444,7 +444,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			}
 		} else {
 			// Open the referenced file.
-			file, err := os.Open(filePath)
+			file, err = os.Open(filePath)
 			if err != nil {
 				return err
 			}
@@ -481,8 +481,13 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	}
 	defer reader.Close()
 
+	progressReader := &ProgressReader{
+		Reader: reader,
+		Total:  objectSize,
+	}
+
 	if err = gnfdClient.PutObject(c, bucketName, objectName,
-		objectSize, reader, opt); err != nil {
+		objectSize, progressReader, opt); err != nil {
 		return toCmdErr(err)
 	}
 
@@ -495,6 +500,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	timeout := time.After(1 * time.Hour)
 	ticker := time.NewTicker(3 * time.Second)
 	count := 0
+	fmt.Println()
 	fmt.Println("sealing...")
 	for {
 		select {
@@ -602,6 +608,24 @@ func getObject(ctx *cli.Context) error {
 	}
 
 	return nil
+}
+
+type ProgressReader struct {
+	io.Reader
+	Total   int64
+	Current int64
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.Reader.Read(p)
+	pr.Current += int64(n)
+	pr.printProgress()
+	return n, err
+}
+
+func (pr *ProgressReader) printProgress() {
+	progress := float64(pr.Current) / float64(pr.Total) * 100
+	fmt.Printf("\ruploading progress：%.2f%%", progress)
 }
 
 // cancelCreateObject cancel the created object on chain
