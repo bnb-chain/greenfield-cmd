@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -387,8 +388,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	}
 	// upload folder
 	for id, info := range fileInfos {
-		//	pathList := strings.Split(info.Name(), "/")
-		objectName := filePaths[id]
+		objectName := path.Base(filePaths[id])
 		if uploadErr := uploadFile(bucketName, objectName, filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
 			fmt.Printf("failed to upload object: %s, error:%v \n", objectName, uploadErr)
 		}
@@ -497,7 +497,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	}
 
 	if bypassSeal {
-		fmt.Printf("upload %s to %s \n", objectName, urlInfo)
+		fmt.Printf("\nupload %s to %s \n", objectName, urlInfo)
 		return nil
 	}
 
@@ -571,6 +571,30 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
+<<<<<<< HEAD
+=======
+	st, err := os.Stat(filePath)
+	if err == nil {
+		// If the destination exists and is a directory.
+		if st.IsDir() {
+			fmt.Printf("file:%s is a directory\n", filePath)
+			filePath = filePath + "/" + objectName
+		}
+		fmt.Printf("download file:%s already exist\n", filePath)
+		return nil
+	}
+
+	dir := filepath.Dir(filePath)
+	fileName := "." + filepath.Base(filePath) + ".tmp"
+	tempFilePath := filepath.Join(dir, fileName)
+	// download to the temp file firstly
+	fd, err := os.OpenFile(tempFilePath, os.O_CREATE|os.O_WRONLY, 0660)
+	if err != nil {
+		return err
+	}
+
+	defer fd.Close()
+>>>>>>> db6e1d5 (fix: fix recursive parse object name error)
 	opt := sdktypes.GetObjectOptions{}
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
