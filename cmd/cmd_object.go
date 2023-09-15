@@ -633,6 +633,12 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
+	err = os.Rename(tempFilePath, filePath)
+	if err != nil {
+		fmt.Printf("failed to rename %s to %s \n", tempFilePath, filePath)
+		return nil
+	}
+
 	fmt.Printf("\ndownload object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 
 	return nil
