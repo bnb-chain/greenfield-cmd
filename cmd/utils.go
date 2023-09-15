@@ -538,3 +538,39 @@ func parseFileByArg(ctx *cli.Context, argIndex int) (int64, error) {
 	}
 	return objectSize, nil
 }
+
+type ProgressReader struct {
+	io.Reader
+	Total   int64
+	Current int64
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.Reader.Read(p)
+	pr.Current += int64(n)
+	pr.printProgress()
+	return n, err
+}
+
+func (pr *ProgressReader) printProgress() {
+	progress := float64(pr.Current) / float64(pr.Total) * 100
+	fmt.Printf("\ruploading progress：%.2f%%", progress)
+}
+
+type ProgressWriter struct {
+	io.Writer
+	Total   int64
+	Current int64
+}
+
+func (pw *ProgressWriter) Write(p []byte) (int, error) {
+	n, err := pw.Writer.Write(p)
+	pw.Current += int64(n)
+	pw.printProgress()
+	return n, err
+}
+
+func (pw *ProgressWriter) printProgress() {
+	progress := float64(pw.Current) / float64(pw.Total) * 100
+	fmt.Printf("\rdownloading progress：%.2f%%", progress)
+}

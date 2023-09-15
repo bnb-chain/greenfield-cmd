@@ -549,7 +549,7 @@ func getObject(ctx *cli.Context) error {
 	c, cancelGetObject := context.WithCancel(globalContext)
 	defer cancelGetObject()
 
-	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		return toCmdErr(ErrObjectNotExist)
 	}
@@ -592,45 +592,50 @@ func getObject(ctx *cli.Context) error {
 		}
 		fmt.Printf("resumable download object %s, the file path is %s \n", objectName, filePath)
 	} else {
-		// If file exist, open it in append mode
-		fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+		var fd *os.File
+		dir := filepath.Dir(filePath)
+		fileName := "." + filepath.Base(filePath) + ".tmp"
+		tempFilePath := filepath.Join(dir, fileName)
+
+		tempFilePath, err = checkIfDownloadFileExist(tempFilePath, objectName)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		// download to the temp file firstly
+		fd, err = os.OpenFile(tempFilePath, os.O_CREATE|os.O_WRONLY, 0660)
 		if err != nil {
 			return err
 		}
 
 		defer fd.Close()
 
-		body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		pw := &ProgressWriter{
+			Writer:      fd,
+			Total:       int64(chainInfo.ObjectInfo.PayloadSize),
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		body, info, getErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		if getErr != nil {
+			return toCmdErr(err)
+		}
+
+		_, err = io.Copy(pw, body)
 		if err != nil {
 			return toCmdErr(err)
 		}
 
-		_, err = io.Copy(fd, body)
+		err = os.Rename(tempFilePath, filePath)
 		if err != nil {
-			return toCmdErr(err)
+			fmt.Printf("failed to rename %s to %s \n", tempFilePath, filePath)
+			return nil
 		}
-		fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 	}
 
+	fmt.Printf("\ndownload object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+
 	return nil
-}
-
-type ProgressReader struct {
-	io.Reader
-	Total   int64
-	Current int64
-}
-
-func (pr *ProgressReader) Read(p []byte) (int, error) {
-	n, err := pr.Reader.Read(p)
-	pr.Current += int64(n)
-	pr.printProgress()
-	return n, err
-}
-
-func (pr *ProgressReader) printProgress() {
-	progress := float64(pr.Current) / float64(pr.Total) * 100
-	fmt.Printf("\ruploading progress：%.2f%%", progress)
 }
 
 // cancelCreateObject cancel the created object on chain
