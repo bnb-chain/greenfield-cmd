@@ -571,30 +571,6 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-<<<<<<< HEAD
-=======
-	st, err := os.Stat(filePath)
-	if err == nil {
-		// If the destination exists and is a directory.
-		if st.IsDir() {
-			fmt.Printf("file:%s is a directory\n", filePath)
-			filePath = filePath + "/" + objectName
-		}
-		fmt.Printf("download file:%s already exist\n", filePath)
-		return nil
-	}
-
-	dir := filepath.Dir(filePath)
-	fileName := "." + filepath.Base(filePath) + ".tmp"
-	tempFilePath := filepath.Join(dir, fileName)
-	// download to the temp file firstly
-	fd, err := os.OpenFile(tempFilePath, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
->>>>>>> db6e1d5 (fix: fix recursive parse object name error)
 	opt := sdktypes.GetObjectOptions{}
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
@@ -655,15 +631,8 @@ func getObject(ctx *cli.Context) error {
 			fmt.Printf("failed to rename %s to %s \n", tempFilePath, filePath)
 			return nil
 		}
+		fmt.Printf("\ndownload object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 	}
-
-	err = os.Rename(tempFilePath, filePath)
-	if err != nil {
-		fmt.Printf("failed to rename %s to %s \n", tempFilePath, filePath)
-		return nil
-	}
-
-	fmt.Printf("\ndownload object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 
 	return nil
 }

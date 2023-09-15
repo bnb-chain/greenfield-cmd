@@ -541,8 +541,10 @@ func parseFileByArg(ctx *cli.Context, argIndex int) (int64, error) {
 
 type ProgressReader struct {
 	io.Reader
-	Total   int64
-	Current int64
+	Total       int64
+	Current     int64
+	StartTime   time.Time
+	LastPrinted time.Time
 }
 
 func (pr *ProgressReader) Read(p []byte) (int, error) {
@@ -554,13 +556,23 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 
 func (pr *ProgressReader) printProgress() {
 	progress := float64(pr.Current) / float64(pr.Total) * 100
-	fmt.Printf("\ruploading progress：%.2f%%", progress)
+	now := time.Now()
+	elapsed := now.Sub(pr.StartTime)
+	uploadSpeed := float64(pr.Current) / elapsed.Seconds()
+
+	if now.Sub(pr.LastPrinted) >= time.Second { // print rate every second
+		fmt.Printf("\ruploading progress: %.2f%% [ %s / %s ], : %s",
+			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
+		pr.LastPrinted = now
+	}
 }
 
 type ProgressWriter struct {
 	io.Writer
-	Total   int64
-	Current int64
+	Total       int64
+	Current     int64
+	StartTime   time.Time
+	LastPrinted time.Time
 }
 
 func (pw *ProgressWriter) Write(p []byte) (int, error) {
@@ -572,5 +584,45 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 
 func (pw *ProgressWriter) printProgress() {
 	progress := float64(pw.Current) / float64(pw.Total) * 100
-	fmt.Printf("\rdownloading progress：%.2f%%", progress)
+	now := time.Now()
+
+	elapsed := now.Sub(pw.StartTime)
+	downloadedBytes := pw.Current
+	downloadSpeed := float64(downloadedBytes) / elapsed.Seconds()
+
+	if now.Sub(pw.LastPrinted) >= time.Second { // print rate every second
+		fmt.Printf("\rdownloding progress: %.2f%% [ %s / %s ], : %s",
+			progress, getConvertSize(pw.Current), getConvertSize(pw.Total), getConvertRate(downloadSpeed))
+		pw.LastPrinted = now
+	}
+}
+
+func getConvertSize(fileSize int64) string {
+	var convertedSize string
+	if fileSize > 1<<30 {
+		convertedSize = fmt.Sprintf("%.2fG", float64(fileSize)/(1<<30))
+	} else if fileSize > 1<<20 {
+		convertedSize = fmt.Sprintf("%.2fM", float64(fileSize)/(1<<20))
+	} else if fileSize > 1<<10 {
+		convertedSize = fmt.Sprintf("%.2fK", float64(fileSize)/(1<<10))
+	} else {
+		convertedSize = fmt.Sprintf("%dB", fileSize)
+	}
+	return convertedSize
+}
+
+func getConvertRate(rate float64) string {
+	const (
+		KB = 1024
+		MB = 1024 * KB
+	)
+
+	switch {
+	case rate >= MB:
+		return fmt.Sprintf("%.2f MB/s", rate/MB)
+	case rate >= KB:
+		return fmt.Sprintf("%.2f KB/s", rate/KB)
+	default:
+		return fmt.Sprintf("%.2f Byte /s", rate)
+	}
 }
