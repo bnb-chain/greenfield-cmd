@@ -57,7 +57,7 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 			},
 			&cli.Uint64Flag{
 				Name:  partSizeFlag,
-				Value: 16 * 1024 * 1024,
+				Value: 32 * 1024 * 1024,
 				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
 					"The part size is an integer multiple of the segment size.",
 			},
@@ -100,6 +100,19 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 				Name:  endOffsetFlag,
 				Value: 0,
 				Usage: "end offset info of the download body",
+			},
+			&cli.Uint64Flag{
+				Name:  partSizeFlag,
+				Value: 32 * 1024 * 1024,
+				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
+					"The part size is an integer multiple of the segment size.",
+			},
+			&cli.BoolFlag{
+				Name:  resumableDownloadFlag,
+				Value: false,
+				Usage: "indicate whether need to enable resumeable download. Resumable download refers to the process of download " +
+					"a file in multiple parts, where each part is downloaded separately.This allows the download to be resumed from " +
+					"where it left off in case of interruptions or failures, rather than starting the entire download process from the beginning.",
 			},
 		},
 	}
@@ -530,16 +543,11 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-	// If file exist, open it in append mode
-	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
 	opt := sdktypes.GetObjectOptions{}
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
+	partSize := ctx.Uint64(partSizeFlag)
+	resumableDownload := ctx.Bool(resumableDownloadFlag)
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
@@ -548,17 +556,35 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-	body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
-	if err != nil {
-		return toCmdErr(err)
-	}
+	if resumableDownload {
+		opt.PartSize = partSize
+		err = gnfdClient.FGetObjectResumable(c, bucketName, objectName, filePath, opt)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		fmt.Printf("resumable download object %s, the file path is %s \n", objectName, filePath)
 
-	_, err = io.Copy(fd, body)
-	if err != nil {
-		return toCmdErr(err)
-	}
+	} else {
+		// If file exist, open it in append mode
+		fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+		if err != nil {
+			return err
+		}
 
-	fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+		defer fd.Close()
+
+		body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		_, err = io.Copy(fd, body)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+
+	}
 
 	return nil
 }
