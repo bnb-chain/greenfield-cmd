@@ -486,6 +486,11 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		Total:  objectSize,
 	}
 
+	// if the file is more than 2G , it needs to force use resume uploading
+	if objectSize > maxPutWithoutResumeSize {
+		opt.DisableResumable = false
+	}
+
 	if err = gnfdClient.PutObject(c, bucketName, objectName,
 		objectSize, progressReader, opt); err != nil {
 		return toCmdErr(err)
