@@ -56,13 +56,14 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Usage: "set visibility of the object",
 			},
 			&cli.Uint64Flag{
-				Name:  partSizeFlag,
+				Name: partSizeFlag,
+				// the default part size is 32M
 				Value: 32 * 1024 * 1024,
 				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
 					"The part size is an integer multiple of the segment size.",
 			},
 			&cli.BoolFlag{
-				Name:  resumableUploadFlag,
+				Name:  resumableFlag,
 				Value: false,
 				Usage: "indicate whether need to enable resumeable upload. Resumable upload refers to the process of uploading " +
 					"a file in multiple parts, where each part is uploaded separately.This allows the upload to be resumed from " +
@@ -102,13 +103,14 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 				Usage: "end offset info of the download body",
 			},
 			&cli.Uint64Flag{
-				Name:  partSizeFlag,
+				Name: partSizeFlag,
+				// the default part size is 32M
 				Value: 32 * 1024 * 1024,
 				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
 					"The part size is an integer multiple of the segment size.",
 			},
 			&cli.BoolFlag{
-				Name:  resumableDownloadFlag,
+				Name:  resumableFlag,
 				Value: false,
 				Usage: "indicate whether need to enable resumeable download. Resumable download refers to the process of download " +
 					"a file in multiple parts, where each part is downloaded separately.This allows the download to be resumed from " +
@@ -396,7 +398,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
-	resumableUpload := ctx.Bool(resumableUploadFlag)
+	resumableUpload := ctx.Bool(resumableFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
@@ -547,7 +549,7 @@ func getObject(ctx *cli.Context) error {
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
 	partSize := ctx.Uint64(partSizeFlag)
-	resumableDownload := ctx.Bool(resumableDownloadFlag)
+	resumableDownload := ctx.Bool(resumableFlag)
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
@@ -563,7 +565,6 @@ func getObject(ctx *cli.Context) error {
 			return toCmdErr(err)
 		}
 		fmt.Printf("resumable download object %s, the file path is %s \n", objectName, filePath)
-
 	} else {
 		// If file exist, open it in append mode
 		fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
@@ -583,7 +584,6 @@ func getObject(ctx *cli.Context) error {
 			return toCmdErr(err)
 		}
 		fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
-
 	}
 
 	return nil
