@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"cosmossdk.io/math"
 
@@ -285,10 +286,9 @@ func listBuckets(ctx *cli.Context) error {
 		return nil
 	}
 
-	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{ShowRemovedBucket: false, EndPointOptions: &sdktypes.EndPointOptions{
-		Endpoint:  spInfo[0].Endpoint,
-		SPAddress: "",
-	}})
+	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{ShowRemovedBucket: false,
+		Endpoint: spInfo[0].Endpoint,
+	})
 	if err != nil {
 		return toCmdErr(err)
 	}
