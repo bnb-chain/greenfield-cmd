@@ -481,19 +481,32 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	}
 	defer reader.Close()
 
-	progressReader := &ProgressReader{
-		Reader: reader,
-		Total:  objectSize,
-	}
-
 	// if the file is more than 2G , it needs to force use resume uploading
 	if objectSize > maxPutWithoutResumeSize {
 		opt.DisableResumable = false
 	}
 
-	if err = gnfdClient.PutObject(c, bucketName, objectName,
-		objectSize, progressReader, opt); err != nil {
-		return toCmdErr(err)
+	if opt.DisableResumable {
+		progressReader := &ProgressReader{
+			Reader:      reader,
+			Total:       objectSize,
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		if objectSize > objectLargerSize {
+			progressReader.LastPrinted = time.Now().Add(2 * time.Second)
+		}
+
+		if err = gnfdClient.PutObject(c, bucketName, objectName,
+			objectSize, progressReader, opt); err != nil {
+			return toCmdErr(err)
+		}
+	} else {
+		if err = gnfdClient.PutObject(c, bucketName, objectName,
+			objectSize, reader, opt); err != nil {
+			return toCmdErr(err)
+		}
 	}
 
 	if bypassSeal {

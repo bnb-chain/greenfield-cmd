@@ -565,10 +565,8 @@ func (pr *ProgressReader) printProgress() {
 	if now.Sub(pr.LastPrinted) >= time.Second { // print rate every second
 		progressStr := fmt.Sprintf("uploading progress: %.2f%% [ %s / %s ], rate: %s",
 			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
-
 		// Clear current line
 		fmt.Print("\r", strings.Repeat(" ", len(pr.LastPrintedStr)), "\r")
-
 		// Print new progress
 		fmt.Print(progressStr)
 
