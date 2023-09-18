@@ -403,9 +403,14 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
+<<<<<<< HEAD
 	resumableUpload := ctx.Bool(resumableFlag)
 
+=======
+>>>>>>> 83af1a5 (feat: support resumable download (#89))
 	bypassSeal := ctx.Bool(bypassSealFlag)
+	resumableUpload := ctx.Bool(resumableFlag)
+
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
@@ -531,6 +536,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
+	var err error
 	if ctx.NArg() < 1 {
 		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
@@ -569,6 +575,11 @@ func getObject(ctx *cli.Context) error {
 				}
 			}
 		}
+	}
+
+	filePath, err = checkIfDownloadFileExist(filePath, objectName)
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	opt := sdktypes.GetObjectOptions{}
