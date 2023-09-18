@@ -403,13 +403,8 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
-<<<<<<< HEAD
 	resumableUpload := ctx.Bool(resumableFlag)
-
-=======
->>>>>>> 83af1a5 (feat: support resumable download (#89))
 	bypassSeal := ctx.Bool(bypassSealFlag)
-	resumableUpload := ctx.Bool(resumableFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
