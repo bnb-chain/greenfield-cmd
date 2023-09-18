@@ -561,7 +561,7 @@ func (pr *ProgressReader) printProgress() {
 	uploadSpeed := float64(pr.Current) / elapsed.Seconds()
 
 	if now.Sub(pr.LastPrinted) >= time.Second { // print rate every second
-		fmt.Printf("\ruploading progress: %.2f%% [ %s / %s ], : %s",
+		fmt.Printf("\ruploading progress: %.2f%% [ %s / %s ], rate:  %10s",
 			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
 		pr.LastPrinted = now
 	}
@@ -591,7 +591,7 @@ func (pw *ProgressWriter) printProgress() {
 	downloadSpeed := float64(downloadedBytes) / elapsed.Seconds()
 
 	if now.Sub(pw.LastPrinted) >= time.Second { // print rate every second
-		fmt.Printf("\rdownloding progress: %.2f%% [ %s / %s ], : %s",
+		fmt.Printf("\rdownloding progress: %.2f%% [ %s / %s ], rate: %s  ",
 			progress, getConvertSize(pw.Current), getConvertSize(pw.Total), getConvertRate(downloadSpeed))
 		pw.LastPrinted = now
 	}
@@ -623,6 +623,19 @@ func getConvertRate(rate float64) string {
 	case rate >= KB:
 		return fmt.Sprintf("%.2f KB/s", rate/KB)
 	default:
-		return fmt.Sprintf("%.2f Byte /s", rate)
+		return fmt.Sprintf("%.2f Byte/s", rate)
 	}
+}
+
+func checkIfDownloadFileExist(filePath, objectName string) (string, error) {
+	st, err := os.Stat(filePath)
+	if err == nil {
+		// If the destination exists and is a directory.
+		if st.IsDir() {
+			filePath = filePath + "/" + objectName
+			return filePath, nil
+		}
+		return filePath, fmt.Errorf("download file:%s already exist\n", filePath)
+	}
+	return filePath, nil
 }
