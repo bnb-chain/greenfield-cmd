@@ -93,8 +93,8 @@ const (
 	objectNameFlag     = "objectName"
 
 	// resumable download & upload
-	partSizeFlag        = "partSize"
-	resumableUploadFlag = "resumableUpload"
+	partSizeFlag  = "partSize"
+	resumableFlag = "resumable"
 
 	operatorAddressLen = 42
 	exitStatus         = "GRACEFUL_EXITING"
