@@ -105,6 +105,7 @@ const (
 
 	noBalanceErr     = "key not found"
 	maxListMemberNum = 1000
+	objectLargerSize = 10 * 1024 * 1024
 )
 
 var (
@@ -541,10 +542,11 @@ func parseFileByArg(ctx *cli.Context, argIndex int) (int64, error) {
 
 type ProgressReader struct {
 	io.Reader
-	Total       int64
-	Current     int64
-	StartTime   time.Time
-	LastPrinted time.Time
+	Total          int64
+	Current        int64
+	StartTime      time.Time
+	LastPrinted    time.Time
+	LastPrintedStr string
 }
 
 func (pr *ProgressReader) Read(p []byte) (int, error) {
@@ -561,8 +563,15 @@ func (pr *ProgressReader) printProgress() {
 	uploadSpeed := float64(pr.Current) / elapsed.Seconds()
 
 	if now.Sub(pr.LastPrinted) >= time.Second { // print rate every second
-		fmt.Printf("\ruploading progress: %.2f%% [ %s / %s ], rate:  %10s",
+		progressStr := fmt.Sprintf("uploading progress: %.2f%% [ %s / %s ], rate: %s",
 			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
+
+		// Clear current line
+		fmt.Print("\r", strings.Repeat(" ", len(pr.LastPrintedStr)), "\r")
+
+		// Print new progress
+		fmt.Print(progressStr)
+
 		pr.LastPrinted = now
 	}
 }

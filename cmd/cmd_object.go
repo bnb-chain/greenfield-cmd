@@ -571,29 +571,6 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-<<<<<<< HEAD
-=======
-	filePath, err = checkIfDownloadFileExist(filePath, objectName)
-	if err != nil {
-		return toCmdErr(err)
-	}
-	dir := filepath.Dir(filePath)
-	fileName := "." + filepath.Base(filePath) + ".tmp"
-	tempFilePath := filepath.Join(dir, fileName)
-
-	tempFilePath, err = checkIfDownloadFileExist(tempFilePath, objectName)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
-	// download to the temp file firstly
-	fd, err := os.OpenFile(tempFilePath, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
->>>>>>> 0adb378 (fix: fix download check exist file)
 	opt := sdktypes.GetObjectOptions{}
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
