@@ -494,7 +494,8 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			LastPrinted: time.Now(),
 		}
 
-		if objectSize > objectLargerSize {
+		// if print big file progress, the printing progress should be delayed to obtain a more accurate display.
+		if objectSize > progressDelayPrintSize {
 			progressReader.LastPrinted = time.Now().Add(2 * time.Second)
 		}
 
@@ -523,7 +524,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	for {
 		select {
 		case <-timeout:
-			return toCmdErr(errors.New("object not sealed after 15 seconds"))
+			return toCmdErr(errors.New("object not sealed after 1 hour"))
 		case <-ticker.C:
 			count++
 			headObjOutput, queryErr := gnfdClient.HeadObject(c, bucketName, objectName)

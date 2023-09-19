@@ -103,9 +103,9 @@ const (
 	StatusSPrefix      = "STATUS_"
 	defaultMaxKey      = 500
 
-	noBalanceErr     = "key not found"
-	maxListMemberNum = 1000
-	objectLargerSize = 10 * 1024 * 1024
+	noBalanceErr           = "key not found"
+	maxListMemberNum       = 1000
+	progressDelayPrintSize = 10 * 1024 * 1024
 )
 
 var (
