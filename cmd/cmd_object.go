@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -73,6 +74,11 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Name:  recursiveFlag,
 				Value: false,
 				Usage: "performed on all files or objects under the specified directory or prefix in a recursive way",
+			},
+			&cli.BoolFlag{
+				Name:  bypassSealFlag,
+				Value: false,
+				Usage: "if set this flag as true, it will not wait for the file to be sealed after the uploading is completed.",
 			},
 		},
 	}
@@ -382,8 +388,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	}
 	// upload folder
 	for id, info := range fileInfos {
-		//	pathList := strings.Split(info.Name(), "/")
-		objectName := filePaths[id]
+		objectName := path.Base(filePaths[id])
 		if uploadErr := uploadFile(bucketName, objectName, filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
 			fmt.Printf("failed to upload object: %s, error:%v \n", objectName, uploadErr)
 		}
@@ -394,11 +399,12 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
 	gnfdClient client.Client, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
-
+	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
 	resumableUpload := ctx.Bool(resumableFlag)
+	bypassSeal := ctx.Bool(bypassSealFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
@@ -438,7 +444,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			}
 		} else {
 			// Open the referenced file.
-			file, err := os.Open(filePath)
+			file, err = os.Open(filePath)
 			if err != nil {
 				return err
 			}
@@ -475,25 +481,59 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	}
 	defer reader.Close()
 
-	if err = gnfdClient.PutObject(c, bucketName, objectName,
-		objectSize, reader, opt); err != nil {
-		return toCmdErr(err)
+	// if the file is more than 2G , it needs to force use resume uploading
+	if objectSize > maxPutWithoutResumeSize {
+		opt.DisableResumable = false
+	}
+
+	if opt.DisableResumable {
+		progressReader := &ProgressReader{
+			Reader:      reader,
+			Total:       objectSize,
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		// if print big file progress, the printing progress should be delayed to obtain a more accurate display.
+		if objectSize > progressDelayPrintSize {
+			progressReader.LastPrinted = time.Now().Add(2 * time.Second)
+		}
+
+		if err = gnfdClient.PutObject(c, bucketName, objectName,
+			objectSize, progressReader, opt); err != nil {
+			return toCmdErr(err)
+		}
+	} else {
+		if err = gnfdClient.PutObject(c, bucketName, objectName,
+			objectSize, reader, opt); err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	if bypassSeal {
+		fmt.Printf("\nupload %s to %s \n", objectName, urlInfo)
+		return nil
 	}
 
 	// Check if object is sealed
-	timeout := time.After(15 * time.Second)
-	ticker := time.NewTicker(2 * time.Second)
-
+	timeout := time.After(1 * time.Hour)
+	ticker := time.NewTicker(3 * time.Second)
+	count := 0
+	fmt.Println()
+	fmt.Println("sealing...")
 	for {
 		select {
 		case <-timeout:
-			return toCmdErr(errors.New("object not sealed after 15 seconds"))
+			return toCmdErr(errors.New("object not sealed after 1 hour"))
 		case <-ticker.C:
+			count++
 			headObjOutput, queryErr := gnfdClient.HeadObject(c, bucketName, objectName)
 			if queryErr != nil {
 				return queryErr
 			}
-
+			if count%10 == 0 {
+				fmt.Println("sealing...")
+			}
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
@@ -505,6 +545,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
+	var err error
 	if ctx.NArg() < 1 {
 		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
@@ -523,7 +564,7 @@ func getObject(ctx *cli.Context) error {
 	c, cancelGetObject := context.WithCancel(globalContext)
 	defer cancelGetObject()
 
-	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		return toCmdErr(ErrObjectNotExist)
 	}
@@ -543,6 +584,11 @@ func getObject(ctx *cli.Context) error {
 				}
 			}
 		}
+	}
+
+	filePath, err = checkIfDownloadFileExist(filePath, objectName)
+	if err != nil {
+		return toCmdErr(err)
 	}
 
 	opt := sdktypes.GetObjectOptions{}
@@ -566,24 +612,46 @@ func getObject(ctx *cli.Context) error {
 		}
 		fmt.Printf("resumable download object %s, the file path is %s \n", objectName, filePath)
 	} else {
-		// If file exist, open it in append mode
-		fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+		var fd *os.File
+		dir := filepath.Dir(filePath)
+		fileName := "." + filepath.Base(filePath) + ".tmp"
+		tempFilePath := filepath.Join(dir, fileName)
+
+		tempFilePath, err = checkIfDownloadFileExist(tempFilePath, objectName)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		// download to the temp file firstly
+		fd, err = os.OpenFile(tempFilePath, os.O_CREATE|os.O_WRONLY, 0660)
 		if err != nil {
 			return err
 		}
 
 		defer fd.Close()
 
-		body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		pw := &ProgressWriter{
+			Writer:      fd,
+			Total:       int64(chainInfo.ObjectInfo.PayloadSize),
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		body, info, getErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		if getErr != nil {
+			return toCmdErr(err)
+		}
+
+		_, err = io.Copy(pw, body)
 		if err != nil {
 			return toCmdErr(err)
 		}
 
-		_, err = io.Copy(fd, body)
+		err = os.Rename(tempFilePath, filePath)
 		if err != nil {
-			return toCmdErr(err)
+			fmt.Printf("failed to rename %s to %s \n", tempFilePath, filePath)
+			return nil
 		}
-		fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+		fmt.Printf("\ndownload object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
 	}
 
 	return nil

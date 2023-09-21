@@ -28,34 +28,36 @@ import (
 )
 
 const (
-	Version               = "v0.1.0"
-	maxFileSize           = 10 * 1024 * 1024 * 1024
-	publicReadType        = "public-read"
-	privateType           = "private"
-	inheritType           = "inherit"
-	effectAllow           = "allow"
-	effectDeny            = "deny"
-	primarySPFlag         = "primarySP"
-	chargeQuotaFlag       = "chargedQuota"
-	visibilityFlag        = "visibility"
-	paymentFlag           = "paymentAddress"
-	secondarySPFlag       = "secondarySPs"
-	contentTypeFlag       = "contentType"
-	startOffsetFlag       = "start"
-	endOffsetFlag         = "end"
-	recursiveFlag         = "recursive"
-	addMemberFlag         = "addMembers"
-	removeMemberFlag      = "removeMembers"
-	renewMemberFlag       = "renewMembers"
-	groupOwnerFlag        = "groupOwner"
-	groupMemberExpireFlag = "expireTime"
-	groupIDFlag           = "groupId"
-	granteeFlag           = "grantee"
-	actionsFlag           = "actions"
-	effectFlag            = "effect"
-	expireTimeFlag        = "expire"
-	IdFlag                = "id"
-	DestChainIdFlag       = "destChainId"
+	Version                 = "v0.1.0"
+	maxFileSize             = 64 * 1024 * 1024 * 1024
+	maxPutWithoutResumeSize = 2 * 1024 * 1024 * 1024
+	publicReadType          = "public-read"
+	privateType             = "private"
+	inheritType             = "inherit"
+	effectAllow             = "allow"
+	effectDeny              = "deny"
+	primarySPFlag           = "primarySP"
+	chargeQuotaFlag         = "chargedQuota"
+	visibilityFlag          = "visibility"
+	paymentFlag             = "paymentAddress"
+	secondarySPFlag         = "secondarySPs"
+	contentTypeFlag         = "contentType"
+	startOffsetFlag         = "start"
+	endOffsetFlag           = "end"
+	recursiveFlag           = "recursive"
+	bypassSealFlag          = "bypassSeal"
+	addMemberFlag           = "addMembers"
+	removeMemberFlag        = "removeMembers"
+	renewMemberFlag         = "renewMembers"
+	groupOwnerFlag          = "groupOwner"
+	groupMemberExpireFlag   = "expireTime"
+	groupIDFlag             = "groupId"
+	granteeFlag             = "grantee"
+	actionsFlag             = "actions"
+	effectFlag              = "effect"
+	expireTimeFlag          = "expire"
+	IdFlag                  = "id"
+	DestChainIdFlag         = "destChainId"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
@@ -101,8 +103,9 @@ const (
 	StatusSPrefix      = "STATUS_"
 	defaultMaxKey      = 500
 
-	noBalanceErr     = "key not found"
-	maxListMemberNum = 1000
+	noBalanceErr           = "key not found"
+	maxListMemberNum       = 1000
+	progressDelayPrintSize = 10 * 1024 * 1024
 )
 
 var (
@@ -535,4 +538,111 @@ func parseFileByArg(ctx *cli.Context, argIndex int) (int64, error) {
 		return 0, fmt.Errorf("upload file larger than 10G ")
 	}
 	return objectSize, nil
+}
+
+type ProgressReader struct {
+	io.Reader
+	Total          int64
+	Current        int64
+	StartTime      time.Time
+	LastPrinted    time.Time
+	LastPrintedStr string
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.Reader.Read(p)
+	pr.Current += int64(n)
+	pr.printProgress()
+	return n, err
+}
+
+func (pr *ProgressReader) printProgress() {
+	progress := float64(pr.Current) / float64(pr.Total) * 100
+	now := time.Now()
+	elapsed := now.Sub(pr.StartTime)
+	uploadSpeed := float64(pr.Current) / elapsed.Seconds()
+
+	if now.Sub(pr.LastPrinted) >= time.Second { // print rate every second
+		progressStr := fmt.Sprintf("uploading progress: %.2f%% [ %s / %s ], rate: %s",
+			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
+		// Clear current line
+		fmt.Print("\r", strings.Repeat(" ", len(pr.LastPrintedStr)), "\r")
+		// Print new progress
+		fmt.Print(progressStr)
+
+		pr.LastPrinted = now
+	}
+}
+
+type ProgressWriter struct {
+	io.Writer
+	Total       int64
+	Current     int64
+	StartTime   time.Time
+	LastPrinted time.Time
+}
+
+func (pw *ProgressWriter) Write(p []byte) (int, error) {
+	n, err := pw.Writer.Write(p)
+	pw.Current += int64(n)
+	pw.printProgress()
+	return n, err
+}
+
+func (pw *ProgressWriter) printProgress() {
+	progress := float64(pw.Current) / float64(pw.Total) * 100
+	now := time.Now()
+
+	elapsed := now.Sub(pw.StartTime)
+	downloadedBytes := pw.Current
+	downloadSpeed := float64(downloadedBytes) / elapsed.Seconds()
+
+	if now.Sub(pw.LastPrinted) >= time.Second { // print rate every second
+		fmt.Printf("\rdownloding progress: %.2f%% [ %s / %s ], rate: %s  ",
+			progress, getConvertSize(pw.Current), getConvertSize(pw.Total), getConvertRate(downloadSpeed))
+		pw.LastPrinted = now
+	}
+}
+
+func getConvertSize(fileSize int64) string {
+	var convertedSize string
+	if fileSize > 1<<30 {
+		convertedSize = fmt.Sprintf("%.2fG", float64(fileSize)/(1<<30))
+	} else if fileSize > 1<<20 {
+		convertedSize = fmt.Sprintf("%.2fM", float64(fileSize)/(1<<20))
+	} else if fileSize > 1<<10 {
+		convertedSize = fmt.Sprintf("%.2fK", float64(fileSize)/(1<<10))
+	} else {
+		convertedSize = fmt.Sprintf("%dB", fileSize)
+	}
+	return convertedSize
+}
+
+func getConvertRate(rate float64) string {
+	const (
+		KB = 1024
+		MB = 1024 * KB
+	)
+
+	switch {
+	case rate >= MB:
+		return fmt.Sprintf("%.2f MB/s", rate/MB)
+	case rate >= KB:
+		return fmt.Sprintf("%.2f KB/s", rate/KB)
+	default:
+		return fmt.Sprintf("%.2f Byte/s", rate)
+	}
+}
+
+func checkIfDownloadFileExist(filePath, objectName string) (string, error) {
+	st, err := os.Stat(filePath)
+	if err == nil {
+		// If the destination exists and is a directory.
+		if st.IsDir() {
+			filePath = filePath + "/" + objectName
+			return filePath, nil
+		}
+		return filePath, fmt.Errorf("download file:%s already exist\n", filePath)
+	}
+	return filePath, nil
 }
