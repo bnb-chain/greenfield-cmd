@@ -359,7 +359,7 @@ func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType
 	return nil
 }
 
-func handleObjectPolicy(ctx *cli.Context, client client.Client, bucketName, objectName string, principal sdktypes.Principal,
+func handleObjectPolicy(ctx *cli.Context, client client.IClient, bucketName, objectName string, principal sdktypes.Principal,
 	statements []*permTypes.Statement, delete bool) error {
 	c, cancelObjectPolicy := context.WithCancel(globalContext)
 	defer cancelObjectPolicy()
@@ -393,7 +393,7 @@ func handleObjectPolicy(ctx *cli.Context, client client.Client, bucketName, obje
 	return nil
 }
 
-func handleBucketPolicy(ctx *cli.Context, client client.Client, bucketName string, principal sdktypes.Principal,
+func handleBucketPolicy(ctx *cli.Context, client client.IClient, bucketName string, principal sdktypes.Principal,
 	statements []*permTypes.Statement, delete bool) error {
 	c, cancelBucketPolicy := context.WithCancel(globalContext)
 	defer cancelBucketPolicy()
@@ -427,7 +427,7 @@ func handleBucketPolicy(ctx *cli.Context, client client.Client, bucketName strin
 	return nil
 }
 
-func handleGroupPolicy(ctx *cli.Context, client client.Client, groupName string,
+func handleGroupPolicy(ctx *cli.Context, client client.IClient, groupName string,
 	statements []*permTypes.Statement, delete bool) error {
 	c, cancelPolicy := context.WithCancel(globalContext)
 	defer cancelPolicy()
@@ -509,7 +509,7 @@ func parseGroupResource(resourceName string) (string, string, error) {
 	return objectPath[:index], objectPath[index+1:], nil
 }
 
-func printObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectName string) {
+func printObjectPolicy(ctx *cli.Context, cli client.IClient, bucketName, objectName string) {
 	// get the latest policy from chain
 	groupId := ctx.Uint64(groupIDFlag)
 	grantee := ctx.String(granteeFlag)
@@ -528,7 +528,7 @@ func printObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNa
 	}
 }
 
-func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectName, resourceName string) error {
+func listObjectPolicy(ctx *cli.Context, cli client.IClient, bucketName, objectName, resourceName string) error {
 	// get the latest policy from chain
 	groupId := ctx.Uint64(groupIDFlag)
 	grantee := ctx.String(granteeFlag)
@@ -553,7 +553,7 @@ func listObjectPolicy(ctx *cli.Context, cli client.Client, bucketName, objectNam
 	return nil
 }
 
-func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {
+func printBucketPolicy(ctx *cli.Context, cli client.IClient, bucketName string) {
 	c, cancelPolicy := context.WithCancel(globalContext)
 	defer cancelPolicy()
 	// get the latest policy from chain
@@ -572,7 +572,7 @@ func printBucketPolicy(ctx *cli.Context, cli client.Client, bucketName string) {
 	}
 }
 
-func listBucketPolicy(ctx *cli.Context, cli client.Client, bucketName, resourceName string) error {
+func listBucketPolicy(ctx *cli.Context, cli client.IClient, bucketName, resourceName string) error {
 	c, cancelPolicy := context.WithCancel(globalContext)
 	defer cancelPolicy()
 

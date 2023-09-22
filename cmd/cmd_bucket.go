@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"time"
 
 	"cosmossdk.io/math"
-
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -285,10 +284,9 @@ func listBuckets(ctx *cli.Context) error {
 		return nil
 	}
 
-	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{ShowRemovedBucket: false, EndPointOptions: &sdktypes.EndPointOptions{
-		Endpoint:  spInfo[0].Endpoint,
-		SPAddress: "",
-	}})
+	bucketListRes, err := client.ListBuckets(c, sdktypes.ListBucketsOptions{ShowRemovedBucket: false,
+		Endpoint: spInfo[0].Endpoint,
+	})
 	if err != nil {
 		return toCmdErr(err)
 	}

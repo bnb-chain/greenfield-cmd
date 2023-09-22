@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -56,13 +57,14 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Usage: "set visibility of the object",
 			},
 			&cli.Uint64Flag{
-				Name:  partSizeFlag,
-				Value: 16 * 1024 * 1024,
+				Name: partSizeFlag,
+				// the default part size is 32M
+				Value: 32 * 1024 * 1024,
 				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
 					"The part size is an integer multiple of the segment size.",
 			},
 			&cli.BoolFlag{
-				Name:  resumableUploadFlag,
+				Name:  resumableFlag,
 				Value: false,
 				Usage: "indicate whether need to enable resumeable upload. Resumable upload refers to the process of uploading " +
 					"a file in multiple parts, where each part is uploaded separately.This allows the upload to be resumed from " +
@@ -72,6 +74,11 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Name:  recursiveFlag,
 				Value: false,
 				Usage: "performed on all files or objects under the specified directory or prefix in a recursive way",
+			},
+			&cli.BoolFlag{
+				Name:  bypassSealFlag,
+				Value: false,
+				Usage: "if set this flag as true, it will not wait for the file to be sealed after the uploading is completed.",
 			},
 		},
 	}
@@ -100,6 +107,20 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 				Name:  endOffsetFlag,
 				Value: 0,
 				Usage: "end offset info of the download body",
+			},
+			&cli.Uint64Flag{
+				Name: partSizeFlag,
+				// the default part size is 32M
+				Value: 32 * 1024 * 1024,
+				Usage: "indicate the resumable upload 's part size, uploading a large file in multiple parts. " +
+					"The part size is an integer multiple of the segment size.",
+			},
+			&cli.BoolFlag{
+				Name:  resumableFlag,
+				Value: false,
+				Usage: "indicate whether need to enable resumeable download. Resumable download refers to the process of download " +
+					"a file in multiple parts, where each part is downloaded separately.This allows the download to be resumed from " +
+					"where it left off in case of interruptions or failures, rather than starting the entire download process from the beginning.",
 			},
 		},
 	}
@@ -336,7 +357,7 @@ func putObject(ctx *cli.Context) error {
 
 // uploadFolder upload folder and the files inside to bucket in a recursive way
 func uploadFolder(urlInfo string, ctx *cli.Context,
-	gnfdClient client.Client) error {
+	gnfdClient client.IClient) error {
 	// upload folder with recursive flag
 	bucketName := ParseBucket(urlInfo)
 	if bucketName == "" {
@@ -367,8 +388,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	}
 	// upload folder
 	for id, info := range fileInfos {
-		//	pathList := strings.Split(info.Name(), "/")
-		objectName := filePaths[id]
+		objectName := path.Base(filePaths[id])
 		if uploadErr := uploadFile(bucketName, objectName, filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
 			fmt.Printf("failed to upload object: %s, error:%v \n", objectName, uploadErr)
 		}
@@ -378,12 +398,13 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 }
 
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
-	gnfdClient client.Client, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
-
+	gnfdClient client.IClient, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
+	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
 	partSize := ctx.Uint64(partSizeFlag)
-	resumableUpload := ctx.Bool(resumableUploadFlag)
+	resumableUpload := ctx.Bool(resumableFlag)
+	bypassSeal := ctx.Bool(bypassSealFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
@@ -423,7 +444,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			}
 		} else {
 			// Open the referenced file.
-			file, err := os.Open(filePath)
+			file, err = os.Open(filePath)
 			if err != nil {
 				return err
 			}
@@ -460,25 +481,59 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	}
 	defer reader.Close()
 
-	if err = gnfdClient.PutObject(c, bucketName, objectName,
-		objectSize, reader, opt); err != nil {
-		return toCmdErr(err)
+	// if the file is more than 2G , it needs to force use resume uploading
+	if objectSize > maxPutWithoutResumeSize {
+		opt.DisableResumable = false
+	}
+
+	if opt.DisableResumable {
+		progressReader := &ProgressReader{
+			Reader:      reader,
+			Total:       objectSize,
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		// if print big file progress, the printing progress should be delayed to obtain a more accurate display.
+		if objectSize > progressDelayPrintSize {
+			progressReader.LastPrinted = time.Now().Add(2 * time.Second)
+		}
+
+		if err = gnfdClient.PutObject(c, bucketName, objectName,
+			objectSize, progressReader, opt); err != nil {
+			return toCmdErr(err)
+		}
+	} else {
+		if err = gnfdClient.PutObject(c, bucketName, objectName,
+			objectSize, reader, opt); err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	if bypassSeal {
+		fmt.Printf("\nupload %s to %s \n", objectName, urlInfo)
+		return nil
 	}
 
 	// Check if object is sealed
-	timeout := time.After(15 * time.Second)
-	ticker := time.NewTicker(2 * time.Second)
-
+	timeout := time.After(1 * time.Hour)
+	ticker := time.NewTicker(3 * time.Second)
+	count := 0
+	fmt.Println()
+	fmt.Println("sealing...")
 	for {
 		select {
 		case <-timeout:
-			return toCmdErr(errors.New("object not sealed after 15 seconds"))
+			return toCmdErr(errors.New("object not sealed after 1 hour"))
 		case <-ticker.C:
+			count++
 			headObjOutput, queryErr := gnfdClient.HeadObject(c, bucketName, objectName)
 			if queryErr != nil {
 				return queryErr
 			}
-
+			if count%10 == 0 {
+				fmt.Println("sealing...")
+			}
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
@@ -490,6 +545,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 
 // getObject download the object payload from sp
 func getObject(ctx *cli.Context) error {
+	var err error
 	if ctx.NArg() < 1 {
 		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
@@ -508,7 +564,7 @@ func getObject(ctx *cli.Context) error {
 	c, cancelGetObject := context.WithCancel(globalContext)
 	defer cancelGetObject()
 
-	_, err = gnfdClient.HeadObject(c, bucketName, objectName)
+	chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		return toCmdErr(ErrObjectNotExist)
 	}
@@ -530,16 +586,16 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-	// If file exist, open it in append mode
-	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+	filePath, err = checkIfDownloadFileExist(filePath, objectName)
 	if err != nil {
-		return err
+		return toCmdErr(err)
 	}
 
-	defer fd.Close()
 	opt := sdktypes.GetObjectOptions{}
 	startOffset := ctx.Int64(startOffsetFlag)
 	endOffset := ctx.Int64(endOffsetFlag)
+	partSize := ctx.Uint64(partSizeFlag)
+	resumableDownload := ctx.Bool(resumableFlag)
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
@@ -548,17 +604,55 @@ func getObject(ctx *cli.Context) error {
 		}
 	}
 
-	body, info, err := gnfdClient.GetObject(c, bucketName, objectName, opt)
-	if err != nil {
-		return toCmdErr(err)
-	}
+	if resumableDownload {
+		opt.PartSize = partSize
+		err = gnfdClient.FGetObjectResumable(c, bucketName, objectName, filePath, opt)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		fmt.Printf("resumable download object %s, the file path is %s \n", objectName, filePath)
+	} else {
+		var fd *os.File
+		dir := filepath.Dir(filePath)
+		fileName := "." + filepath.Base(filePath) + ".tmp"
+		tempFilePath := filepath.Join(dir, fileName)
 
-	_, err = io.Copy(fd, body)
-	if err != nil {
-		return toCmdErr(err)
-	}
+		tempFilePath, err = checkIfDownloadFileExist(tempFilePath, objectName)
+		if err != nil {
+			return toCmdErr(err)
+		}
+		// download to the temp file firstly
+		fd, err = os.OpenFile(tempFilePath, os.O_CREATE|os.O_WRONLY, 0660)
+		if err != nil {
+			return err
+		}
 
-	fmt.Printf("download object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+		defer fd.Close()
+
+		pw := &ProgressWriter{
+			Writer:      fd,
+			Total:       int64(chainInfo.ObjectInfo.PayloadSize),
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		body, info, downloadErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		if downloadErr != nil {
+			return toCmdErr(downloadErr)
+		}
+
+		_, err = io.Copy(pw, body)
+		if err != nil {
+			return toCmdErr(err)
+		}
+
+		err = os.Rename(tempFilePath, filePath)
+		if err != nil {
+			fmt.Printf("failed to rename %s to %s \n", tempFilePath, filePath)
+			return nil
+		}
+		fmt.Printf("\ndownload object %s, the file path is %s, content length:%d \n", objectName, filePath, uint64(info.Size))
+	}
 
 	return nil
 }
@@ -628,7 +722,7 @@ func listObjects(ctx *cli.Context) error {
 	return nil
 }
 
-func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixName string, isRecursive bool) error {
+func listObjectByPage(cli client.IClient, c context.Context, bucketName, prefixName string, isRecursive bool) error {
 	var (
 		listResult        sdktypes.ListObjectsResult
 		continuationToken string

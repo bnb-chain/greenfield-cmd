@@ -98,7 +98,7 @@ func deleteBucket(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	
+
 	fmt.Printf("delete_bucket: %s \ntransaction hash: %s\n", bucketName, txnHash)
 	return nil
 }
@@ -164,7 +164,7 @@ func deleteObject(ctx *cli.Context) error {
 	return nil
 }
 
-func deleteObjectByPage(cli client.Client, c context.Context, bucketName, prefixName string) error {
+func deleteObjectByPage(cli client.IClient, c context.Context, bucketName, prefixName string) error {
 	var (
 		listResult        sdktypes.ListObjectsResult
 		continuationToken string
@@ -195,7 +195,7 @@ func deleteObjectByPage(cli client.Client, c context.Context, bucketName, prefix
 	return nil
 }
 
-func deleteObjectAndWaitTxn(cli client.Client, c context.Context, bucketName, objectName string) {
+func deleteObjectAndWaitTxn(cli client.IClient, c context.Context, bucketName, objectName string) {
 	txnHash, err := cli.DeleteObject(c, bucketName, objectName, sdktypes.DeleteObjectOption{TxOpts: &TxnOptionWithSyncMode})
 	if err != nil {
 		fmt.Printf("failed to delele object %s err:%v\n", objectName, err)
