@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	Version                 = "v0.1.0"
+	Version                 = "v0.1.1"
 	maxFileSize             = 64 * 1024 * 1024 * 1024
 	maxPutWithoutResumeSize = 2 * 1024 * 1024 * 1024
 	publicReadType          = "public-read"
