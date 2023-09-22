@@ -636,9 +636,9 @@ func getObject(ctx *cli.Context) error {
 			LastPrinted: time.Now(),
 		}
 
-		body, info, getErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
-		if getErr != nil {
-			return toCmdErr(err)
+		body, info, downloadErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		if downloadErr != nil {
+			return toCmdErr(downloadErr)
 		}
 
 		_, err = io.Copy(pw, body)
