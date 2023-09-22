@@ -357,7 +357,7 @@ func putObject(ctx *cli.Context) error {
 
 // uploadFolder upload folder and the files inside to bucket in a recursive way
 func uploadFolder(urlInfo string, ctx *cli.Context,
-	gnfdClient client.Client) error {
+	gnfdClient client.IClient) error {
 	// upload folder with recursive flag
 	bucketName := ParseBucket(urlInfo)
 	if bucketName == "" {
@@ -398,7 +398,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 }
 
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
-	gnfdClient client.Client, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
+	gnfdClient client.IClient, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
 	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
@@ -722,7 +722,7 @@ func listObjects(ctx *cli.Context) error {
 	return nil
 }
 
-func listObjectByPage(cli client.Client, c context.Context, bucketName, prefixName string, isRecursive bool) error {
+func listObjectByPage(cli client.IClient, c context.Context, bucketName, prefixName string, isRecursive bool) error {
 	var (
 		listResult        sdktypes.ListObjectsResult
 		continuationToken string

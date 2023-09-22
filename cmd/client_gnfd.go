@@ -33,7 +33,7 @@ func showVersion(ctx *cli.Context) error {
 }
 
 // NewClient returns a new greenfield client
-func NewClient(ctx *cli.Context, isQueryCmd bool) (client.Client, error) {
+func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
 	var (
 		account    *types.Account
 		err        error
@@ -57,7 +57,7 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.Client, error) {
 		return nil, err
 	}
 
-	var cli client.Client
+	var cli client.IClient
 	if host != "" {
 		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host})
 	} else {
@@ -112,7 +112,7 @@ func ParseBucket(urlPath string) (bucketName string) {
 	return splits[0]
 }
 
-func waitTxnStatus(cli client.Client, ctx context.Context, txnHash string, txnInfo string) error {
+func waitTxnStatus(cli client.IClient, ctx context.Context, txnHash string, txnInfo string) error {
 	ctxTimeout, cancel := context.WithTimeout(ctx, ContextTimeout)
 	defer cancel()
 

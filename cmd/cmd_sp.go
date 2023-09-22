@@ -170,7 +170,7 @@ func getQuotaPrice(ctx *cli.Context) error {
 	return nil
 }
 
-func getSPAddr(spAddressInfo string, cli client.Client, c context.Context) (sdk.AccAddress, error) {
+func getSPAddr(spAddressInfo string, cli client.IClient, c context.Context) (sdk.AccAddress, error) {
 	var addr sdk.AccAddress
 	var err error
 	var spList []sptypes.StorageProvider
