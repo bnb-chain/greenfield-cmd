@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.1
+FEATURES
+* [#89](https://github.com/bnb-chain/greenfield-cmd/pull/89)  support resumable download by adding a flag to "object get cmd"
+* [#90](https://github.com/bnb-chain/greenfield-cmd/pull/90)  improve cmd of downloading and uploading with printing progress details and speed
+* [#90](https://github.com/bnb-chain/greenfield-cmd/pull/92)  update dependency of go-sdk and greenfield to v0.2.6
+
+BUGFIX
+* [#90](https://github.com/bnb-chain/greenfield-cmd/pull/90)  solve the problem of parsing object name err when recursive upload folder
+
 ## v0.1.0
 
 FEATURES
