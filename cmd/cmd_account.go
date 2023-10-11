@@ -250,10 +250,11 @@ func importKey(ctx *cli.Context) error {
 	}
 
 	// fetch password content
-	password, err = getPassword(ctx)
+	password, err = getPassword(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
+	fmt.Println("- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!")
 
 	// encrypt the private key
 	encryptContent, err = EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
@@ -391,7 +392,7 @@ func createAccount(ctx *cli.Context) error {
 	}
 
 	// fetch password content
-	password, err = getPassword(ctx)
+	password, err = getPassword(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -524,7 +525,7 @@ func parseKeystore(ctx *cli.Context) (string, string, error) {
 		return "", "", toCmdErr(err)
 	}
 	// fetch password content
-	password, err := getPassword(ctx)
+	password, err := getPassword(ctx, false)
 	if err != nil {
 		return "", "", toCmdErr(err)
 	}

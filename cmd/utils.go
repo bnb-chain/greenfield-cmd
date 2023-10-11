@@ -338,7 +338,7 @@ func parseActions(ctx *cli.Context, resourceType ResourceType) ([]permTypes.Acti
 }
 
 // getPassword return the password content
-func getPassword(ctx *cli.Context) (string, error) {
+func getPassword(ctx *cli.Context, needNotice bool) (string, error) {
 	var filepath string
 	if passwordFile := ctx.String(passwordFileFlag); passwordFile != "" {
 		filepath = passwordFile
@@ -350,6 +350,7 @@ func getPassword(ctx *cli.Context) (string, error) {
 	}
 
 	fmt.Print("Please enter the passphrase now:")
+
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		fmt.Println("read password err:", err)
@@ -357,6 +358,10 @@ func getPassword(ctx *cli.Context) (string, error) {
 	}
 	password := string(bytePassword)
 	fmt.Println()
+	if needNotice {
+		fmt.Println("- You must BACKUP your key file! Without the key, it's impossible to set transaction to greenfield!")
+		fmt.Println("- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!")
+	}
 	return password, nil
 }
 
