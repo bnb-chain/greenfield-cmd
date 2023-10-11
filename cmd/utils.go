@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/BurntSushi/toml"
 	sdkutils "github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
@@ -86,6 +87,9 @@ const (
 	DefaultConfigPath   = "config/config.toml"
 	DefaultConfigDir    = ".gnfd-cmd"
 	DefaultKeyStorePath = "keystore/key.json"
+	DefaultAccountPath  = "account/defaultKey"
+	DefaultKeyDir       = "keystore"
+	DefaultKeyFile      = "key.json"
 
 	rpcAddrConfigField = "rpcAddr"
 	chainIdConfigField = "chainId"
@@ -99,6 +103,7 @@ const (
 	resumableFlag = "resumable"
 
 	operatorAddressLen = 42
+	accountAddressLen  = 40
 	exitStatus         = "GRACEFUL_EXITING"
 	StatusSPrefix      = "STATUS_"
 	defaultMaxKey      = 500
@@ -106,6 +111,7 @@ const (
 	noBalanceErr           = "key not found"
 	maxListMemberNum       = 1000
 	progressDelayPrintSize = 10 * 1024 * 1024
+	timeFormat             = "2006-01-02T15-04-05.000000000Z"
 )
 
 var (
@@ -345,7 +351,7 @@ func getPassword(ctx *cli.Context) (string, error) {
 		return strings.TrimRight(string(readContent), "\r\n"), nil
 	}
 
-	fmt.Print("Please enter a passphrase now:")
+	fmt.Print("Please enter the passphrase now:")
 	bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		fmt.Println("read password err:", err)
@@ -477,22 +483,59 @@ func getConfig(ctx *cli.Context) (string, string, string, error) {
 }
 
 func loadKeyStoreFile(ctx *cli.Context) ([]byte, string, error) {
-	keyfilepath := ctx.String("keystore")
-	if keyfilepath == "" {
+	keyfilePath := ctx.String("keystore")
+	if keyfilePath == "" {
 		homeDir, err := getHomeDir(ctx)
 		if err != nil {
 			return nil, "", err
 		}
-		keyfilepath = filepath.Join(homeDir, DefaultKeyStorePath)
+
+		defaultAddrFilePath := filepath.Join(homeDir, DefaultAccountPath)
+		fileContent, err := os.ReadFile(defaultAddrFilePath)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid default address" + err.Error())
+		}
+		if len(fileContent) != accountAddressLen {
+			return nil, "", fmt.Errorf("invalid default address length")
+		}
+		// get the default keystore file path
+		keyStorePath := filepath.Join(homeDir, DefaultKeyDir)
+		keyfilePath, err = getKeystoreFileByAddress(keyStorePath, string(fileContent))
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to load the default keystore:" + err.Error())
+		}
 	}
 
 	// fetch private key from keystore
-	content, err := os.ReadFile(keyfilepath)
+	content, err := os.ReadFile(keyfilePath)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilepath, err)
+		return nil, "", fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyfilePath, err)
 	}
 
-	return content, keyfilepath, nil
+	return content, keyfilePath, nil
+}
+
+// getKeystoreFileByAddress list the keystore dir and find the file with address suffix
+func getKeystoreFileByAddress(directory string, address string) (string, error) {
+	var filePath string
+
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && strings.HasSuffix(info.Name(), address) {
+			filePath = path
+			return filepath.SkipDir
+		}
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return filePath, nil
 }
 
 func getHomeDir(ctx *cli.Context) (string, error) {
@@ -645,4 +688,14 @@ func checkIfDownloadFileExist(filePath, objectName string) (string, error) {
 		return filePath, fmt.Errorf("download file:%s already exist\n", filePath)
 	}
 	return filePath, nil
+}
+
+func convertAddressToLower(str string) string {
+	converted := strings.Map(func(r rune) rune {
+		if unicode.IsUpper(r) {
+			return unicode.ToLower(r)
+		}
+		return r
+	}, str)
+	return converted[2:]
 }
