@@ -163,6 +163,7 @@ func main() {
 					cmdListAccount(),
 					cmdCreateAccount(),
 					cmdExportAccount(),
+					cmdSetDefaultAccount(),
 				},
 			},
 			cmdShowVersion(),

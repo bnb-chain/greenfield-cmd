@@ -111,6 +111,20 @@ $ gnfd-cmd bank balance --address 0x... `,
 	}
 }
 
+func cmdSetDefaultAccount() *cli.Command {
+	return &cli.Command{
+		Name:      "set-default",
+		Action:    setDefaultAccount,
+		Usage:     "set the default account",
+		ArgsUsage: " ",
+		Description: `
+Set the default account value. When running other commands, the keystore corresponding to this account will be used by default.
+
+Examples:
+$ gnfd-cmd account default  0x75345BC9FfFAe09486dE7EC954bAfAEcE29b9b24`,
+	}
+}
+
 func getAccountBalance(ctx *cli.Context) error {
 	client, err := NewClient(ctx, true)
 	if err != nil {
@@ -214,7 +228,8 @@ func importKey(ctx *cli.Context) error {
 	}
 
 	if isKeystoreExist(homeDir+"/"+DefaultKeyDir, addr.String()) {
-		return toCmdErr(errors.New("account already exists"))
+		fmt.Println("account already exists")
+		return nil
 	}
 
 	keyFilePath := ctx.String("keystore")
@@ -369,7 +384,8 @@ func createAccount(ctx *cli.Context) error {
 	}
 
 	if _, err = os.Stat(keyFilePath); err == nil {
-		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
+		fmt.Println("key already exists at :", keyFilePath)
+		return nil
 	} else if !os.IsNotExist(err) {
 		return toCmdErr(err)
 	}
@@ -466,6 +482,42 @@ func Transfer(ctx *cli.Context) error {
 	return nil
 }
 
+func setDefaultAccount(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number error"))
+	}
+
+	defaultAddress := ctx.Args().Get(0)
+	_, err := sdk.AccAddressFromHexUnsafe(defaultAddress)
+	if err != nil {
+		return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+	}
+
+	homeDir, err := getHomeDir(ctx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+	}
+
+	defaultAccountPath := filepath.Join(homeDir, DefaultAccountPath)
+	dirPath := filepath.Dir(defaultAccountPath)
+	_, err = os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(dirPath, 0755)
+		if err != nil {
+			return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+		}
+	}
+
+	// write the default account info
+	err = os.WriteFile(defaultAccountPath, []byte(convertAddressToLower(defaultAddress)), 0644)
+	if err != nil {
+		return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+	}
+
+	fmt.Println("the default account has been set to", defaultAddress)
+	return nil
+}
+
 func parseKeystore(ctx *cli.Context) (string, string, error) {
 	keyjson, keyFile, err := loadKeyStoreFile(ctx)
 	if err != nil {
@@ -496,7 +548,7 @@ func checkAndWriteDefaultKey(homeDir string, content string) {
 
 		err = os.WriteFile(filePath, []byte(content), 0644)
 		if err != nil {
-			fmt.Printf("write default keystore info fail 123 %v \n", err)
+			fmt.Printf("failed to write default keystore info %v \n", err)
 			return
 		}
 	} else {
@@ -510,7 +562,7 @@ func checkAndWriteDefaultKey(homeDir string, content string) {
 		if len(fileContent) == 0 {
 			err = os.WriteFile(filePath, []byte(content), 0644)
 			if err != nil {
-				fmt.Printf("write default keystore info fail %v \n", err)
+				fmt.Printf("failed to write default keystore info %v \n", err)
 			}
 		}
 	}

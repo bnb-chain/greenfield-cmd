@@ -84,12 +84,10 @@ const (
 	BucketResourceType = 2
 	GroupResourceType  = 3
 
-	DefaultConfigPath   = "config/config.toml"
-	DefaultConfigDir    = ".gnfd-cmd"
-	DefaultKeyStorePath = "keystore/key.json"
-	DefaultAccountPath  = "account/defaultKey"
-	DefaultKeyDir       = "keystore"
-	DefaultKeyFile      = "key.json"
+	DefaultConfigPath  = "config/config.toml"
+	DefaultConfigDir   = ".gnfd-cmd"
+	DefaultAccountPath = "account/defaultKey"
+	DefaultKeyDir      = "keystore"
 
 	rpcAddrConfigField = "rpcAddr"
 	chainIdConfigField = "chainId"
@@ -697,5 +695,9 @@ func convertAddressToLower(str string) string {
 		}
 		return r
 	}, str)
-	return converted[2:]
+
+	if strings.HasPrefix(str, "0x") {
+		converted = converted[2:]
+	}
+	return converted
 }
