@@ -279,20 +279,30 @@ func importKey(ctx *cli.Context) error {
 }
 
 func listAccounts(ctx *cli.Context) error {
+	var defaultAccount string
 	homeDir, err := getHomeDir(ctx)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	keyfile := filepath.Join(homeDir, DefaultKeyDir)
-	if err = parseKeyStore(keyfile); err != nil {
+	keyfileDir := filepath.Join(homeDir, DefaultKeyDir)
+
+	defaultAddrFilePath := filepath.Join(homeDir, DefaultAccountPath)
+	fileContent, err := os.ReadFile(defaultAddrFilePath)
+	if err != nil {
+		defaultAccount = ""
+	} else {
+		defaultAccount = string(fileContent)
+	}
+
+	if err = listKeyStore(keyfileDir, defaultAccount); err != nil {
 		return toCmdErr(err)
 	}
 
 	return nil
 }
 
-func parseKeyStore(keystoreDir string) error {
+func listKeyStore(keystoreDir, defaultAccount string) error {
 	var (
 		keyFileContent []byte
 		err            error
@@ -305,7 +315,7 @@ func parseKeyStore(keystoreDir string) error {
 	for _, file := range files {
 		if !file.IsDir() {
 			// if it is not a valid key file name , bypass it
-			if len(file.Name()) < len(timeFormat)+40 || !strings.Contains(file.Name(), "--") {
+			if len(file.Name()) != len(timeFormat)+operatorAddressLen || !strings.Contains(file.Name(), "--") {
 				continue
 			}
 			keyPath := filepath.Join(keystoreDir, file.Name())
@@ -319,7 +329,11 @@ func parseKeyStore(keystoreDir string) error {
 				return toCmdErr(err)
 			}
 
-			fmt.Printf("Account: { %s },  Keystore : %s \n", k.Address, keyPath)
+			if defaultAccount != "" && convertAddressToLower(k.Address) == defaultAccount {
+				fmt.Printf("Account: { %s },  Keystore : %s (default account)\n", k.Address, keyPath)
+			} else {
+				fmt.Printf("Account: { %s },  Keystore : %s \n", k.Address, keyPath)
+			}
 		}
 	}
 	return nil
