@@ -254,7 +254,6 @@ func importKey(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	fmt.Println("- You must REMEMBER your password! Without the password, it's impossible to decrypt the key!")
 
 	// encrypt the private key
 	encryptContent, err = EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
@@ -274,7 +273,7 @@ func importKey(ctx *cli.Context) error {
 	// if it is the first keystore, set it as the default key
 	checkAndWriteDefaultKey(homeDir, convertAddressToLower(key.Address.String()))
 
-	fmt.Printf("key address: %s, encrypted key file: %s \n", key.Address, keyFilePath)
+	fmt.Printf("imported account: %s, keystore: %s \n", key.Address, keyFilePath)
 	return nil
 }
 
@@ -428,7 +427,7 @@ func createAccount(ctx *cli.Context) error {
 	// if it is the first keystore, set it as the default key
 	checkAndWriteDefaultKey(homeDir, convertAddressToLower(key.Address.String()))
 
-	fmt.Printf("created new account: {%s} \n", account.GetAddress())
+	fmt.Printf("created new account: {%s}, keystore: %s \n", account.GetAddress(), keyFilePath)
 	return nil
 }
 
