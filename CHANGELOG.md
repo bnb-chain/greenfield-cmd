@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.0
+FEATURES
+* [#94](https://github.com/bnb-chain/greenfield-cmd/pull/94) support multi-account management and set-default command
+* [#95](https://github.com/bnb-chain/greenfield-cmd/pull/95) update dependency of go-sdk and greenfield to v1.0.0
+
 ## v0.1.1
 FEATURES
 * [#89](https://github.com/bnb-chain/greenfield-cmd/pull/89)  support resumable download by adding a flag to "object get cmd"
