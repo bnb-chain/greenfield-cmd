@@ -13,9 +13,8 @@ import (
 
 	"cosmossdk.io/math"
 	"github.com/bnb-chain/greenfield-go-sdk/client"
-	"github.com/bnb-chain/greenfield/sdk/types"
-
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
 )
@@ -486,26 +485,27 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		opt.DisableResumable = false
 	}
 
+	progressReader := &ProgressReader{
+		Reader:      reader,
+		Total:       objectSize,
+		StartTime:   time.Now(),
+		LastPrinted: time.Now(),
+	}
+
+	// if print big file progress, the printing progress should be delayed to obtain a more accurate display.
+	if objectSize > progressDelayPrintSize {
+		progressReader.LastPrinted = time.Now().Add(3 * time.Second)
+	}
+
 	if opt.DisableResumable {
-		progressReader := &ProgressReader{
-			Reader:      reader,
-			Total:       objectSize,
-			StartTime:   time.Now(),
-			LastPrinted: time.Now(),
-		}
-
-		// if print big file progress, the printing progress should be delayed to obtain a more accurate display.
-		if objectSize > progressDelayPrintSize {
-			progressReader.LastPrinted = time.Now().Add(2 * time.Second)
-		}
-
 		if err = gnfdClient.PutObject(c, bucketName, objectName,
 			objectSize, progressReader, opt); err != nil {
 			return toCmdErr(err)
 		}
 	} else {
+		fmt.Println("resumable uploading is beginning...")
 		if err = gnfdClient.PutObject(c, bucketName, objectName,
-			objectSize, reader, opt); err != nil {
+			objectSize, progressReader, opt); err != nil {
 			return toCmdErr(err)
 		}
 	}
@@ -524,7 +524,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	for {
 		select {
 		case <-timeout:
-			return toCmdErr(errors.New("object not sealed after 1 hour"))
+			return toCmdErr(errors.New("object not sealed after one hour"))
 		case <-ticker.C:
 			count++
 			headObjOutput, queryErr := gnfdClient.HeadObject(c, bucketName, objectName)

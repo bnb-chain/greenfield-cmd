@@ -38,6 +38,7 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
 		account    *types.Account
 		err        error
 		privateKey string
+		cli        client.IClient
 	)
 	if !isQueryCmd {
 		privateKey, _, err = parseKeystore(ctx)
@@ -57,7 +58,6 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
 		return nil, err
 	}
 
-	var cli client.IClient
 	if host != "" {
 		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host})
 	} else {

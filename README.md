@@ -21,7 +21,7 @@ To obtain the latest release, please visit the following URL: https://github.com
 git clone https://github.com/bnb-chain/greenfield-cmd.git
 cd greenfield-cmd
 # Find the latest release here: https://github.com/bnb-chain/greenfield-cmd/releases
-git checkout -b branch-name v0.1.1
+git checkout -b branch-name v1.0.0
 make build
 cd build
 ./gnfd-cmd -h
@@ -97,7 +97,7 @@ Users can use "account import [keyfile]" to generate the keystore.  Before impor
 gnfd-cmd account import key.txt
 ```
 
-The keystore will be generated in the path "keystore/key.json" under the home directory of the system or the directory set by "-home"
+The keystore will be generated in the path "keystore/keyfile" under the home directory of the system or the directory set by "-home"
 and it is also the default path to load keystore when running other commands.
 Password info is also needed to run the command. The terminal will prompt user to enter the password information.
 Users can also specify the password file path by using the "--passwordfile".
@@ -116,6 +116,16 @@ Users can use "account export" or "account ls" to display the keystore informati
 gnfd-cmd account ls
 // export the account key info
 gnfd-cmd account export --unarmoredHex --unsafe
+```
+
+Users can create multiple accounts using the "account import" or "account new" command. You can use the set-default command to specify which account to use for running other commands by default. When executing commands using the default account, there is no need to specify the keystore.
+You can also switch to different accounts for sending requests by specifying the --keystore flag.
+```
+// set the default account.
+gnfd-cmd account set-default [address-info]
+
+// set keystore flag to use other account which is not default
+./gnfd-cmd --keystore /Users/user/.gnfd-cmd/keystore/2023-10-11T09-51-27.868544000Z--xxx  bucket create gnfd://test-bucket
 ```
 
 #### Bank Operations

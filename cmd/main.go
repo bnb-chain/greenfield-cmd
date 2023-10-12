@@ -7,11 +7,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )
 
 var globalContext, _ = context.WithCancel(context.Background())
+
+func init() {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+}
 
 func main() {
 	homeDir, err := os.UserHomeDir()
@@ -163,6 +168,7 @@ func main() {
 					cmdListAccount(),
 					cmdCreateAccount(),
 					cmdExportAccount(),
+					cmdSetDefaultAccount(),
 				},
 			},
 			cmdShowVersion(),

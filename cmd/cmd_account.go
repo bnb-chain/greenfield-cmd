@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"cosmossdk.io/math"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
@@ -29,7 +31,7 @@ Users need to set the private key file path which contain the origin private hex
 
 Examples:
 // key.txt contains the origin private hex string 
-$ gnfd-cmd  -k key.json  account import  key.txt `,
+$ gnfd-cmd  account import  key.txt `,
 	}
 }
 
@@ -106,6 +108,20 @@ $ gnfd-cmd bank balance --address 0x... `,
 				Usage: "indicate the address's balance to be retrieved",
 			},
 		},
+	}
+}
+
+func cmdSetDefaultAccount() *cli.Command {
+	return &cli.Command{
+		Name:      "set-default",
+		Action:    setDefaultAccount,
+		Usage:     "set the default account",
+		ArgsUsage: " ",
+		Description: `
+Set the default account value. When running other commands, the keystore corresponding to this account will be used by default.
+
+Examples:
+$ gnfd-cmd account default  0x75345BC9FfFAe09486dE7EC954bAfAEcE29b9b24`,
 	}
 }
 
@@ -190,24 +206,14 @@ $ gnfd-cmd bank bridge --toAddress 0x.. --amount 12345`,
 }
 
 func importKey(ctx *cli.Context) error {
+	var (
+		err               error
+		homeDir, password string
+		encryptContent    []byte
+	)
 	privateKeyFile := ctx.Args().First()
 	if privateKeyFile == "" {
 		return toCmdErr(errors.New("fail to get the private key file info"))
-	}
-
-	keyFilePath := ctx.String("keystore")
-	if keyFilePath == "" {
-		homeDir, err := getHomeDir(ctx)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		keyFilePath = filepath.Join(homeDir, DefaultKeyStorePath)
-	}
-
-	if _, err := os.Stat(keyFilePath); err == nil {
-		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
-	} else if !os.IsNotExist(err) {
-		return toCmdErr(err)
 	}
 
 	// Load private key from file.
@@ -216,49 +222,119 @@ func importKey(ctx *cli.Context) error {
 		return toCmdErr(errors.New("failed to load private key: %v" + err.Error()))
 	}
 
+	homeDir, err = getHomeDir(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	if isKeystoreExist(homeDir+"/"+DefaultKeyDir, addr.String()) {
+		fmt.Println("account already exists")
+		return nil
+	}
+
+	keyFilePath := ctx.String("keystore")
+	if keyFilePath == "" {
+		utcTimestamp := time.Now().UTC().Format(timeFormat)
+		keyFilePath = filepath.Join(homeDir, DefaultKeyDir+"/"+utcTimestamp+"--"+convertAddressToLower(addr.String()))
+	}
+
+	if _, err = os.Stat(keyFilePath); err == nil {
+		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
+	} else if !os.IsNotExist(err) {
+		return toCmdErr(err)
+	}
+
 	key := &Key{
 		Address:    addr,
 		PrivateKey: privateKey,
 	}
 
 	// fetch password content
-	password, err := getPassword(ctx)
+	password, err = getPassword(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	// encrypt the private key
-	encryptContent, err := EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
+	encryptContent, err = EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
+	if err = os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
 		return toCmdErr(errors.New("failed to create directory %s" + filepath.Dir(keyFilePath)))
 	}
 
 	// store the keystore file
-	if err := os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
+	if err = os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
 		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
 	}
 
-	fmt.Printf("key address: %s, encrypted key file: %s \n", key.Address, keyFilePath)
+	// if it is the first keystore, set it as the default key
+	checkAndWriteDefaultKey(homeDir, convertAddressToLower(key.Address.String()))
 
+	fmt.Printf("imported account: %s, keystore: %s \n", key.Address, keyFilePath)
 	return nil
 }
 
 func listAccounts(ctx *cli.Context) error {
-	keyJson, keyFile, err := loadKeyStoreFile(ctx)
+	var defaultAccount string
+	homeDir, err := getHomeDir(ctx)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	k := new(encryptedKey)
-	if err = json.Unmarshal(keyJson, k); err != nil {
+	keyfileDir := filepath.Join(homeDir, DefaultKeyDir)
+
+	defaultAddrFilePath := filepath.Join(homeDir, DefaultAccountPath)
+	fileContent, err := os.ReadFile(defaultAddrFilePath)
+	if err != nil {
+		defaultAccount = ""
+	} else {
+		defaultAccount = string(fileContent)
+	}
+
+	if err = listKeyStore(keyfileDir, defaultAccount); err != nil {
 		return toCmdErr(err)
 	}
 
-	fmt.Printf("Account: { %s },  Keystore : %s \n", k.Address, keyFile)
+	return nil
+}
+
+func listKeyStore(keystoreDir, defaultAccount string) error {
+	var (
+		keyFileContent []byte
+		err            error
+	)
+	files, err := os.ReadDir(keystoreDir)
+	if err != nil {
+		return errors.New("keystore not exists")
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			// if it is not a valid key file name , bypass it
+			if len(file.Name()) != len(timeFormat)+operatorAddressLen || !strings.Contains(file.Name(), "--") {
+				continue
+			}
+			keyPath := filepath.Join(keystoreDir, file.Name())
+			keyFileContent, err = os.ReadFile(keyPath)
+			if err != nil {
+				return fmt.Errorf("failed to read the keyfile at '%s': %v \n", keyPath, err)
+			}
+
+			k := new(encryptedKey)
+			if err = json.Unmarshal(keyFileContent, k); err != nil {
+				return toCmdErr(err)
+			}
+
+			if defaultAccount != "" && convertAddressToLower(k.Address) == defaultAccount {
+				fmt.Printf("Account: { %s },  Keystore : %s (default account)\n", k.Address, keyPath)
+			} else {
+				fmt.Printf("Account: { %s },  Keystore : %s \n", k.Address, keyPath)
+			}
+		}
+	}
 	return nil
 }
 
@@ -293,20 +369,12 @@ func exportAccount(ctx *cli.Context) error {
 }
 
 func createAccount(ctx *cli.Context) error {
-	keyFilePath := ctx.String("keystore")
-	if keyFilePath == "" {
-		homeDirname, err := getHomeDir(ctx)
-		if err != nil {
-			return toCmdErr(err)
-		}
-		keyFilePath = filepath.Join(homeDirname, DefaultKeyStorePath)
-	}
-
-	if _, err := os.Stat(keyFilePath); err == nil {
-		return toCmdErr(errors.New("key already exists at :" + keyFilePath))
-	} else if !os.IsNotExist(err) {
-		return toCmdErr(err)
-	}
+	var (
+		err            error
+		homeDir        string
+		password       string
+		encryptContent []byte
+	)
 
 	account, privateKey, err := sdktypes.NewAccount("gnfd-account")
 	if err != nil {
@@ -318,28 +386,48 @@ func createAccount(ctx *cli.Context) error {
 		PrivateKey: privateKey,
 	}
 
+	homeDir, err = getHomeDir(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	keyFilePath := ctx.String("keystore")
+	if keyFilePath == "" {
+		utcTimestamp := time.Now().UTC().Format(timeFormat)
+		keyFilePath = filepath.Join(homeDir, DefaultKeyDir+"/"+utcTimestamp+"--"+convertAddressToLower(account.GetAddress().String()))
+	}
+
+	if _, err = os.Stat(keyFilePath); err == nil {
+		fmt.Println("key already exists at :", keyFilePath)
+		return nil
+	} else if !os.IsNotExist(err) {
+		return toCmdErr(err)
+	}
+
 	// fetch password content
-	password, err := getPassword(ctx)
+	password, err = getPassword(ctx, true)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	// encrypt the private key
-	encryptContent, err := EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
+	encryptContent, err = EncryptKey(key, password, EncryptScryptN, EncryptScryptP)
 	if err != nil {
 		return toCmdErr(err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
+	if err = os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
 		return toCmdErr(errors.New("failed to create directory %s" + filepath.Dir(keyFilePath)))
 	}
-
 	// store the keystore file
-	if err := os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
+	if err = os.WriteFile(keyFilePath, encryptContent, 0600); err != nil {
 		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", keyFilePath, err))
 	}
 
-	fmt.Printf("created new account: {%s} \n", account.GetAddress())
+	// if it is the first keystore, set it as the default key
+	checkAndWriteDefaultKey(homeDir, convertAddressToLower(key.Address.String()))
+
+	fmt.Printf("created new account: {%s}, keystore: %s \n", account.GetAddress(), keyFilePath)
 	return nil
 }
 
@@ -408,14 +496,49 @@ func Transfer(ctx *cli.Context) error {
 	return nil
 }
 
+func setDefaultAccount(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number error"))
+	}
+
+	defaultAddress := ctx.Args().Get(0)
+	_, err := sdk.AccAddressFromHexUnsafe(defaultAddress)
+	if err != nil {
+		return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+	}
+
+	homeDir, err := getHomeDir(ctx)
+	if err != nil {
+		return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+	}
+
+	defaultAccountPath := filepath.Join(homeDir, DefaultAccountPath)
+	dirPath := filepath.Dir(defaultAccountPath)
+	_, err = os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(dirPath, 0755)
+		if err != nil {
+			return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+		}
+	}
+
+	// write the default account info
+	err = os.WriteFile(defaultAccountPath, []byte(convertAddressToLower(defaultAddress)), 0644)
+	if err != nil {
+		return toCmdErr(errors.New("failed to set the default account:" + err.Error()))
+	}
+
+	fmt.Println("the default account has been set to", defaultAddress)
+	return nil
+}
+
 func parseKeystore(ctx *cli.Context) (string, string, error) {
 	keyjson, keyFile, err := loadKeyStoreFile(ctx)
 	if err != nil {
 		return "", "", toCmdErr(err)
 	}
-
 	// fetch password content
-	password, err := getPassword(ctx)
+	password, err := getPassword(ctx, false)
 	if err != nil {
 		return "", "", toCmdErr(err)
 	}
@@ -426,4 +549,57 @@ func parseKeystore(ctx *cli.Context) (string, string, error) {
 	}
 
 	return privateKey, keyFile, nil
+}
+
+func checkAndWriteDefaultKey(homeDir string, content string) {
+	var err error
+	filePath := filepath.Join(homeDir, DefaultAccountPath)
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
+			fmt.Printf("failed to create directory %s, error: %v\n", filepath.Dir(filePath), err)
+		}
+
+		err = os.WriteFile(filePath, []byte(content), 0644)
+		if err != nil {
+			fmt.Printf("failed to write default keystore info %v \n", err)
+			return
+		}
+	} else {
+		// file exist, check if it is empty
+		fileContent, readErr := os.ReadFile(filePath)
+		if readErr != nil {
+			fmt.Printf("read default keystore info fail %v \n", readErr)
+			return
+		}
+
+		if len(fileContent) == 0 {
+			err = os.WriteFile(filePath, []byte(content), 0644)
+			if err != nil {
+				fmt.Printf("failed to write default keystore info %v \n", err)
+			}
+		}
+	}
+}
+
+func isKeystoreExist(keystoreDir string, address string) bool {
+	files, err := os.ReadDir(keystoreDir)
+	if err != nil {
+		return false
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), convertAddressToLower(address)) {
+			filePath := filepath.Join(keystoreDir, file.Name())
+			fileContent, err := os.ReadFile(filePath)
+			if err != nil {
+				return false
+			}
+
+			if len(fileContent) > 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
