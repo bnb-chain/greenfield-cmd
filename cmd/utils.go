@@ -418,7 +418,7 @@ func parseConfigFile(filePath string) (*cmdConfig, error) {
 	return &config, nil
 }
 
-const configContent = "rpcAddr = \"https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443\"\nchainId = \"greenfield_5600-1\""
+const configContent = "rpcAddr = \"https://greenfield-chain.bnbchain.org:443\"\nchainId = \"greenfield_1017-1\""
 
 // loadConfig parse the default config file path
 func loadConfig(ctx *cli.Context) (*cmdConfig, error) {

@@ -12,7 +12,7 @@ for any bug bounty. We advise you to be careful and experiment on the network at
 ## Cmd usage
 
 
-Greenfield is still undergoing rapid development iterations, and greenfield-cmd also needs to be continuously updated and adapted. When using it, please do not directly use the master branch or develop branch. If you are using this tool on the Greenfield Testnet, please switch to the latest official release version. 
+Greenfield is still undergoing rapid development iterations, and greenfield-cmd also needs to be continuously updated and adapted. When using it, please do not directly use the master branch or develop branch. If you are using this tool on the Greenfield Mainnet, please switch to the latest official release version. 
 To obtain the latest release, please visit the following URL: https://github.com/bnb-chain/greenfield-cmd/releases.
 
 ### installation
@@ -34,13 +34,13 @@ When running commands that interact with the greenfield, if there is no config/c
 the tool will generate the config/config.toml file automatically which is consistent with the testnet configuration under the path.
 
 Below is an example of the config file. The rpcAddr and chainId should be consistent with the Greenfield network.
-For Greenfield Testnet, you can refer to [Greenfield Testnet RPC Endpoints](https://docs.bnbchain.org/greenfield-docs/docs/api/endpoints).
+For Greenfield Mainnet, you can refer to [Greenfield Mainnet RPC Endpoints](https://docs.bnbchain.org/greenfield-docs/docs/api/endpoints).
 The rpcAddr indicates the Tendermint RPC address with the port info.
 ```
-rpcAddr = "https://gnfd-testnet-fullnode-tendermint-us.bnbchain.org:443"
-chainId = "greenfield_5600-1"
+rpcAddr = "https://greenfield-chain.bnbchain.org:443"
+chainId = "greenfield_1017-1"
 ```
-The command tool can also support other networks besides the Testnet.
+The command tool can also support other networks besides the Mainnet.
 you can replace the content of a custom config file in the default config directory with config.toml or
 run command with "-c filepath" to set the custom config file.
 
@@ -87,7 +87,7 @@ All the other commands need to run with -k if the keystore is not on the default
 
 ### Examples
 
-#### Init Account
+#### Init Accounts
 
 Users can use "account import [keyfile]" to generate the keystore.  Before importing the key and generate keystore, you should export your private key from MetaMask and write it into a local keyfile as plaintext.
 
@@ -118,14 +118,14 @@ gnfd-cmd account ls
 gnfd-cmd account export --unarmoredHex --unsafe
 ```
 
-Users can create multiple accounts using the "account import" or "account new" command. You can use the set-default command to specify which account to use for running other commands by default. When executing commands using the default account, there is no need to specify the keystore.
+Users can create multiple accounts using the "account import" or "account new" command. You can use the "set-default" command to specify which account to use for running other commands by default. When executing commands using the default account, there is no need to specify the keystore.
 You can also switch to different accounts for sending requests by specifying the --keystore flag.
 ```
 // set the default account.
 gnfd-cmd account set-default [address-info]
 
 // set keystore flag to use other account which is not default
-./gnfd-cmd --keystore /Users/user/.gnfd-cmd/keystore/2023-10-11T09-51-27.868544000Z--xxx  bucket create gnfd://test-bucket
+gnfd-cmd --keystore [keystore-path]  bucket create gnfd://test-bucket
 ```
 
 #### Bank Operations
