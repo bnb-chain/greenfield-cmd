@@ -503,7 +503,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			return toCmdErr(err)
 		}
 	} else {
-		fmt.Println("resumable uploading is beginning...")
+		fmt.Printf("resumable uploading %s is beginning...\n", objectName)
 		if err = gnfdClient.PutObject(c, bucketName, objectName,
 			objectSize, progressReader, opt); err != nil {
 			return toCmdErr(err)

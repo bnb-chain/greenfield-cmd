@@ -608,8 +608,8 @@ func (pr *ProgressReader) printProgress() {
 	elapsed := now.Sub(pr.StartTime)
 	uploadSpeed := float64(pr.Current) / elapsed.Seconds()
 
-	if now.Sub(pr.LastPrinted) >= time.Second { // print rate every second
-		progressStr := fmt.Sprintf("uploading progress: %.2f%% [ %s / %s ], rate: %s",
+	if now.Sub(pr.LastPrinted) >= time.Second/2 { // print rate every second
+		progressStr := fmt.Sprintf("uploading progress: %.2f%% [ %s / %s ], rate: %s , cost ",
 			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
 		// Clear current line
 		fmt.Print("\r", strings.Repeat(" ", len(pr.LastPrintedStr)), "\r")
@@ -643,7 +643,7 @@ func (pw *ProgressWriter) printProgress() {
 	downloadedBytes := pw.Current
 	downloadSpeed := float64(downloadedBytes) / elapsed.Seconds()
 
-	if now.Sub(pw.LastPrinted) >= time.Second { // print rate every second
+	if now.Sub(pw.LastPrinted) >= time.Second/2 { // print rate every second
 		fmt.Printf("\rdownloding progress: %.2f%% [ %s / %s ], rate: %s  ",
 			progress, getConvertSize(pw.Current), getConvertSize(pw.Total), getConvertRate(downloadSpeed))
 		pw.LastPrinted = now
