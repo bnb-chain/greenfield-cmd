@@ -12,6 +12,7 @@ import (
 	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	gnfdTypes "github.com/bnb-chain/greenfield/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	"github.com/urfave/cli/v2"
 )
@@ -168,13 +169,18 @@ func putPolicy(ctx *cli.Context) error {
 		}
 	}
 
+	bucketName, err := parseBucketResource(resource)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
 	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketName, "*").String()}, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
 	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+		statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketName, "*").String()}, sdktypes.NewStatementOptions{})
 	}
 
 	statements := []*permTypes.Statement{&statement}
