@@ -245,15 +245,12 @@ func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) 
 
 	return principal, nil
 }
-
 func getBucketAction(action string) (permTypes.ActionType, bool, error) {
 	switch action {
 	case "update":
 		return permTypes.ACTION_UPDATE_BUCKET_INFO, false, nil
 	case "delete":
 		return permTypes.ACTION_DELETE_BUCKET, false, nil
-	case "create":
-		return permTypes.ACTION_CREATE_OBJECT, false, nil
 	case "list":
 		return permTypes.ACTION_LIST_OBJECT, false, nil
 	case "createObj":

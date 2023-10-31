@@ -55,7 +55,7 @@ $ gnfd-cmd policy put --groupId 111 --actions get,delete grn:o::gnfd-bucket/gnfd
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"if it is an object policy, actions can be the following: create, delete, copy, get, execute, list, update or all," +
-					"if it is a bucket policy, actions can be the following: delete, update, create, createObj,deleteObj, copyObj, getObj, executeObj, list or all" +
+					"if it is a bucket policy, actions can be the following: delete, update, createObj,deleteObj, copyObj, getObj, executeObj, list or all." +
 					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
 					" the deleteObj means grant the permission of delete Objects in the bucket" +
 					"if it is a group policy, actions can be the following: update, delete or all, update indicates the update-group-member action" +
@@ -164,7 +164,7 @@ func putPolicy(ctx *cli.Context) error {
 		}
 	}
 
-	// if the actions contains object actions of bucket policy, isObjectActionInBucketPolicy will be true
+	// if the actions contain object actions of bucket policy, isObjectActionInBucketPolicy will be set as true
 	actions, isObjectActionInBucketPolicy, err := parseActions(ctx, resourceType)
 	if err != nil {
 		return toCmdErr(err)

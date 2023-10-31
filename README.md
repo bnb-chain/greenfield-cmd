@@ -242,6 +242,10 @@ The group policy actions can be "update", "delete" or all, update indicates the 
 
 The policy effect can set to be "allow" or "deny" by --effect
 
+If it is an object policy, actions can be the following: create, delete, copy, get, execute, list, update or all. 
+If it is a bucket policy, actions can be the following: delete, update, createObj, deleteObj, copyObj, getObj, executeObj, list or all. The actions which 
+contain Obj means it is an action for the objects in the bucket. If it is a group policy, actions can be the following: update, delete or all.
+
 Put policy examples:
 ```
 // grant object operation permissions to a group
