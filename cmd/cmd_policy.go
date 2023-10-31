@@ -150,13 +150,22 @@ func putPolicy(ctx *cli.Context) error {
 	}
 
 	var resourceType ResourceType
+	var bucketNameOfBucketPolicy string
 	resource := ctx.Args().Get(0)
 	resourceType, err := parseResourceType(resource)
 	if err != nil {
 		return err
 	}
 
-	actions, err := parseActions(ctx, resourceType)
+	if resourceType == BucketResourceType {
+		bucketNameOfBucketPolicy, err = parseBucketResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	// if the actions contains object actions of bucket policy, isObjectActionInBucketPolicy will be true
+	actions, isObjectActionInBucketPolicy, err := parseActions(ctx, resourceType)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -169,20 +178,24 @@ func putPolicy(ctx *cli.Context) error {
 		}
 	}
 
-	bucketName, err := parseBucketResource(resource)
-	if err != nil {
-		return toCmdErr(err)
-	}
-
 	expireTime := ctx.Uint64(expireTimeFlag)
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketName, "*").String()}, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		if bucketNameOfBucketPolicy != "" && isObjectActionInBucketPolicy {
+			// putting bucket policy need to set the sub-resource as "grn:o:bucket-name/*"
+			statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketNameOfBucketPolicy, "*").String()}, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		} else {
+			statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		}
 	} else {
-		statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketName, "*").String()}, sdktypes.NewStatementOptions{})
+		if bucketNameOfBucketPolicy != "" && isObjectActionInBucketPolicy {
+			// putting bucket policy need to set the sub-resource as "grn:o:bucket-name/*"
+			statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketNameOfBucketPolicy, "*").String()}, sdktypes.NewStatementOptions{})
+		} else {
+			statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+		}
 	}
-
 	statements := []*permTypes.Statement{&statement}
 
 	return handlePutPolicy(ctx, resource, statements, resourceType)

@@ -246,30 +246,30 @@ func parsePrincipal(grantee string, groupId uint64) (sdktypes.Principal, error) 
 	return principal, nil
 }
 
-func getBucketAction(action string) (permTypes.ActionType, error) {
+func getBucketAction(action string) (permTypes.ActionType, bool, error) {
 	switch action {
 	case "update":
-		return permTypes.ACTION_UPDATE_BUCKET_INFO, nil
+		return permTypes.ACTION_UPDATE_BUCKET_INFO, false, nil
 	case "delete":
-		return permTypes.ACTION_DELETE_BUCKET, nil
+		return permTypes.ACTION_DELETE_BUCKET, false, nil
 	case "create":
-		return permTypes.ACTION_CREATE_OBJECT, nil
+		return permTypes.ACTION_CREATE_OBJECT, false, nil
 	case "list":
-		return permTypes.ACTION_LIST_OBJECT, nil
+		return permTypes.ACTION_LIST_OBJECT, false, nil
 	case "createObj":
-		return permTypes.ACTION_CREATE_OBJECT, nil
+		return permTypes.ACTION_CREATE_OBJECT, true, nil
 	case "deleteObj":
-		return permTypes.ACTION_DELETE_OBJECT, nil
+		return permTypes.ACTION_DELETE_OBJECT, true, nil
 	case "copyObj":
-		return permTypes.ACTION_COPY_OBJECT, nil
+		return permTypes.ACTION_COPY_OBJECT, true, nil
 	case "getObj":
-		return permTypes.ACTION_GET_OBJECT, nil
+		return permTypes.ACTION_GET_OBJECT, true, nil
 	case "executeObj":
-		return permTypes.ACTION_EXECUTE_OBJECT, nil
+		return permTypes.ACTION_EXECUTE_OBJECT, true, nil
 	case "all":
-		return permTypes.ACTION_TYPE_ALL, nil
+		return permTypes.ACTION_TYPE_ALL, true, nil
 	default:
-		return permTypes.ACTION_UNSPECIFIED, errors.New("invalid action :" + action)
+		return permTypes.ACTION_UNSPECIFIED, false, errors.New("invalid action :" + action)
 	}
 }
 
@@ -309,32 +309,33 @@ func getGroupAction(action string) (permTypes.ActionType, error) {
 	}
 }
 
-func parseActions(ctx *cli.Context, resourceType ResourceType) ([]permTypes.ActionType, error) {
+func parseActions(ctx *cli.Context, resourceType ResourceType) ([]permTypes.ActionType, bool, error) {
 	actions := make([]permTypes.ActionType, 0)
 	actionListStr := ctx.String(actionsFlag)
 	if actionListStr == "" {
-		return nil, errors.New("fail to parse actions")
+		return nil, false, errors.New("fail to parse actions")
 	}
 
 	actionList := strings.Split(actionListStr, ",")
+	var isObjectActionInBucketPolicy bool
 	for _, v := range actionList {
 		var action permTypes.ActionType
 		var err error
 		if resourceType == ObjectResourceType {
 			action, err = getObjectAction(v)
 		} else if resourceType == BucketResourceType {
-			action, err = getBucketAction(v)
+			action, isObjectActionInBucketPolicy, err = getBucketAction(v)
 		} else if resourceType == GroupResourceType {
 			action, err = getGroupAction(v)
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, isObjectActionInBucketPolicy, err
 		}
 		actions = append(actions, action)
 	}
 
-	return actions, nil
+	return actions, isObjectActionInBucketPolicy, nil
 }
 
 // getPassword return the password content
