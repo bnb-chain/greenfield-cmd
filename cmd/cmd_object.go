@@ -325,9 +325,10 @@ func putObject(ctx *cli.Context) error {
 					return toCmdErr(err)
 				}
 
-				if err = uploadFile(bucketName, objectName, fileName, urlInfo, ctx, gnfdClient, false, false, objectSize); err != nil {
+				if err = uploadFile(bucketName, objectName, fileName, urlInfo, ctx, gnfdClient, false, true, objectSize); err != nil {
 					fmt.Println("upload object:", objectName, "err", err)
 				}
+				fmt.Println()
 			}
 		} else {
 			// upload single file
