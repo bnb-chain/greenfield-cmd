@@ -12,6 +12,7 @@ import (
 	"github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	gnfdTypes "github.com/bnb-chain/greenfield/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	"github.com/urfave/cli/v2"
 )
@@ -54,7 +55,7 @@ $ gnfd-cmd policy put --groupId 111 --actions get,delete grn:o::gnfd-bucket/gnfd
 				Value: "",
 				Usage: "set the actions of the policy," +
 					"if it is an object policy, actions can be the following: create, delete, copy, get, execute, list, update or all," +
-					"if it is a bucket policy, actions can be the following: delete, update, deleteObj, copyObj, getObj, executeObj, list or all" +
+					"if it is a bucket policy, actions can be the following: delete, update, createObj, deleteObj, copyObj, getObj, executeObj, list or all." +
 					" the actions which contain Obj means it is a action for the objects in the bucket, for example," +
 					" the deleteObj means grant the permission of delete Objects in the bucket" +
 					"if it is a group policy, actions can be the following: update, delete or all, update indicates the update-group-member action" +
@@ -149,13 +150,22 @@ func putPolicy(ctx *cli.Context) error {
 	}
 
 	var resourceType ResourceType
+	var bucketNameOfBucketPolicy string
 	resource := ctx.Args().Get(0)
 	resourceType, err := parseResourceType(resource)
 	if err != nil {
 		return err
 	}
 
-	actions, err := parseActions(ctx, resourceType)
+	if resourceType == BucketResourceType {
+		bucketNameOfBucketPolicy, err = parseBucketResource(resource)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	// if the actions contain object actions of bucket policy, isObjectActionInBucketPolicy will be set as true
+	actions, isObjectActionInBucketPolicy, err := parseActions(ctx, resourceType)
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -172,11 +182,20 @@ func putPolicy(ctx *cli.Context) error {
 	var statement permTypes.Statement
 	if expireTime > 0 {
 		tm := time.Unix(int64(expireTime), 0)
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		if bucketNameOfBucketPolicy != "" && isObjectActionInBucketPolicy {
+			// putting bucket policy need to set the sub-resource as "grn:o:bucket-name/*"
+			statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketNameOfBucketPolicy, "*").String()}, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		} else {
+			statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{StatementExpireTime: &tm})
+		}
 	} else {
-		statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+		if bucketNameOfBucketPolicy != "" && isObjectActionInBucketPolicy {
+			// putting bucket policy need to set the sub-resource as "grn:o:bucket-name/*"
+			statement = utils.NewStatement(actions, effect, []string{gnfdTypes.NewObjectGRN(bucketNameOfBucketPolicy, "*").String()}, sdktypes.NewStatementOptions{})
+		} else {
+			statement = utils.NewStatement(actions, effect, nil, sdktypes.NewStatementOptions{})
+		}
 	}
-
 	statements := []*permTypes.Statement{&statement}
 
 	return handlePutPolicy(ctx, resource, statements, resourceType)

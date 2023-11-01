@@ -37,7 +37,7 @@ func cmdUpdateGroup() *cli.Command {
 	return &cli.Command{
 		Name:      "update",
 		Action:    updateGroupMember,
-		Usage:     "update group member",
+		Usage:     "add or remove group members",
 		ArgsUsage: "GROUP-NAME",
 		Description: `
 Add or remove group members of the group, you can set add members 
