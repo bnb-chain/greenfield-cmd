@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.1
+BUGFIX
+* [#99](https://github.com/bnb-chain/greenfield-cmd/pull/99) fix put bucket policy with object actions and help info
+
 ## v1.0.0
 FEATURES
 * [#94](https://github.com/bnb-chain/greenfield-cmd/pull/94) support multi-account management and set-default command

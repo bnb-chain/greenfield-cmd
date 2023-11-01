@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	Version                 = "v1.0.0"
+	Version                 = "v1.0.1"
 	maxFileSize             = 64 * 1024 * 1024 * 1024
 	maxPutWithoutResumeSize = 2 * 1024 * 1024 * 1024
 	publicReadType          = "public-read"
@@ -110,6 +110,8 @@ const (
 	maxListMemberNum       = 1000
 	progressDelayPrintSize = 10 * 1024 * 1024
 	timeFormat             = "2006-01-02T15-04-05.000000000Z"
+
+	printRateInterval = time.Second / 2
 )
 
 var (
@@ -606,7 +608,7 @@ func (pr *ProgressReader) printProgress() {
 	elapsed := now.Sub(pr.StartTime)
 	uploadSpeed := float64(pr.Current) / elapsed.Seconds()
 
-	if now.Sub(pr.LastPrinted) >= time.Second/2 { // print rate every second
+	if now.Sub(pr.LastPrinted) >= printRateInterval { // print rate every half second
 		progressStr := fmt.Sprintf("uploading progress: %.2f%% [ %s / %s ], rate: %s , cost ",
 			progress, getConvertSize(pr.Current), getConvertSize(pr.Total), getConvertRate(uploadSpeed))
 		// Clear current line
@@ -641,7 +643,7 @@ func (pw *ProgressWriter) printProgress() {
 	downloadedBytes := pw.Current
 	downloadSpeed := float64(downloadedBytes) / elapsed.Seconds()
 
-	if now.Sub(pw.LastPrinted) >= time.Second/2 { // print rate every second
+	if now.Sub(pw.LastPrinted) >= printRateInterval { // print rate every half second
 		fmt.Printf("\rdownloding progress: %.2f%% [ %s / %s ], rate: %s  ",
 			progress, getConvertSize(pw.Current), getConvertSize(pw.Total), getConvertRate(downloadSpeed))
 		pw.LastPrinted = now

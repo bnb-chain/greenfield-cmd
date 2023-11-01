@@ -21,7 +21,7 @@ To obtain the latest release, please visit the following URL: https://github.com
 git clone https://github.com/bnb-chain/greenfield-cmd.git
 cd greenfield-cmd
 # Find the latest release here: https://github.com/bnb-chain/greenfield-cmd/releases
-git checkout -b branch-name v1.0.0
+git checkout -b branch-name v1.0.1
 make build
 cd build
 ./gnfd-cmd -h
@@ -236,15 +236,12 @@ The gnfd-cmd policy command supports the policy for put/delete resources policy(
 
 The principal is need to be set by --grantee which indicates a greenfield account or --groupId which indicates group id.
 
-The object policy action can be "create", "delete", "copy", "get" , "execute", "list" or "all".
-The bucket policy actions can be "update", "delete", "create", "list", "update", "getObj", "createObj" and so on.
-The group policy actions can be "update", "delete" or all, update indicates the update-group-member action.
+The object policy action can be "create", "delete", "copy", "get" , "execute", "list", "update" or "all".
+The bucket policy actions can be "update", "delete",  "list", "update", "createObj", "deleteObj", "copyObj", "getObj", "executeObj" or "all".The actions which
+contain Obj means it is an action for the objects in the bucket.
+The group policy actions can be "update", "delete" or "all".
 
 The policy effect can set to be "allow" or "deny" by --effect
-
-If it is an object policy, actions can be the following: create, delete, copy, get, execute, list, update or all. 
-If it is a bucket policy, actions can be the following: delete, update, createObj, deleteObj, copyObj, getObj, executeObj, list or all. The actions which 
-contain Obj means it is an action for the objects in the bucket. If it is a group policy, actions can be the following: update, delete or all.
 
 Put policy examples:
 ```
