@@ -468,7 +468,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		return nil
 	}
 	startUploading := time.Now()
-	println("create object finished. It takes ", time.Since(start).Seconds())
+	fmt.Printf("create object finished. It takes %.1f seconds", time.Since(start).Seconds())
 	opt := sdktypes.PutObjectOptions{}
 	if contentType != "" {
 		opt.ContentType = contentType
@@ -519,7 +519,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		return nil
 	}
 	startSealing := time.Now()
-	println("upload finished. It takes ", time.Since(startUploading).Seconds())
+	fmt.Printf("upload finished. It takes %.1f seconds", time.Since(startUploading).Seconds())
 	// Check if object is sealed
 	timeout := time.After(1 * time.Hour)
 	ticker := time.NewTicker(3 * time.Second)
@@ -542,7 +542,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
-				println("sealing object finished. It takes ", time.Since(startSealing).Seconds())
+				fmt.Printf("sealing object finished. It takes %.1f seconds", time.Since(startSealing).Seconds())
 				return nil
 			}
 		}
