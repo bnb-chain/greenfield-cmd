@@ -399,6 +399,8 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
 	gnfdClient client.IClient, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
+	start := time.Now()
+	println("upload file starting", start)
 	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
@@ -465,7 +467,8 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	if objectSize == 0 {
 		return nil
 	}
-
+	startUploading := time.Now()
+	println("create object finished. It takes ", time.Since(start))
 	opt := sdktypes.PutObjectOptions{}
 	if contentType != "" {
 		opt.ContentType = contentType
@@ -515,7 +518,8 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		fmt.Printf("\nupload %s to %s \n", objectName, urlInfo)
 		return nil
 	}
-
+	startSealing := time.Now()
+	println("upload finished. It takes ", time.Since(startUploading))
 	// Check if object is sealed
 	timeout := time.After(1 * time.Hour)
 	ticker := time.NewTicker(3 * time.Second)
@@ -538,6 +542,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
+				println("sealing object finished. It takes ", time.Since(startSealing))
 				return nil
 			}
 		}
