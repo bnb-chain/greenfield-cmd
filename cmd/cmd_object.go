@@ -400,7 +400,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
 	gnfdClient client.IClient, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
 	start := time.Now()
-	println("upload file starting", start)
+	println("upload file starting", start.Format(time.RFC3339))
 	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
