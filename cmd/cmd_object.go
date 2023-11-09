@@ -400,7 +400,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
 	gnfdClient client.IClient, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
 	start := time.Now()
-	println("upload file starting", start.Format(time.RFC3339))
+	println("upload file starting. =================\n", start.Format(time.RFC3339))
 	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
@@ -468,7 +468,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		return nil
 	}
 	startUploading := time.Now()
-	fmt.Printf("create object finished. It takes %.1f seconds", time.Since(start).Seconds())
+	fmt.Printf("create object finished. It takes %.1f seconds. =================\n", time.Since(start).Seconds())
 	opt := sdktypes.PutObjectOptions{}
 	if contentType != "" {
 		opt.ContentType = contentType
@@ -519,7 +519,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 		return nil
 	}
 	startSealing := time.Now()
-	fmt.Printf("upload finished. It takes %.1f seconds", time.Since(startUploading).Seconds())
+	fmt.Printf("upload finished. It takes %.1f seconds. =================\n", time.Since(startUploading).Seconds())
 	// Check if object is sealed
 	timeout := time.After(1 * time.Hour)
 	ticker := time.NewTicker(3 * time.Second)
@@ -542,7 +542,8 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
 				ticker.Stop()
 				fmt.Printf("upload %s to %s \n", objectName, urlInfo)
-				fmt.Printf("sealing object finished. It takes %.1f seconds", time.Since(startSealing).Seconds())
+				fmt.Printf("sealing object finished. It takes %.1f seconds. =================\n", time.Since(startSealing).Seconds())
+				fmt.Printf("Totally. It takes %.1f seconds. =================\n", time.Since(start).Seconds())
 				return nil
 			}
 		}
