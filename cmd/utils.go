@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -111,7 +112,8 @@ const (
 	progressDelayPrintSize = 10 * 1024 * 1024
 	timeFormat             = "2006-01-02T15-04-05.000000000Z"
 
-	printRateInterval = time.Second / 2
+	printRateInterval  = time.Second / 2
+	bytesToReadForMIME = 512
 )
 
 var (
@@ -705,4 +707,22 @@ func convertAddressToLower(str string) string {
 		converted = converted[2:]
 	}
 	return converted
+}
+
+func getContentTypeOfFile(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	// read the first bits of file for judgment of the mime type
+	buffer := make([]byte, bytesToReadForMIME)
+	_, err = file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+
+	contentType := http.DetectContentType(buffer)
+	return contentType, nil
 }
