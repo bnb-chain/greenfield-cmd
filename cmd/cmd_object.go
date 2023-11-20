@@ -409,6 +409,12 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	opts := sdktypes.CreateObjectOptions{}
 	if contentType != "" {
 		opts.ContentType = contentType
+	} else {
+		// parse the mimeType as content type
+		mimeType, err := getContentTypeOfFile(filePath)
+		if err == nil {
+			opts.ContentType = mimeType
+		}
 	}
 
 	visibity := ctx.Generic(visibilityFlag)
