@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -379,6 +378,11 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 		if !info.IsDir() {
 			fileInfos = append(fileInfos, info)
 			filePaths = append(filePaths, path)
+		} else {
+			fmt.Println("creating folder:", path)
+			if createFolderErr := uploadFile(bucketName, path+"/", path, urlInfo, ctx, gnfdClient, true, false, 0); createFolderErr != nil {
+				return toCmdErr(createFolderErr)
+			}
 		}
 		return nil
 	})
@@ -388,9 +392,8 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	}
 	// upload folder
 	for id, info := range fileInfos {
-		objectName := path.Base(filePaths[id])
-		if uploadErr := uploadFile(bucketName, objectName, filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
-			fmt.Printf("failed to upload object: %s, error:%v \n", objectName, uploadErr)
+		if uploadErr := uploadFile(bucketName, filePaths[id], filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
+			fmt.Printf("failed to upload object: %s, error:%v \n", filePaths[id], uploadErr)
 		}
 	}
 
