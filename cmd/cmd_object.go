@@ -373,25 +373,33 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 		return errors.New("failed to parse folder path with recursive flag")
 	}
 
-	lastDir := filepath.Base(folderName)
+	baseDir := filepath.Base(folderName)
 
 	fileInfos := make([]os.FileInfo, 0)
 	filePaths := make([]string, 0)
-
+	objectNames := make([]string, 0)
 	listFolderErr := filepath.Walk(folderName, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			fileInfos = append(fileInfos, info)
+			// use the base dir to construct object name of the file
+			index := strings.Index(path, baseDir)
+			if index == -1 {
+				return nil
+			}
+			objectNames = append(objectNames, path[index:])
 			filePaths = append(filePaths, path)
 		} else {
-			objectname := path + "/"
-			if path != folderName {
-				relativePath := strings.TrimPrefix(path, path+"/")
-				objectname = filepath.Join(lastDir, relativePath)
+			// use the base dir to construct object name of the sub-folder
+			index := strings.Index(path, baseDir)
+			if index == -1 {
+				return nil
 			}
-			fmt.Println("creating folder:", path)
-			if createFolderErr := uploadFile(bucketName, objectname, path, urlInfo, ctx, gnfdClient, true, false, 0); createFolderErr != nil {
+			subFolderName := path[index:] + "/"
+			fmt.Println("creating folder:", subFolderName)
+			if createFolderErr := uploadFile(bucketName, subFolderName, path, urlInfo, ctx, gnfdClient, true, false, 0); createFolderErr != nil {
 				return toCmdErr(createFolderErr)
 			}
+
 		}
 		return nil
 	})
@@ -401,7 +409,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	}
 	// upload folder
 	for id, info := range fileInfos {
-		if uploadErr := uploadFile(bucketName, filePaths[id], filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
+		if uploadErr := uploadFile(bucketName, objectNames[id], filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
 			fmt.Printf("failed to upload object: %s, error:%v \n", filePaths[id], uploadErr)
 		}
 	}
