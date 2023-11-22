@@ -70,6 +70,9 @@ const (
 	unsafeFlag       = "unsafe"
 	unarmoredFlag    = "unarmoredHex"
 	passwordFileFlag = "passwordfile"
+	formatFlag       = "format"
+	defaultFormat    = "plaintxt"
+	jsonFormat       = "json"
 	homeFlag         = "home"
 	keyStoreFlag     = "keystore"
 	configFlag       = "config"
@@ -126,6 +129,37 @@ var (
 	SyncBroadcastMode     = tx.BroadcastMode_BROADCAST_MODE_SYNC
 	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
+
+type ObjectInfo struct {
+	ObjectStatus        string            `json:"object_status"`
+	Owner               string            `json:"owner"`
+	BucketName          string            `json:"bucket_name"`
+	ObjectName          string            `json:"object_name"`
+	ID                  string            `json:"id"`
+	LocalVirtualGroupID int               `json:"local_virtual_group_id"`
+	PayloadSize         int               `json:"payload_size"`
+	Visibility          string            `json:"visibility"`
+	ContentType         string            `json:"content_type"`
+	CreateAt            string            `json:"create_at"`
+	Checksums           map[string]string `json:"checksums"`
+}
+
+type BucketInfo struct {
+	Owner                      string `json:"owner"`
+	BucketName                 string `json:"bucket_name"`
+	Visibility                 string `json:"visibility"`
+	ID                         string `json:"id"`
+	CreateAt                   string `json:"create_at"`
+	PaymentAddress             string `json:"payment_address"`
+	GlobalVirtualGroupFamilyID int    `json:"global_virtual_group_family_id"`
+	BucketStatus               string `json:"bucket_status"`
+}
+
+type GroupInfo struct {
+	Owner     string `json:"owner"`
+	GroupName string `json:"group_name"`
+	ID        string `json:"id"`
+}
 
 type CmdEnumValue struct {
 	Enum     []string
@@ -202,8 +236,67 @@ func parseObjectInfo(objectDetail *sdktypes.ObjectDetail) {
 	}
 }
 
-func parseBucketInfo(info string) {
+func parseObjectByJsonFormat(objectDetail *sdktypes.ObjectDetail) {
+	info := objectDetail.ObjectInfo.String()
+	objectInfo := ObjectInfo{
+		ObjectStatus: objectDetail.ObjectInfo.ObjectStatus.String(),
+		Checksums:    make(map[string]string),
+	}
 	infoStr := strings.Split(info, " ")
+	checksumID := 0
+	for _, objInfo := range infoStr {
+		if strings.Contains(objInfo, "create_at:") {
+			timeInfo := strings.Split(objInfo, ":")
+			timestamp, _ := strconv.ParseInt(timeInfo[1], 10, 64)
+			location, _ := time.LoadLocation("Asia/Shanghai")
+			t := time.Unix(timestamp, 0).In(location)
+			objectInfo.CreateAt = t.Format(iso8601DateFormat)
+		}
+		if strings.Contains(objInfo, "checksums:") {
+			hashInfo := strings.Split(objInfo, ":")
+			objectInfo.Checksums["checksum["+strconv.Itoa(checksumID)+"]"] = hex.EncodeToString([]byte(hashInfo[1]))
+			checksumID++
+		}
+		if strings.Contains(objInfo, "status") {
+			continue
+		}
+		keyValue := strings.Split(objInfo, ":")
+		if len(keyValue) == 2 {
+			switch keyValue[0] {
+			case "owner":
+				objectInfo.Owner = keyValue[1]
+			case "bucket_name":
+				objectInfo.BucketName = keyValue[1]
+			case "object_name":
+				objectInfo.ObjectName = keyValue[1]
+			case "id":
+				objectInfo.ID = keyValue[1]
+			case "local_virtual_group_id":
+				groupID, _ := strconv.Atoi(keyValue[1])
+				objectInfo.LocalVirtualGroupID = groupID
+			case "payload_size":
+				payloadSize, _ := strconv.Atoi(keyValue[1])
+				objectInfo.PayloadSize = payloadSize
+			case "visibility":
+				objectInfo.Visibility = keyValue[1]
+			case "content_type":
+				objectInfo.ContentType = keyValue[1]
+			default:
+				continue
+			}
+		}
+	}
+	jsonData, err := json.Marshal(objectInfo)
+	if err != nil {
+		fmt.Println("Error marshalling to JSON:", err)
+		return
+	}
+	fmt.Println(string(jsonData))
+}
+
+func parseBucketInfo(info *storageTypes.BucketInfo) {
+	fmt.Println("bucket_status:", info.BucketStatus.String())
+	infoStr := strings.Split(info.String(), " ")
 	for _, bucketInfo := range infoStr {
 		if strings.Contains(bucketInfo, "create_at:") {
 			timeInfo := strings.Split(bucketInfo, ":")
@@ -214,6 +307,70 @@ func parseBucketInfo(info string) {
 		}
 		fmt.Println(bucketInfo)
 	}
+}
+
+func parseBucketByJsonFormat(info *storageTypes.BucketInfo) {
+	infoStr := strings.Split(info.String(), " ")
+	bucketInfo := BucketInfo{}
+	bucketInfo.BucketStatus = info.BucketStatus.String()
+	for _, entry := range infoStr {
+		keyValue := strings.Split(entry, ":")
+		if len(keyValue) == 2 {
+			key := strings.TrimSpace(keyValue[0])
+			value := strings.TrimSpace(keyValue[1])
+			switch key {
+			case "owner":
+				bucketInfo.Owner = value
+			case "bucket_name":
+				bucketInfo.BucketName = value
+			case "visibility":
+				bucketInfo.Visibility = value
+			case "id":
+				bucketInfo.ID = value
+			case "create_at":
+				bucketInfo.CreateAt = value
+			case "payment_address":
+				bucketInfo.PaymentAddress = value
+			case "global_virtual_group_family_id":
+				id, _ := strconv.Atoi(value)
+				bucketInfo.GlobalVirtualGroupFamilyID = id
+			}
+		}
+	}
+
+	jsonData, err := json.Marshal(bucketInfo)
+	if err != nil {
+		fmt.Println("Error marshalling to JSON:", err)
+		return
+	}
+	fmt.Println(string(jsonData))
+}
+
+func parseGroupByFormat(info *storageTypes.GroupInfo) {
+	infoStr := strings.Split(info.String(), " ")
+	groupInfo := GroupInfo{}
+	for _, entry := range infoStr {
+		keyValue := strings.Split(entry, ":")
+		if len(keyValue) == 2 {
+			key := strings.TrimSpace(keyValue[0])
+			value := strings.TrimSpace(keyValue[1])
+			switch key {
+			case "owner":
+				groupInfo.Owner = value
+			case "group_name":
+				groupInfo.GroupName = value
+			case "id":
+				groupInfo.ID = value
+			}
+		}
+	}
+
+	jsonData, err := json.Marshal(groupInfo)
+	if err != nil {
+		fmt.Println("Error marshalling to JSON:", err)
+		return
+	}
+	fmt.Println(string(jsonData))
 }
 
 func getBucketNameByUrl(ctx *cli.Context) (string, error) {

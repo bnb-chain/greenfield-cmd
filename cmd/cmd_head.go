@@ -96,12 +96,20 @@ func headObject(ctx *cli.Context) error {
 
 	objectDetail, err := client.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		fmt.Println("no such ob`ject")
+		fmt.Println("no such object")
 		return nil
 	}
 
 	fmt.Println("latest object info:")
-	parseObjectInfo(objectDetail)
+	if format := ctx.String(formatFlag); format != "" {
+		if format == defaultFormat {
+			parseObjectInfo(objectDetail)
+		} else if format == jsonFormat {
+			parseObjectByJsonFormat(objectDetail)
+		} else {
+			return toCmdErr(fmt.Errorf("invalid format"))
+		}
+	}
 	return nil
 }
 
@@ -126,7 +134,15 @@ func headBucket(ctx *cli.Context) error {
 	}
 
 	fmt.Println("latest bucket info:")
-	parseBucketInfo(bucketInfo.String())
+	if format := ctx.String(formatFlag); format != "" {
+		if format == defaultFormat {
+			parseBucketInfo(bucketInfo)
+		} else if format == jsonFormat {
+			parseBucketByJsonFormat(bucketInfo)
+		} else {
+			return toCmdErr(fmt.Errorf("invalid format"))
+		}
+	}
 	return nil
 }
 
@@ -155,10 +171,20 @@ func headGroup(ctx *cli.Context) error {
 		return nil
 	}
 
-	infoStr := strings.Split(groupInfo.String(), " ")
-	for _, info := range infoStr {
-		fmt.Println(info)
+	fmt.Println("latest group info:")
+	if format := ctx.String(formatFlag); format != "" {
+		if format == defaultFormat {
+			infoStr := strings.Split(groupInfo.String(), " ")
+			for _, info := range infoStr {
+				fmt.Println(info)
+			}
+		} else if format == jsonFormat {
+			parseGroupByFormat(groupInfo)
+		} else {
+			return toCmdErr(fmt.Errorf("invalid format"))
+		}
 	}
+
 	return nil
 }
 
