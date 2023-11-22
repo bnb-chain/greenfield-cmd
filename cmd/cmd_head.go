@@ -96,10 +96,12 @@ func headObject(ctx *cli.Context) error {
 
 	objectDetail, err := client.HeadObject(c, bucketName, objectName)
 	if err != nil {
-		fmt.Println("no such object")
+		fmt.Println("no such ob`ject")
 		return nil
 	}
-	parseChainInfo(objectDetail.ObjectInfo.String(), false)
+
+	fmt.Println("latest object info:")
+	parseObjectInfo(objectDetail)
 	return nil
 }
 
@@ -123,7 +125,8 @@ func headBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	parseChainInfo(bucketInfo.String(), true)
+	fmt.Println("latest bucket info:")
+	parseBucketInfo(bucketInfo.String())
 	return nil
 }
 

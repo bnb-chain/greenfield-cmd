@@ -173,27 +173,46 @@ func toCmdErr(err error) error {
 	return nil
 }
 
-// parse bucket info or object info meta on the chain
-func parseChainInfo(info string, isBucketInfo bool) {
-	if isBucketInfo {
-		fmt.Println("latest bucket info:")
-	} else {
-		fmt.Println("latest object info:")
-	}
+// parse object info meta on the chain
+func parseObjectInfo(objectDetail *sdktypes.ObjectDetail) {
+	info := objectDetail.ObjectInfo.String()
+	fmt.Println("object_status:", objectDetail.ObjectInfo.ObjectStatus)
 	infoStr := strings.Split(info, " ")
-	for _, info := range infoStr {
-		if strings.Contains(info, "create_at:") {
-			timeInfo := strings.Split(info, ":")
+	checksumID := 0
+	for _, objInfo := range infoStr {
+		if strings.Contains(objInfo, "create_at:") {
+			timeInfo := strings.Split(objInfo, ":")
 			timestamp, _ := strconv.ParseInt(timeInfo[1], 10, 64)
 			location, _ := time.LoadLocation("Asia/Shanghai")
 			t := time.Unix(timestamp, 0).In(location)
-			info = timeInfo[0] + ":" + t.Format(iso8601DateFormat)
+			objInfo = timeInfo[0] + ":" + t.Format(iso8601DateFormat)
 		}
-		if strings.Contains(info, "checksums:") {
-			hashInfo := strings.Split(info, ":")
-			info = hashInfo[0] + ":" + hex.EncodeToString([]byte(hashInfo[1]))
+		if strings.Contains(objInfo, "checksums:") {
+			if checksumID == 0 {
+				fmt.Println("checksums:")
+			}
+			hashInfo := strings.Split(objInfo, ":")
+			objInfo = hashInfo[0] + "[" + strconv.Itoa(checksumID) + "]" + ":" + hex.EncodeToString([]byte(hashInfo[1]))
+			checksumID++
 		}
-		fmt.Println(info)
+		if strings.Contains(objInfo, "status") {
+			continue
+		}
+		fmt.Println(objInfo)
+	}
+}
+
+func parseBucketInfo(info string) {
+	infoStr := strings.Split(info, " ")
+	for _, bucketInfo := range infoStr {
+		if strings.Contains(bucketInfo, "create_at:") {
+			timeInfo := strings.Split(bucketInfo, ":")
+			timestamp, _ := strconv.ParseInt(timeInfo[1], 10, 64)
+			location, _ := time.LoadLocation("Asia/Shanghai")
+			t := time.Unix(timestamp, 0).In(location)
+			bucketInfo = timeInfo[0] + ":" + t.Format(iso8601DateFormat)
+		}
+		fmt.Println(bucketInfo)
 	}
 }
 
