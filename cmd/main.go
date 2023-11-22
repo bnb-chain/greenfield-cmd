@@ -53,12 +53,6 @@ func main() {
 			Usage:   "password file for encrypting and decoding the private key",
 		},
 		&cli.StringFlag{
-			Name:    formatFlag,
-			Aliases: []string{"f"},
-			Value:   defaultFormat,
-			Usage:   "return format of plaintxt or json",
-		},
-		&cli.StringFlag{
 			Name:    configFlag,
 			Aliases: []string{"c"},
 			Usage:   "Load configuration from `FILE`",

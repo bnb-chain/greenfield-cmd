@@ -372,15 +372,24 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	if !fileInfo.IsDir() {
 		return errors.New("failed to parse folder path with recursive flag")
 	}
+
+	lastDir := filepath.Base(folderName)
+
 	fileInfos := make([]os.FileInfo, 0)
 	filePaths := make([]string, 0)
+
 	listFolderErr := filepath.Walk(folderName, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			fileInfos = append(fileInfos, info)
 			filePaths = append(filePaths, path)
 		} else {
+			objectname := path + "/"
+			if path != folderName {
+				relativePath := strings.TrimPrefix(path, path+"/")
+				objectname = filepath.Join(lastDir, relativePath)
+			}
 			fmt.Println("creating folder:", path)
-			if createFolderErr := uploadFile(bucketName, path+"/", path, urlInfo, ctx, gnfdClient, true, false, 0); createFolderErr != nil {
+			if createFolderErr := uploadFile(bucketName, objectname, path, urlInfo, ctx, gnfdClient, true, false, 0); createFolderErr != nil {
 				return toCmdErr(createFolderErr)
 			}
 		}

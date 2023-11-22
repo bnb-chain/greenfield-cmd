@@ -19,6 +19,17 @@ func cmdHeadObj() *cli.Command {
 send headObject txn to chain and fetch object info on greenfield chain
 Examples:
 $ gnfd-cmd object head gnfd://bucket-name/object-name`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name:    formatFlag,
+				Aliases: []string{"f"},
+				Value: &CmdEnumValue{
+					Enum:    []string{defaultFormat, jsonFormat},
+					Default: defaultFormat,
+				},
+				Usage: "set format of the return content of plaintxt or json",
+			},
+		},
 	}
 }
 
@@ -33,6 +44,17 @@ func cmdHeadBucket() *cli.Command {
 send headBucket txn to chain and fetch bucket info on greenfield chain
 Examples:
 $ gnfd-cmd bucket head gnfd://bucket-name`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name:    formatFlag,
+				Aliases: []string{"f"},
+				Value: &CmdEnumValue{
+					Enum:    []string{defaultFormat, jsonFormat},
+					Default: defaultFormat,
+				},
+				Usage: "set format of the return content of plaintxt or json",
+			},
+		},
 	}
 }
 
@@ -52,6 +74,15 @@ $ gnfd-cmd group head --groupOwner  group-name`,
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
+			},
+			&cli.GenericFlag{
+				Name:    formatFlag,
+				Aliases: []string{"f"},
+				Value: &CmdEnumValue{
+					Enum:    []string{defaultFormat, jsonFormat},
+					Default: defaultFormat,
+				},
+				Usage: "set format of the return content of plaintxt or json",
 			},
 		},
 	}
