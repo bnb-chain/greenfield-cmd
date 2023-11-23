@@ -117,6 +117,7 @@ const (
 
 	printRateInterval  = time.Second / 2
 	bytesToReadForMIME = 512
+	notFound           = -1
 )
 
 var (
@@ -334,6 +335,8 @@ func parseBucketByJsonFormat(info *storageTypes.BucketInfo) {
 			case "global_virtual_group_family_id":
 				id, _ := strconv.Atoi(value)
 				bucketInfo.GlobalVirtualGroupFamilyID = id
+			default:
+				continue
 			}
 		}
 	}
@@ -900,5 +903,6 @@ func getContentTypeOfFile(filePath string) (string, error) {
 	}
 
 	contentType := http.DetectContentType(buffer)
+	fmt.Println("content type is", contentType)
 	return contentType, nil
 }

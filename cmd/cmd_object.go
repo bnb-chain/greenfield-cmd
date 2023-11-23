@@ -383,7 +383,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 			fileInfos = append(fileInfos, info)
 			// use the base dir to construct object name of the file
 			index := strings.Index(path, baseDir)
-			if index == -1 {
+			if index == notFound {
 				return nil
 			}
 			objectNames = append(objectNames, path[index:])
@@ -391,7 +391,7 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 		} else {
 			// use the base dir to construct object name of the sub-folder
 			index := strings.Index(path, baseDir)
-			if index == -1 {
+			if index == notFound {
 				return nil
 			}
 			subFolderName := path[index:] + "/"
