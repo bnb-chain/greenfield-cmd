@@ -903,6 +903,5 @@ func getContentTypeOfFile(filePath string) (string, error) {
 	}
 
 	contentType := http.DetectContentType(buffer)
-	fmt.Println("content type is", contentType)
 	return contentType, nil
 }
