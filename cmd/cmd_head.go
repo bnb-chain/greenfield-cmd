@@ -210,7 +210,7 @@ func headGroup(ctx *cli.Context) error {
 				fmt.Println(info)
 			}
 		} else if format == jsonFormat {
-			parseGroupByFormat(groupInfo)
+			parseGroupByJson(groupInfo)
 		} else {
 			return toCmdErr(fmt.Errorf("invalid format"))
 		}

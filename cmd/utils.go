@@ -265,13 +265,13 @@ func parseObjectByJsonFormat(objectDetail *sdktypes.ObjectDetail) {
 		if len(keyValue) == 2 {
 			switch keyValue[0] {
 			case "owner":
-				objectInfo.Owner = keyValue[1]
+				objectInfo.Owner = strings.Trim(keyValue[1], "\"")
 			case "bucket_name":
-				objectInfo.BucketName = keyValue[1]
+				objectInfo.BucketName = strings.Trim(keyValue[1], "\"")
 			case "object_name":
-				objectInfo.ObjectName = keyValue[1]
+				objectInfo.ObjectName = strings.Trim(keyValue[1], "\"")
 			case "id":
-				objectInfo.ID = keyValue[1]
+				objectInfo.ID = strings.Trim(keyValue[1], "\"")
 			case "local_virtual_group_id":
 				groupID, _ := strconv.Atoi(keyValue[1])
 				objectInfo.LocalVirtualGroupID = groupID
@@ -279,9 +279,9 @@ func parseObjectByJsonFormat(objectDetail *sdktypes.ObjectDetail) {
 				payloadSize, _ := strconv.Atoi(keyValue[1])
 				objectInfo.PayloadSize = payloadSize
 			case "visibility":
-				objectInfo.Visibility = keyValue[1]
+				objectInfo.Visibility = strings.Trim(keyValue[1], "\"")
 			case "content_type":
-				objectInfo.ContentType = keyValue[1]
+				objectInfo.ContentType = strings.Trim(keyValue[1], "\"")
 			default:
 				continue
 			}
@@ -321,17 +321,17 @@ func parseBucketByJsonFormat(info *storageTypes.BucketInfo) {
 			value := strings.TrimSpace(keyValue[1])
 			switch key {
 			case "owner":
-				bucketInfo.Owner = value
+				bucketInfo.Owner = strings.Trim(value, "\"")
 			case "bucket_name":
-				bucketInfo.BucketName = value
+				bucketInfo.BucketName = strings.Trim(value, "\"")
 			case "visibility":
-				bucketInfo.Visibility = value
+				bucketInfo.Visibility = strings.Trim(value, "\"")
 			case "id":
-				bucketInfo.ID = value
+				bucketInfo.ID = strings.Trim(value, "\"")
 			case "create_at":
-				bucketInfo.CreateAt = value
+				bucketInfo.CreateAt = strings.Trim(value, "\"")
 			case "payment_address":
-				bucketInfo.PaymentAddress = value
+				bucketInfo.PaymentAddress = strings.Trim(value, "\"")
 			case "global_virtual_group_family_id":
 				id, _ := strconv.Atoi(value)
 				bucketInfo.GlobalVirtualGroupFamilyID = id
@@ -349,7 +349,7 @@ func parseBucketByJsonFormat(info *storageTypes.BucketInfo) {
 	fmt.Println(string(jsonData))
 }
 
-func parseGroupByFormat(info *storageTypes.GroupInfo) {
+func parseGroupByJson(info *storageTypes.GroupInfo) {
 	infoStr := strings.Split(info.String(), " ")
 	groupInfo := GroupInfo{}
 	for _, entry := range infoStr {
@@ -359,11 +359,11 @@ func parseGroupByFormat(info *storageTypes.GroupInfo) {
 			value := strings.TrimSpace(keyValue[1])
 			switch key {
 			case "owner":
-				groupInfo.Owner = value
+				groupInfo.Owner = strings.Trim(value, "\"")
 			case "group_name":
-				groupInfo.GroupName = value
+				groupInfo.GroupName = strings.Trim(value, "\"")
 			case "id":
-				groupInfo.ID = value
+				groupInfo.ID = strings.Trim(value, "\"")
 			}
 		}
 	}
