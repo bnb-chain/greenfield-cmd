@@ -19,6 +19,17 @@ func cmdHeadObj() *cli.Command {
 send headObject txn to chain and fetch object info on greenfield chain
 Examples:
 $ gnfd-cmd object head gnfd://bucket-name/object-name`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name:    formatFlag,
+				Aliases: []string{"f"},
+				Value: &CmdEnumValue{
+					Enum:    []string{defaultFormat, jsonFormat},
+					Default: defaultFormat,
+				},
+				Usage: "set format of the return content of plaintxt or json",
+			},
+		},
 	}
 }
 
@@ -33,6 +44,17 @@ func cmdHeadBucket() *cli.Command {
 send headBucket txn to chain and fetch bucket info on greenfield chain
 Examples:
 $ gnfd-cmd bucket head gnfd://bucket-name`,
+		Flags: []cli.Flag{
+			&cli.GenericFlag{
+				Name:    formatFlag,
+				Aliases: []string{"f"},
+				Value: &CmdEnumValue{
+					Enum:    []string{defaultFormat, jsonFormat},
+					Default: defaultFormat,
+				},
+				Usage: "set format of the return content of plaintxt or json",
+			},
+		},
 	}
 }
 
@@ -52,6 +74,15 @@ $ gnfd-cmd group head --groupOwner  group-name`,
 				Name:  groupOwnerFlag,
 				Value: "",
 				Usage: "need set the owner address if you are not the owner of the group",
+			},
+			&cli.GenericFlag{
+				Name:    formatFlag,
+				Aliases: []string{"f"},
+				Value: &CmdEnumValue{
+					Enum:    []string{defaultFormat, jsonFormat},
+					Default: defaultFormat,
+				},
+				Usage: "set format of the return content of plaintxt or json",
 			},
 		},
 	}
@@ -99,7 +130,17 @@ func headObject(ctx *cli.Context) error {
 		fmt.Println("no such object")
 		return nil
 	}
-	parseChainInfo(objectDetail.ObjectInfo.String(), false)
+
+	fmt.Println("latest object info:")
+	if format := ctx.String(formatFlag); format != "" {
+		if format == defaultFormat {
+			parseObjectInfo(objectDetail)
+		} else if format == jsonFormat {
+			parseObjectByJsonFormat(objectDetail)
+		} else {
+			return toCmdErr(fmt.Errorf("invalid format"))
+		}
+	}
 	return nil
 }
 
@@ -123,7 +164,16 @@ func headBucket(ctx *cli.Context) error {
 		return nil
 	}
 
-	parseChainInfo(bucketInfo.String(), true)
+	fmt.Println("latest bucket info:")
+	if format := ctx.String(formatFlag); format != "" {
+		if format == defaultFormat {
+			parseBucketInfo(bucketInfo)
+		} else if format == jsonFormat {
+			parseBucketByJsonFormat(bucketInfo)
+		} else {
+			return toCmdErr(fmt.Errorf("invalid format"))
+		}
+	}
 	return nil
 }
 
@@ -152,10 +202,20 @@ func headGroup(ctx *cli.Context) error {
 		return nil
 	}
 
-	infoStr := strings.Split(groupInfo.String(), " ")
-	for _, info := range infoStr {
-		fmt.Println(info)
+	fmt.Println("latest group info:")
+	if format := ctx.String(formatFlag); format != "" {
+		if format == defaultFormat {
+			infoStr := strings.Split(groupInfo.String(), " ")
+			for _, info := range infoStr {
+				fmt.Println(info)
+			}
+		} else if format == jsonFormat {
+			parseGroupByJson(groupInfo)
+		} else {
+			return toCmdErr(fmt.Errorf("invalid format"))
+		}
 	}
+
 	return nil
 }
 

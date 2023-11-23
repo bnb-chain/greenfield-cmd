@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2
+FEATURES
+* [#101](https://github.com/bnb-chain/greenfield-cmd/pull/101) support parsing content type when uploading files
+* [#102](https://github.com/bnb-chain/greenfield-cmd/pull/102) support automatically create folder structure in bucket when uploading folder
+* [#103](https://github.com/bnb-chain/greenfield-cmd/pull/103) support format flag to support json content for the head bucket/object/group commands
+
 ## v1.0.1
 BUGFIX
 * [#99](https://github.com/bnb-chain/greenfield-cmd/pull/99) fix put bucket policy with object actions and help info
