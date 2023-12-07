@@ -168,8 +168,8 @@ github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20231129013257-1e407f209b0
 github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20231129013257-1e407f209b02/go.mod h1:vhsZxXE9tYJeYB5JR4hPhd6Pc/uPf7j1T8IJ7p9FdeM=
 github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20231129013257-1e407f209b02 h1:RMrZep7e2dcMk4E5YysMdCn6PekI3vA2WHfnMQ/kg18=
 github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20231129013257-1e407f209b02/go.mod h1:An0MllWJY6PxibUpnwGk8jOm+a/qIxlKmL5Zyp9NnaM=
-github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231207021247-cf3e05653b6f h1:TvAy6e3paGFtbc3etYb3DA7lTYCPwKP0dCmKAKdRmDg=
-github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231207021247-cf3e05653b6f/go.mod h1:Wtg4gK6GbcskJ6qNGI9MvsJm43pHEYuKXBpmyRrIphg=
+github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231207022909-3bb7fa1b1cc5 h1:JyJZuLtazyZHgqAZKPxmLT3WMn4Tx4bW67dvaxP2crg=
+github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231207022909-3bb7fa1b1cc5/go.mod h1:Wtg4gK6GbcskJ6qNGI9MvsJm43pHEYuKXBpmyRrIphg=
 github.com/bnb-chain/greenfield-iavl v0.20.1 h1:y3L64GU99otNp27/xLVBTDbv4eroR6CzoYz0rbaVotM=
 github.com/bnb-chain/greenfield-iavl v0.20.1/go.mod h1:oLksTs8dfh7DYIKBro7hbRQ+ewls7ghJ27pIXlbEXyI=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
