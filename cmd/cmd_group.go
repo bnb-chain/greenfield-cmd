@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/urfave/cli/v2"
+
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/urfave/cli/v2"
 )
 
 // cmdCreateBucket create a new Bucket
@@ -482,7 +483,7 @@ func listGroup(ctx *cli.Context) error {
 		}
 
 		id := groupList.Groups[memberNum-1].Group.Id
-		initStartKey = strconv.FormatUint(id, 10)
+		initStartKey = strconv.FormatUint(id.Uint64(), 10)
 	}
 
 	return nil
@@ -518,7 +519,7 @@ func listBelongGroup(ctx *cli.Context) error {
 		}
 
 		id := groupList.Groups[memberNum-1].Group.Id
-		initStartKey = strconv.FormatUint(id, 10)
+		initStartKey = strconv.FormatUint(id.Uint64(), 10)
 	}
 
 	return nil
@@ -556,7 +557,7 @@ func printListGroupResult(listResult *sdktypes.GroupsResult) {
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(group.CreateTime, 0).In(location)
 
-		fmt.Printf(format, t.Format(iso8601DateFormat), group.Group.GroupName, strconv.FormatUint(group.Group.Id, 10))
+		fmt.Printf(format, t.Format(iso8601DateFormat), group.Group.GroupName, strconv.FormatUint(group.Group.Id.Uint64(), 10))
 	}
 }
 
