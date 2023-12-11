@@ -61,7 +61,10 @@ func setTag(ctx *cli.Context) error {
 
 	tagsParam := ctx.String(tagFlag)
 	if tagsParam == "" {
-		toCmdErr(errors.New("invalid tags parameter"))
+		err = errors.New("invalid tags parameter")
+	}
+	if err != nil {
+		return toCmdErr(err)
 	}
 	tags := &storageTypes.ResourceTags{}
 	err = json.Unmarshal([]byte(tagsParam), &tags.Tags)
