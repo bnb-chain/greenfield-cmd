@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,11 +12,13 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/urfave/cli/v2"
+
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/urfave/cli/v2"
+	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
 
 // cmdPutObj return the command to finish uploading payload of the object
@@ -34,7 +37,7 @@ Examples:
 # create object and upload file to storage provider, the corresponding object is gnfd-object
 $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object,
 # upload the files inside the folders
-$ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
+$ gnfd-cmd object put --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' --recursive folderName gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -77,6 +80,11 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Name:  bypassSealFlag,
 				Value: false,
 				Usage: "if set this flag as true, it will not wait for the file to be sealed after the uploading is completed.",
+			},
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags of the object. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
 			},
 		},
 	}
@@ -427,6 +435,16 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	bypassSeal := ctx.Bool(bypassSealFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storageTypes.ResourceTags{}
+		err := json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+
 	if contentType != "" {
 		opts.ContentType = contentType
 	} else {

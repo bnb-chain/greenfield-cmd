@@ -2,15 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
-	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
+
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
+	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
 
 // cmdCreateBucket create a new Bucket
@@ -27,7 +30,7 @@ The command need to set the primary SP address with --primarySP.
 
 Examples:
 # Create a new bucket called gnfd-bucket, visibility is public-read
-$ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
+$ gnfd-cmd bucket create --visibility=public-read  --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -51,6 +54,11 @@ $ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
 					Default: privateType,
 				},
 				Usage: "set visibility of the bucket",
+			},
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags of the bucket. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
 			},
 		},
 	}
@@ -190,6 +198,15 @@ func createBucket(ctx *cli.Context) error {
 	chargedQuota := ctx.Uint64(chargeQuotaFlag)
 	if chargedQuota > 0 {
 		opts.ChargedQuota = chargedQuota
+	}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storagetypes.ResourceTags{}
+		err = json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
 	}
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}

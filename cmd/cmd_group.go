@@ -29,7 +29,14 @@ func cmdCreateGroup() *cli.Command {
 Create a new group
 
 Examples:
-$ gnfd-cmd group create group-name`,
+$ gnfd-cmd group create --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' group-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags of the group. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
+			},
+		},
 	}
 }
 
@@ -233,6 +240,15 @@ func createGroup(ctx *cli.Context) error {
 	}
 
 	opts := sdktypes.CreateGroupOptions{}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storageTypes.ResourceTags{}
+		err = json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 

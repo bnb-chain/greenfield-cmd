@@ -171,6 +171,14 @@ func main() {
 					cmdSetDefaultAccount(),
 				},
 			},
+
+			{
+				Name:  "tag",
+				Usage: "support the tag related functions",
+				Subcommands: []*cli.Command{
+					cmdSetTag(),
+				},
+			},
 			cmdShowVersion(),
 		},
 	}

@@ -16,17 +16,20 @@ import (
 	"unicode"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/gogoproto/jsonpb"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
+
 	sdkutils "github.com/bnb-chain/greenfield-go-sdk/pkg/utils"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
 	permTypes "github.com/bnb-chain/greenfield/x/permission/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/eth/ethsecp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/term"
 )
 
 const (
@@ -41,6 +44,7 @@ const (
 	primarySPFlag           = "primarySP"
 	chargeQuotaFlag         = "chargedQuota"
 	visibilityFlag          = "visibility"
+	tagFlag                 = "tags"
 	paymentFlag             = "paymentAddress"
 	secondarySPFlag         = "secondarySPs"
 	contentTypeFlag         = "contentType"
@@ -131,37 +135,6 @@ var (
 	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
 
-type ObjectInfo struct {
-	ObjectStatus        string            `json:"object_status"`
-	Owner               string            `json:"owner"`
-	BucketName          string            `json:"bucket_name"`
-	ObjectName          string            `json:"object_name"`
-	ID                  string            `json:"id"`
-	LocalVirtualGroupID int               `json:"local_virtual_group_id"`
-	PayloadSize         int               `json:"payload_size"`
-	Visibility          string            `json:"visibility"`
-	ContentType         string            `json:"content_type"`
-	CreateAt            string            `json:"create_at"`
-	Checksums           map[string]string `json:"checksums"`
-}
-
-type BucketInfo struct {
-	Owner                      string `json:"owner"`
-	BucketName                 string `json:"bucket_name"`
-	Visibility                 string `json:"visibility"`
-	ID                         string `json:"id"`
-	CreateAt                   string `json:"create_at"`
-	PaymentAddress             string `json:"payment_address"`
-	GlobalVirtualGroupFamilyID int    `json:"global_virtual_group_family_id"`
-	BucketStatus               string `json:"bucket_status"`
-}
-
-type GroupInfo struct {
-	Owner     string `json:"owner"`
-	GroupName string `json:"group_name"`
-	ID        string `json:"id"`
-}
-
 type CmdEnumValue struct {
 	Enum     []string
 	Default  string
@@ -237,62 +210,21 @@ func parseObjectInfo(objectDetail *sdktypes.ObjectDetail) {
 	}
 }
 
-func parseObjectByJsonFormat(objectDetail *sdktypes.ObjectDetail) {
-	info := objectDetail.ObjectInfo.String()
-	objectInfo := ObjectInfo{
-		ObjectStatus: objectDetail.ObjectInfo.ObjectStatus.String(),
-		Checksums:    make(map[string]string),
+func getJsonMarshaler() *jsonpb.Marshaler {
+	// Create a JSON marshaler
+	return &jsonpb.Marshaler{
+		EmitDefaults: true, // Include fields with zero values
+		OrigName:     true,
 	}
-	infoStr := strings.Split(info, " ")
-	checksumID := 0
-	for _, objInfo := range infoStr {
-		if strings.Contains(objInfo, "create_at:") {
-			timeInfo := strings.Split(objInfo, ":")
-			timestamp, _ := strconv.ParseInt(timeInfo[1], 10, 64)
-			location, _ := time.LoadLocation("Asia/Shanghai")
-			t := time.Unix(timestamp, 0).In(location)
-			objectInfo.CreateAt = t.Format(iso8601DateFormat)
-		}
-		if strings.Contains(objInfo, "checksums:") {
-			hashInfo := strings.Split(objInfo, ":")
-			objectInfo.Checksums["checksum["+strconv.Itoa(checksumID)+"]"] = hex.EncodeToString([]byte(hashInfo[1]))
-			checksumID++
-		}
-		if strings.Contains(objInfo, "status") {
-			continue
-		}
-		keyValue := strings.Split(objInfo, ":")
-		if len(keyValue) == 2 {
-			switch keyValue[0] {
-			case "owner":
-				objectInfo.Owner = strings.Trim(keyValue[1], "\"")
-			case "bucket_name":
-				objectInfo.BucketName = strings.Trim(keyValue[1], "\"")
-			case "object_name":
-				objectInfo.ObjectName = strings.Trim(keyValue[1], "\"")
-			case "id":
-				objectInfo.ID = strings.Trim(keyValue[1], "\"")
-			case "local_virtual_group_id":
-				groupID, _ := strconv.Atoi(keyValue[1])
-				objectInfo.LocalVirtualGroupID = groupID
-			case "payload_size":
-				payloadSize, _ := strconv.Atoi(keyValue[1])
-				objectInfo.PayloadSize = payloadSize
-			case "visibility":
-				objectInfo.Visibility = strings.Trim(keyValue[1], "\"")
-			case "content_type":
-				objectInfo.ContentType = strings.Trim(keyValue[1], "\"")
-			default:
-				continue
-			}
-		}
-	}
-	jsonData, err := json.Marshal(objectInfo)
+}
+
+func parseByJsonFormat(v proto.Message) {
+	jsonData, err := getJsonMarshaler().MarshalToString(v)
 	if err != nil {
 		fmt.Println("Error marshalling to JSON:", err)
 		return
 	}
-	fmt.Println(string(jsonData))
+	fmt.Println(jsonData)
 }
 
 func parseBucketInfo(info *storageTypes.BucketInfo) {
@@ -308,72 +240,6 @@ func parseBucketInfo(info *storageTypes.BucketInfo) {
 		}
 		fmt.Println(bucketInfo)
 	}
-}
-
-func parseBucketByJsonFormat(info *storageTypes.BucketInfo) {
-	infoStr := strings.Split(info.String(), " ")
-	bucketInfo := BucketInfo{}
-	bucketInfo.BucketStatus = info.BucketStatus.String()
-	for _, entry := range infoStr {
-		keyValue := strings.Split(entry, ":")
-		if len(keyValue) == 2 {
-			key := strings.TrimSpace(keyValue[0])
-			value := strings.TrimSpace(keyValue[1])
-			switch key {
-			case "owner":
-				bucketInfo.Owner = strings.Trim(value, "\"")
-			case "bucket_name":
-				bucketInfo.BucketName = strings.Trim(value, "\"")
-			case "visibility":
-				bucketInfo.Visibility = strings.Trim(value, "\"")
-			case "id":
-				bucketInfo.ID = strings.Trim(value, "\"")
-			case "create_at":
-				bucketInfo.CreateAt = strings.Trim(value, "\"")
-			case "payment_address":
-				bucketInfo.PaymentAddress = strings.Trim(value, "\"")
-			case "global_virtual_group_family_id":
-				id, _ := strconv.Atoi(value)
-				bucketInfo.GlobalVirtualGroupFamilyID = id
-			default:
-				continue
-			}
-		}
-	}
-
-	jsonData, err := json.Marshal(bucketInfo)
-	if err != nil {
-		fmt.Println("Error marshalling to JSON:", err)
-		return
-	}
-	fmt.Println(string(jsonData))
-}
-
-func parseGroupByJson(info *storageTypes.GroupInfo) {
-	infoStr := strings.Split(info.String(), " ")
-	groupInfo := GroupInfo{}
-	for _, entry := range infoStr {
-		keyValue := strings.Split(entry, ":")
-		if len(keyValue) == 2 {
-			key := strings.TrimSpace(keyValue[0])
-			value := strings.TrimSpace(keyValue[1])
-			switch key {
-			case "owner":
-				groupInfo.Owner = strings.Trim(value, "\"")
-			case "group_name":
-				groupInfo.GroupName = strings.Trim(value, "\"")
-			case "id":
-				groupInfo.ID = strings.Trim(value, "\"")
-			}
-		}
-	}
-
-	jsonData, err := json.Marshal(groupInfo)
-	if err != nil {
-		fmt.Println("Error marshalling to JSON:", err)
-		return
-	}
-	fmt.Println(string(jsonData))
 }
 
 func getBucketNameByUrl(ctx *cli.Context) (string, error) {
