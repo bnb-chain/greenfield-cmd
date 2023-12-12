@@ -15,6 +15,7 @@ import (
 
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
+	gtypes "github.com/bnb-chain/greenfield/types"
 	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
 
@@ -225,6 +226,76 @@ $ gnfd-cmd group mirror --destChainId 97 --groupName yourGroupName
 			},
 		},
 	}
+}
+
+func cmdSetTagForGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "setTag",
+		Action:    setTagForGroup,
+		Usage:     "Set tags for the given group",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+The command is used to set tag for a given existing group.
+
+Examples:
+$ gnfd-cmd group setTag --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]'  group-name`,
+
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags for the given group. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
+			},
+		},
+	}
+}
+
+// setTag Set tag for a given existing group
+func setTagForGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	acct, err := client.GetDefaultAccount()
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	grn := gtypes.NewGroupGRN(acct.GetAddress(), groupName)
+
+	tagsParam := ctx.String(tagFlag)
+	if tagsParam == "" {
+		err = errors.New("invalid tags parameter")
+	}
+	if err != nil {
+		return toCmdErr(err)
+	}
+	tags := &storageTypes.ResourceTags{}
+	err = json.Unmarshal([]byte(tagsParam), &tags.Tags)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelSetTag := context.WithCancel(globalContext)
+	defer cancelSetTag()
+	txnHash, err := client.SetTag(c, grn.String(), *tags, sdktypes.SetTagsOptions{})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txnHash, "SetTags")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	return nil
 }
 
 // createGroup send the create bucket request to storage provider

@@ -86,6 +86,7 @@ func main() {
 					cmdBuyQuota(),
 					cmdGetQuotaInfo(),
 					cmdMirrorBucket(),
+					cmdSetTagForBucket(),
 				},
 			},
 			{
@@ -102,6 +103,7 @@ func main() {
 					cmdUpdateObject(),
 					cmdGetUploadProgress(),
 					cmdMirrorObject(),
+					cmdSetTagForObject(),
 				},
 			},
 			{
@@ -118,6 +120,7 @@ func main() {
 					cmdListGroup(),
 					cmdListGroupMember(),
 					cmdListGroupBelong(),
+					cmdSetTagForGroup(),
 				},
 			},
 
@@ -169,14 +172,6 @@ func main() {
 					cmdCreateAccount(),
 					cmdExportAccount(),
 					cmdSetDefaultAccount(),
-				},
-			},
-
-			{
-				Name:  "tag",
-				Usage: "support the tag related functions",
-				Subcommands: []*cli.Command{
-					cmdSetTag(),
 				},
 			},
 			cmdShowVersion(),
