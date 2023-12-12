@@ -136,7 +136,7 @@ func headObject(ctx *cli.Context) error {
 		if format == defaultFormat {
 			parseObjectInfo(objectDetail)
 		} else if format == jsonFormat {
-			parseObjectByJsonFormat(objectDetail)
+			parseByJsonFormat(objectDetail)
 		} else {
 			return toCmdErr(fmt.Errorf("invalid format"))
 		}
@@ -169,7 +169,7 @@ func headBucket(ctx *cli.Context) error {
 		if format == defaultFormat {
 			parseBucketInfo(bucketInfo)
 		} else if format == jsonFormat {
-			parseBucketByJsonFormat(bucketInfo)
+			parseByJsonFormat(bucketInfo)
 		} else {
 			return toCmdErr(fmt.Errorf("invalid format"))
 		}
@@ -210,7 +210,7 @@ func headGroup(ctx *cli.Context) error {
 				fmt.Println(info)
 			}
 		} else if format == jsonFormat {
-			parseGroupByJson(groupInfo)
+			parseByJsonFormat(groupInfo)
 		} else {
 			return toCmdErr(fmt.Errorf("invalid format"))
 		}

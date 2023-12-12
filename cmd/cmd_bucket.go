@@ -2,15 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
-	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/bnb-chain/greenfield/sdk/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
+
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
+	gtypes "github.com/bnb-chain/greenfield/types"
+	storagetypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
 
 // cmdCreateBucket create a new Bucket
@@ -27,7 +31,7 @@ The command need to set the primary SP address with --primarySP.
 
 Examples:
 # Create a new bucket called gnfd-bucket, visibility is public-read
-$ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
+$ gnfd-cmd bucket create --visibility=public-read  --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' gnfd://gnfd-bucket`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  primarySPFlag,
@@ -51,6 +55,11 @@ $ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
 					Default: privateType,
 				},
 				Usage: "set visibility of the bucket",
+			},
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags of the bucket. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
 			},
 		},
 	}
@@ -147,6 +156,70 @@ $ gnfd-cmd bucket mirror --destChainId 97 --bucketName yourBucketName
 	}
 }
 
+func cmdSetTagForBucket() *cli.Command {
+	return &cli.Command{
+		Name:      "setTag",
+		Action:    setTagForBucket,
+		Usage:     "Set tags for the given bucket",
+		ArgsUsage: "BUCKET-URL",
+		Description: `
+The command is used to set tag for a given existing bucket.
+
+Examples:
+$ gnfd-cmd bucket setTag --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]'  gnfd://gnfd-bucket`,
+
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags for the given bucket. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
+			},
+		},
+	}
+}
+
+// setTag Set tag for a given existing bucket
+func setTagForBucket(ctx *cli.Context) error {
+	bucketName, err := getBucketNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	grn := gtypes.NewBucketGRN(bucketName)
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	tagsParam := ctx.String(tagFlag)
+	if tagsParam == "" {
+		err = errors.New("invalid tags parameter")
+	}
+	if err != nil {
+		return toCmdErr(err)
+	}
+	tags := &storagetypes.ResourceTags{}
+	err = json.Unmarshal([]byte(tagsParam), &tags.Tags)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelSetTag := context.WithCancel(globalContext)
+	defer cancelSetTag()
+	txnHash, err := client.SetTag(c, grn.String(), *tags, sdktypes.SetTagsOptions{})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txnHash, "SetTags")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	return nil
+}
+
 // createBucket send the create bucket request to storage provider
 func createBucket(ctx *cli.Context) error {
 	bucketName, err := getBucketNameByUrl(ctx)
@@ -190,6 +263,15 @@ func createBucket(ctx *cli.Context) error {
 	chargedQuota := ctx.Uint64(chargeQuotaFlag)
 	if chargedQuota > 0 {
 		opts.ChargedQuota = chargedQuota
+	}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storagetypes.ResourceTags{}
+		err = json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
 	}
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}

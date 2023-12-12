@@ -10,11 +10,13 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/bnb-chain/greenfield/sdk/types"
-	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/urfave/cli/v2"
+
+	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
+	"github.com/bnb-chain/greenfield/sdk/types"
+	gtypes "github.com/bnb-chain/greenfield/types"
+	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
 
 // cmdCreateBucket create a new Bucket
@@ -28,7 +30,14 @@ func cmdCreateGroup() *cli.Command {
 Create a new group
 
 Examples:
-$ gnfd-cmd group create group-name`,
+$ gnfd-cmd group create --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' group-name`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags of the group. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
+			},
+		},
 	}
 }
 
@@ -219,6 +228,76 @@ $ gnfd-cmd group mirror --destChainId 97 --groupName yourGroupName
 	}
 }
 
+func cmdSetTagForGroup() *cli.Command {
+	return &cli.Command{
+		Name:      "setTag",
+		Action:    setTagForGroup,
+		Usage:     "Set tags for the given group",
+		ArgsUsage: "GROUP-NAME",
+		Description: `
+The command is used to set tag for a given existing group.
+
+Examples:
+$ gnfd-cmd group setTag --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]'  group-name`,
+
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags for the given group. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
+			},
+		},
+	}
+}
+
+// setTag Set tag for a given existing group
+func setTagForGroup(ctx *cli.Context) error {
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	groupName, err := getGroupNameByUrl(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	acct, err := client.GetDefaultAccount()
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	grn := gtypes.NewGroupGRN(acct.GetAddress(), groupName)
+
+	tagsParam := ctx.String(tagFlag)
+	if tagsParam == "" {
+		err = errors.New("invalid tags parameter")
+	}
+	if err != nil {
+		return toCmdErr(err)
+	}
+	tags := &storageTypes.ResourceTags{}
+	err = json.Unmarshal([]byte(tagsParam), &tags.Tags)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelSetTag := context.WithCancel(globalContext)
+	defer cancelSetTag()
+	txnHash, err := client.SetTag(c, grn.String(), *tags, sdktypes.SetTagsOptions{})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txnHash, "SetTags")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	return nil
+}
+
 // createGroup send the create bucket request to storage provider
 func createGroup(ctx *cli.Context) error {
 	groupName, err := getGroupNameByUrl(ctx)
@@ -232,6 +311,15 @@ func createGroup(ctx *cli.Context) error {
 	}
 
 	opts := sdktypes.CreateGroupOptions{}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storageTypes.ResourceTags{}
+		err = json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
 
 	opts.TxOpts = &types.TxOption{Mode: &SyncBroadcastMode}
 
@@ -482,7 +570,7 @@ func listGroup(ctx *cli.Context) error {
 		}
 
 		id := groupList.Groups[memberNum-1].Group.Id
-		initStartKey = strconv.FormatUint(id, 10)
+		initStartKey = strconv.FormatUint(id.Uint64(), 10)
 	}
 
 	return nil
@@ -518,7 +606,7 @@ func listBelongGroup(ctx *cli.Context) error {
 		}
 
 		id := groupList.Groups[memberNum-1].Group.Id
-		initStartKey = strconv.FormatUint(id, 10)
+		initStartKey = strconv.FormatUint(id.Uint64(), 10)
 	}
 
 	return nil
@@ -556,7 +644,7 @@ func printListGroupResult(listResult *sdktypes.GroupsResult) {
 		location, _ := time.LoadLocation("Asia/Shanghai")
 		t := time.Unix(group.CreateTime, 0).In(location)
 
-		fmt.Printf(format, t.Format(iso8601DateFormat), group.Group.GroupName, strconv.FormatUint(group.Group.Id, 10))
+		fmt.Printf(format, t.Format(iso8601DateFormat), group.Group.GroupName, strconv.FormatUint(group.Group.Id.Uint64(), 10))
 	}
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,11 +12,14 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/urfave/cli/v2"
+
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
 	"github.com/bnb-chain/greenfield/sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/urfave/cli/v2"
+	gtypes "github.com/bnb-chain/greenfield/types"
+	storageTypes "github.com/bnb-chain/greenfield/x/storage/types"
 )
 
 // cmdPutObj return the command to finish uploading payload of the object
@@ -34,7 +38,7 @@ Examples:
 # create object and upload file to storage provider, the corresponding object is gnfd-object
 $ gnfd-cmd object put file.txt gnfd://gnfd-bucket/gnfd-object,
 # upload the files inside the folders
-$ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
+$ gnfd-cmd object put --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' --recursive folderName gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  secondarySPFlag,
@@ -77,6 +81,11 @@ $ gnfd-cmd object put --recursive folderName gnfd://bucket-name`,
 				Name:  bypassSealFlag,
 				Value: false,
 				Usage: "if set this flag as true, it will not wait for the file to be sealed after the uploading is completed.",
+			},
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags of the object. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
 			},
 		},
 	}
@@ -247,6 +256,76 @@ $ gnfd-cmd object mirror --destChainId 97 --bucketName yourBucketName --objectNa
 			},
 		},
 	}
+}
+
+func cmdSetTagForObject() *cli.Command {
+	return &cli.Command{
+		Name:      "setTag",
+		Action:    setTagForObject,
+		Usage:     "Set tags for the given object",
+		ArgsUsage: "OBJECT-URL",
+		Description: `
+The command is used to set tag for a given existing object.
+
+Examples:
+$ gnfd-cmd object setTag --tags='[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]' gnfd://gnfd-bucket/gnfd-object`,
+
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  tagFlag,
+				Value: "",
+				Usage: "set one or more tags for the given object. The tag value is key-value pairs in json array format. E.g. [{\"key\":\"key1\",\"value\":\"value1\"},{\"key\":\"key2\",\"value\":\"value2\"}]",
+			},
+		},
+	}
+}
+
+// setTag Set tag for a given existing object
+func setTagForObject(ctx *cli.Context) error {
+	if ctx.NArg() != 1 {
+		return toCmdErr(fmt.Errorf("args number should be one"))
+	}
+
+	urlInfo := ctx.Args().First()
+	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	client, err := NewClient(ctx, false)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	grn := gtypes.NewObjectGRN(bucketName, objectName)
+
+	tagsParam := ctx.String(tagFlag)
+	if tagsParam == "" {
+		err = errors.New("invalid tags parameter")
+	}
+	if err != nil {
+		return toCmdErr(err)
+	}
+	tags := &storageTypes.ResourceTags{}
+	err = json.Unmarshal([]byte(tagsParam), &tags.Tags)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	c, cancelSetTag := context.WithCancel(globalContext)
+	defer cancelSetTag()
+	txnHash, err := client.SetTag(c, grn.String(), *tags, sdktypes.SetTagsOptions{})
+
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	err = waitTxnStatus(client, c, txnHash, "SetTags")
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	return nil
 }
 
 // putObject upload the payload of file, finish the third stage of putObject
@@ -427,6 +506,16 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	bypassSeal := ctx.Bool(bypassSealFlag)
 
 	opts := sdktypes.CreateObjectOptions{}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storageTypes.ResourceTags{}
+		err := json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+
 	if contentType != "" {
 		opts.ContentType = contentType
 	} else {

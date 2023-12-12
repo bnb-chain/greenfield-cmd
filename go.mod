@@ -5,9 +5,10 @@ go 1.20
 require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/bnb-chain/greenfield v1.1.0
-	github.com/bnb-chain/greenfield-go-sdk v1.1.0
+	github.com/bnb-chain/greenfield v1.1.2-0.20231206061231-2c244cebf664
+	github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231211085729-31f6ba42ee34
 	github.com/cosmos/cosmos-sdk v0.47.3
+	github.com/cosmos/gogoproto v1.4.10
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/rs/zerolog v1.29.1
 	github.com/urfave/cli/v2 v2.10.2
@@ -40,7 +41,6 @@ require (
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
-	github.com/cosmos/gogoproto v1.4.10 // indirect
 	github.com/cosmos/iavl v0.20.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.13.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
@@ -149,13 +149,13 @@ require (
 )
 
 replace (
-	cosmossdk.io/api => github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20230816082903-b48770f5e210
-	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20230816082903-b48770f5e210
+	cosmossdk.io/api => github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20231206043955-0855e0965bc8
+	cosmossdk.io/math => github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20231206043955-0855e0965bc8
 	github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.23.0
 	github.com/cometbft/cometbft => github.com/bnb-chain/greenfield-cometbft v1.1.0
 	github.com/cometbft/cometbft-db => github.com/bnb-chain/greenfield-cometbft-db v0.8.1-alpha.1
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v1.1.0
+	github.com/cosmos/cosmos-sdk => github.com/bnb-chain/greenfield-cosmos-sdk v1.1.2-0.20231206043955-0855e0965bc8
 	github.com/cosmos/iavl => github.com/bnb-chain/greenfield-iavl v0.20.1
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
