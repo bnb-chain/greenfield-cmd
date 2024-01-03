@@ -129,6 +129,11 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 					"a file in multiple parts, where each part is downloaded separately.This allows the download to be resumed from " +
 					"where it left off in case of interruptions or failures, rather than starting the entire download process from the beginning.",
 			},
+			&cli.BoolFlag{
+				Name:  fastFlag,
+				Value: false,
+				Usage: "indicate whether need to download in a fast way, which will omit some pre-checks to reduce the response time.",
+			},
 		},
 	}
 }
@@ -666,6 +671,8 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(fmt.Errorf("args number less than one"))
 	}
 
+	fastMode := ctx.Bool(fastFlag)
+
 	urlInfo := ctx.Args().Get(0)
 	bucketName, objectName, err := ParseBucketAndObject(urlInfo)
 	if err != nil {
@@ -677,13 +684,19 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
+	if fastMode {
+		return nil
+	}
+
 	c, cancelGetObject := context.WithCancel(globalContext)
 	defer cancelGetObject()
+	fmt.Println("HeadObject starts: ", time.Now())
 
 	chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
 	if err != nil {
 		return toCmdErr(ErrObjectNotExist)
 	}
+	fmt.Println("HeadObject ends:  ", time.Now())
 
 	var filePath string
 	if ctx.Args().Len() == 1 {
@@ -751,16 +764,21 @@ func getObject(ctx *cli.Context) error {
 			StartTime:   time.Now(),
 			LastPrinted: time.Now(),
 		}
+		fmt.Println("gnfdClient.GetObject starts: ", time.Now())
 
 		body, info, downloadErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
+		fmt.Println("gnfdClient.GetObject ends: ", time.Now())
+
 		if downloadErr != nil {
 			return toCmdErr(downloadErr)
 		}
+		fmt.Println("receiving data starts: ", time.Now())
 
 		_, err = io.Copy(pw, body)
 		if err != nil {
 			return toCmdErr(err)
 		}
+		fmt.Println("receiving data ends:  ", time.Now())
 
 		err = os.Rename(tempFilePath, filePath)
 		if err != nil {

@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/urfave/cli/v2"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	"github.com/bnb-chain/greenfield-go-sdk/types"
 	sdktypes "github.com/bnb-chain/greenfield-go-sdk/types"
-	"github.com/urfave/cli/v2"
 )
 
 const iso8601DateFormat = "2006-01-02 15:04:05"
@@ -41,6 +43,8 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
 		cli        client.IClient
 	)
 	if !isQueryCmd {
+		fmt.Println("parseKeystore starts: ", time.Now())
+
 		privateKey, _, err = parseKeystore(ctx)
 		if err != nil {
 			return nil, err
@@ -51,18 +55,21 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
 			fmt.Println("new account err", err.Error())
 			return nil, err
 		}
+		fmt.Println("parseKeystore ends: ", time.Now())
+
 	}
 
 	rpcAddr, chainId, host, err := getConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("sdk client.New starts: ", time.Now())
 	if host != "" {
 		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host})
 	} else {
 		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account})
 	}
+	fmt.Println("sdk client.New ends: ", time.Now())
 
 	if err != nil {
 		fmt.Printf("failed to create client %s \n", err.Error())

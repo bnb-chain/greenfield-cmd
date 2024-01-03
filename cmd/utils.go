@@ -108,6 +108,9 @@ const (
 	partSizeFlag  = "partSize"
 	resumableFlag = "resumable"
 
+	// fast download
+	fastFlag = "fast"
+
 	operatorAddressLen = 42
 	accountAddressLen  = 40
 	exitStatus         = "GRACEFUL_EXITING"
