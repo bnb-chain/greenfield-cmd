@@ -692,10 +692,10 @@ func getObject(ctx *cli.Context) error {
 	defer cancelGetObject()
 	fmt.Println("HeadObject starts: ", time.Now())
 
-	chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
-	if err != nil {
-		return toCmdErr(ErrObjectNotExist)
-	}
+	//chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
+	//if err != nil {
+	//	return toCmdErr(ErrObjectNotExist)
+	//}
 	fmt.Println("HeadObject ends:  ", time.Now())
 
 	var filePath string
@@ -758,12 +758,6 @@ func getObject(ctx *cli.Context) error {
 
 		defer fd.Close()
 
-		pw := &ProgressWriter{
-			Writer:      fd,
-			Total:       int64(chainInfo.ObjectInfo.PayloadSize),
-			StartTime:   time.Now(),
-			LastPrinted: time.Now(),
-		}
 		fmt.Println("gnfdClient.GetObject starts: ", time.Now())
 
 		body, info, downloadErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
@@ -772,6 +766,14 @@ func getObject(ctx *cli.Context) error {
 		if downloadErr != nil {
 			return toCmdErr(downloadErr)
 		}
+
+		pw := &ProgressWriter{
+			Writer:      fd,
+			Total:       int64(info.Size),
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
 		fmt.Println("receiving data starts: ", time.Now())
 
 		_, err = io.Copy(pw, body)
