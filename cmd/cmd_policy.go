@@ -228,7 +228,7 @@ func listPolicy(ctx *cli.Context) error {
 }
 
 func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.Statement, policyType ResourceType) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func handlePutPolicy(ctx *cli.Context, resource string, statements []*permTypes.
 }
 
 func handleDeletePolicy(ctx *cli.Context, resource string, policyType ResourceType) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return err
 	}
@@ -332,7 +332,7 @@ func handleDeletePolicy(ctx *cli.Context, resource string, policyType ResourceTy
 }
 
 func handleListPolicy(ctx *cli.Context, resource string, policyType ResourceType) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return err
 	}

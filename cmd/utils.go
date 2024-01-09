@@ -108,6 +108,9 @@ const (
 	partSizeFlag  = "partSize"
 	resumableFlag = "resumable"
 
+	// download with specified sp host
+	spHostFlag = "spHost"
+
 	operatorAddressLen = 42
 	accountAddressLen  = 40
 	exitStatus         = "GRACEFUL_EXITING"
@@ -134,6 +137,12 @@ var (
 	SyncBroadcastMode     = tx.BroadcastMode_BROADCAST_MODE_SYNC
 	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
+
+// ClientOptions indicates the metadata to construct new greenfield client
+type ClientOptions struct {
+	IsQueryCmd bool   // indicate whether the command is query command
+	Endpoint   string // indicates the endpoint of sp
+}
 
 type CmdEnumValue struct {
 	Enum     []string

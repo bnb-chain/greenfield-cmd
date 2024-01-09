@@ -129,6 +129,11 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 					"a file in multiple parts, where each part is downloaded separately.This allows the download to be resumed from " +
 					"where it left off in case of interruptions or failures, rather than starting the entire download process from the beginning.",
 			},
+			&cli.StringFlag{
+				Name:  spHostFlag,
+				Value: "",
+				Usage: "indicate object sp host",
+			},
 		},
 	}
 }
@@ -292,7 +297,7 @@ func setTagForObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -342,7 +347,7 @@ func putObject(ctx *cli.Context) error {
 		urlInfo                          string
 	)
 
-	gnfdClient, err := NewClient(ctx, false)
+	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return err
 	}
@@ -672,7 +677,9 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	gnfdClient, err := NewClient(ctx, false)
+	spHost := ctx.String(spHostFlag)
+
+	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false, Endpoint: spHost})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -680,10 +687,11 @@ func getObject(ctx *cli.Context) error {
 	c, cancelGetObject := context.WithCancel(globalContext)
 	defer cancelGetObject()
 
-	chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
-	if err != nil {
-		return toCmdErr(ErrObjectNotExist)
-	}
+	//chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
+	//if err != nil {
+	//	return toCmdErr(ErrObjectNotExist)
+	//}
+	fmt.Println("HeadObject ends:  ", time.Now())
 
 	var filePath string
 	if ctx.Args().Len() == 1 {
@@ -712,6 +720,10 @@ func getObject(ctx *cli.Context) error {
 	endOffset := ctx.Int64(endOffsetFlag)
 	partSize := ctx.Uint64(partSizeFlag)
 	resumableDownload := ctx.Bool(resumableFlag)
+
+	if spHost != "" {
+		opt.Endpoint = spHost
+	}
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
@@ -745,17 +757,21 @@ func getObject(ctx *cli.Context) error {
 
 		defer fd.Close()
 
-		pw := &ProgressWriter{
-			Writer:      fd,
-			Total:       int64(chainInfo.ObjectInfo.PayloadSize),
-			StartTime:   time.Now(),
-			LastPrinted: time.Now(),
-		}
+		fmt.Println("gnfdClient.GetObject starts: ", time.Now())
 
 		body, info, downloadErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
 		if downloadErr != nil {
 			return toCmdErr(downloadErr)
 		}
+
+		pw := &ProgressWriter{
+			Writer:      fd,
+			Total:       info.Size,
+			StartTime:   time.Now(),
+			LastPrinted: time.Now(),
+		}
+
+		fmt.Println("receiving data starts: ", time.Now())
 
 		_, err = io.Copy(pw, body)
 		if err != nil {
@@ -785,7 +801,7 @@ func cancelCreateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	cli, err := NewClient(ctx, false)
+	cli, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -817,7 +833,7 @@ func listObjects(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -898,7 +914,7 @@ func updateObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -949,7 +965,7 @@ func getUploadInfo(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -991,7 +1007,7 @@ func getObjAndBucketNames(urlInfo string) (string, string, error) {
 }
 
 func mirrorObject(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}

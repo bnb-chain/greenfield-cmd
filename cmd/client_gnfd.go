@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
 	"github.com/bnb-chain/greenfield-go-sdk/types"
@@ -33,14 +34,17 @@ func showVersion(ctx *cli.Context) error {
 }
 
 // NewClient returns a new greenfield client
-func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
+func NewClient(ctx *cli.Context, opts ClientOptions) (client.IClient, error) {
 	var (
 		account    *types.Account
 		err        error
 		privateKey string
 		cli        client.IClient
 	)
-	if !isQueryCmd {
+
+	if !opts.IsQueryCmd {
+		fmt.Println("parseKeystore starts: ", time.Now())
+
 		privateKey, _, err = parseKeystore(ctx)
 		if err != nil {
 			return nil, err
@@ -59,9 +63,9 @@ func NewClient(ctx *cli.Context, isQueryCmd bool) (client.IClient, error) {
 	}
 
 	if host != "" {
-		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host})
+		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, Host: host, SpEndpoint: opts.Endpoint})
 	} else {
-		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account})
+		cli, err = client.New(chainId, rpcAddr, client.Option{DefaultAccount: account, SpEndpoint: opts.Endpoint})
 	}
 
 	if err != nil {
