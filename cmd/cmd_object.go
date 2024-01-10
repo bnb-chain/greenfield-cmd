@@ -134,6 +134,11 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 				Value: false,
 				Usage: "indicate whether need to download in a fast way, which will omit some pre-checks to reduce the response time.",
 			},
+			&cli.StringFlag{
+				Name:  spHostFlag,
+				Value: "",
+				Usage: "indicate object sp host",
+			},
 		},
 	}
 }
@@ -726,6 +731,12 @@ func getObject(ctx *cli.Context) error {
 	partSize := ctx.Uint64(partSizeFlag)
 	resumableDownload := ctx.Bool(resumableFlag)
 
+	spHost := ctx.String(spHostFlag)
+
+	if spHost != "" {
+		opt.Endpoint = spHost
+	}
+
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {
 		if err = opt.SetRange(startOffset, endOffset); err != nil {
@@ -769,7 +780,7 @@ func getObject(ctx *cli.Context) error {
 
 		pw := &ProgressWriter{
 			Writer:      fd,
-			Total:       int64(info.Size),
+			Total:       info.Size,
 			StartTime:   time.Now(),
 			LastPrinted: time.Now(),
 		}

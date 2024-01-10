@@ -111,6 +111,9 @@ const (
 	// fast download
 	fastFlag = "fast"
 
+	// download with specified sp host
+	spHostFlag = "spHost"
+
 	operatorAddressLen = 42
 	accountAddressLen  = 40
 	exitStatus         = "GRACEFUL_EXITING"

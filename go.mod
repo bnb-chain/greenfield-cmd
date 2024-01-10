@@ -6,7 +6,7 @@ require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/bnb-chain/greenfield v1.2.1-0.20231221015040-11071a6ee95b
-	github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240109064110-743472da3b28
+	github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240110071454-7d843aa48809
 	github.com/cosmos/cosmos-sdk v0.47.3
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/ethereum/go-ethereum v1.10.26
