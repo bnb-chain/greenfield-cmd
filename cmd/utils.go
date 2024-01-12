@@ -141,6 +141,12 @@ var (
 	TxnOptionWithSyncMode = types.TxOption{Mode: &SyncBroadcastMode}
 )
 
+// ClientOptions indicates the metadata to construct new greenfield client
+type ClientOptions struct {
+	IsQueryCmd bool   // indicate whether the command is query command
+	Endpoint   string // indicates the endpoint of sp
+}
+
 type CmdEnumValue struct {
 	Enum     []string
 	Default  string

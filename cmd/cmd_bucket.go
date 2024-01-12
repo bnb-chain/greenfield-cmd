@@ -186,7 +186,7 @@ func setTagForBucket(ctx *cli.Context) error {
 	}
 
 	grn := gtypes.NewBucketGRN(bucketName)
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -227,7 +227,7 @@ func createBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -292,7 +292,7 @@ func updateBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -352,7 +352,7 @@ func updateBucket(ctx *cli.Context) error {
 
 // listBuckets list the buckets of the specific owner
 func listBuckets(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -391,7 +391,7 @@ func listBuckets(ctx *cli.Context) error {
 }
 
 func mirrorBucket(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}

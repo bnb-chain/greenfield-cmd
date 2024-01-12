@@ -56,7 +56,7 @@ $ gnfd-cmd sp get-price https://gnfd-testnet-sp-1.nodereal.io`,
 }
 
 func ListSP(ctx *cli.Context) error {
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -103,7 +103,7 @@ func querySP(ctx *cli.Context) error {
 	// sp addr could be an endpoint or sp operator address
 	spAddressInfo := ctx.Args().Get(0)
 
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -134,7 +134,7 @@ func getQuotaPrice(ctx *cli.Context) error {
 	}
 	spAddressInfo := ctx.Args().Get(0)
 
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}

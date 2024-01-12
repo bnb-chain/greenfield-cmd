@@ -117,7 +117,7 @@ func headObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -150,7 +150,7 @@ func headBucket(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -183,7 +183,7 @@ func headGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -228,7 +228,7 @@ func headGroupMember(ctx *cli.Context) error {
 	headMember := ctx.Args().Get(0)
 	groupName := ctx.Args().Get(1)
 
-	client, err := NewClient(ctx, true)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
 	if err != nil {
 		return toCmdErr(err)
 	}
