@@ -130,9 +130,9 @@ $ gnfd-cmd object get gnfd://gnfd-bucket/gnfd-object  file.txt `,
 					"where it left off in case of interruptions or failures, rather than starting the entire download process from the beginning.",
 			},
 			&cli.StringFlag{
-				Name:  spHostFlag,
+				Name:  spEndpointFlag,
 				Value: "",
-				Usage: "indicate object sp host",
+				Usage: "indicate object sp endpoint",
 			},
 		},
 	}
@@ -677,21 +677,15 @@ func getObject(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	spHost := ctx.String(spHostFlag)
+	spEndpoint := ctx.String(spEndpointFlag)
 
-	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false, Endpoint: spHost})
+	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false, Endpoint: spEndpoint})
 	if err != nil {
 		return toCmdErr(err)
 	}
 
 	c, cancelGetObject := context.WithCancel(globalContext)
 	defer cancelGetObject()
-
-	//chainInfo, err := gnfdClient.HeadObject(c, bucketName, objectName)
-	//if err != nil {
-	//	return toCmdErr(ErrObjectNotExist)
-	//}
-	fmt.Println("HeadObject ends:  ", time.Now())
 
 	var filePath string
 	if ctx.Args().Len() == 1 {
@@ -721,8 +715,8 @@ func getObject(ctx *cli.Context) error {
 	partSize := ctx.Uint64(partSizeFlag)
 	resumableDownload := ctx.Bool(resumableFlag)
 
-	if spHost != "" {
-		opt.Endpoint = spHost
+	if spEndpoint != "" {
+		opt.Endpoint = spEndpoint
 	}
 
 	// flag has been set
@@ -757,8 +751,6 @@ func getObject(ctx *cli.Context) error {
 
 		defer fd.Close()
 
-		fmt.Println("gnfdClient.GetObject starts: ", time.Now())
-
 		body, info, downloadErr := gnfdClient.GetObject(c, bucketName, objectName, opt)
 		if downloadErr != nil {
 			return toCmdErr(downloadErr)
@@ -770,8 +762,6 @@ func getObject(ctx *cli.Context) error {
 			StartTime:   time.Now(),
 			LastPrinted: time.Now(),
 		}
-
-		fmt.Println("receiving data starts: ", time.Now())
 
 		_, err = io.Copy(pw, body)
 		if err != nil {

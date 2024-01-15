@@ -108,8 +108,8 @@ const (
 	partSizeFlag  = "partSize"
 	resumableFlag = "resumable"
 
-	// download with specified sp host
-	spHostFlag = "spHost"
+	// download with specified sp endpoint
+	spEndpointFlag = "spEndpoint"
 
 	operatorAddressLen = 42
 	accountAddressLen  = 40
