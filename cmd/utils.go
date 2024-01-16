@@ -800,7 +800,6 @@ func createAndWriteFile(fileName string, content []byte) error {
 		return toCmdErr(errors.New("failed to create directory %s" + filepath.Dir(fileName)))
 	}
 
-	// store the keystore file
 	if err := os.WriteFile(fileName, content, 0600); err != nil {
 		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", fileName, err))
 	}
@@ -816,6 +815,14 @@ func readFile(fileName string) ([]byte, error) {
 	return content, nil
 }
 
+type UploadFlag struct {
+	ContentType string                      `json:"content_type"`
+	SecondarySP string                      `json:"secondary_sp"`
+	PartSize    uint64                      `json:"part_size"`
+	Tags        string                      `json:"tags"`
+	Visibility  storageTypes.VisibilityType `json:"visibility"`
+}
+
 type TaskState struct {
 	Lock        *sync.Mutex
 	ObjectState map[int]*UploadTaskObject `json:"object_state"`
@@ -823,6 +830,7 @@ type TaskState struct {
 	Status      string                    `json:"status"`
 	BucketName  string                    `json:"bucket_name"`
 	FolderName  string                    `json:"folder_name"`
+	Flag        UploadFlag                `json:"flag"`
 }
 
 type UploadTaskObject struct {
