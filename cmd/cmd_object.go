@@ -679,7 +679,7 @@ func getObject(ctx *cli.Context) error {
 
 	spEndpoint := ctx.String(spEndpointFlag)
 
-	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false, Endpoint: spEndpoint})
+	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false, ForceToUseSpecifiedSpEndpointForDownloadOnly: spEndpoint})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -714,10 +714,6 @@ func getObject(ctx *cli.Context) error {
 	endOffset := ctx.Int64(endOffsetFlag)
 	partSize := ctx.Uint64(partSizeFlag)
 	resumableDownload := ctx.Bool(resumableFlag)
-
-	if spEndpoint != "" {
-		opt.Endpoint = spEndpoint
-	}
 
 	// flag has been set
 	if startOffset != 0 || endOffset != 0 {

@@ -172,6 +172,8 @@ github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240115093145-60e350f86ad1 h1:B
 github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240115093145-60e350f86ad1/go.mod h1:LROoeU9nirW2Z5Wh7Oo3mww2vC3D0Zz9rMHOobf8LuE=
 github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240116020635-52c5244caa60 h1:gEnJMOyOYTz8kUAFC2sNGJ6g0VF8Tjz5osYkaP8ZmYE=
 github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240116020635-52c5244caa60/go.mod h1:LROoeU9nirW2Z5Wh7Oo3mww2vC3D0Zz9rMHOobf8LuE=
+github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240116124605-e777701140dc h1:OhPHaOH5Ax//F8BtdiXa3WRG9ISZGNK0oDjMAVV4ks4=
+github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240116124605-e777701140dc/go.mod h1:LROoeU9nirW2Z5Wh7Oo3mww2vC3D0Zz9rMHOobf8LuE=
 github.com/bnb-chain/greenfield-iavl v0.20.1 h1:y3L64GU99otNp27/xLVBTDbv4eroR6CzoYz0rbaVotM=
 github.com/bnb-chain/greenfield-iavl v0.20.1/go.mod h1:oLksTs8dfh7DYIKBro7hbRQ+ewls7ghJ27pIXlbEXyI=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=

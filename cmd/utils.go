@@ -140,8 +140,10 @@ var (
 
 // ClientOptions indicates the metadata to construct new greenfield client
 type ClientOptions struct {
-	IsQueryCmd bool   // indicate whether the command is query command
-	Endpoint   string // indicates the endpoint of sp
+	IsQueryCmd bool // indicate whether the command is query command
+	// forceToUseSpecifiedSpEndpointForDownloadOnly indicates a fixed endpoint of sp and shall only be used by get object cmd.
+	// Any other api shall not use this parameter.
+	ForceToUseSpecifiedSpEndpointForDownloadOnly string
 }
 
 type CmdEnumValue struct {
