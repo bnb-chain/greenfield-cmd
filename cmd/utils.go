@@ -142,8 +142,8 @@ var (
 type ClientOptions struct {
 	// IsQueryCmd indicate whether the command is query command
 	IsQueryCmd bool
-	// forceToUseSpecifiedSpEndpointForDownloadOnly indicates a fixed endpoint of sp and shall only be used by get object cmd.
-	// Any other api shall not use this parameter.
+	// ForceToUseSpecifiedSpEndpointForDownloadOnly indicates a fixed SP endpoint to which to send the download / get object request
+	// If this option is set, the client can only make download /get object requests, and can only download from the fixed endpoint
 	ForceToUseSpecifiedSpEndpointForDownloadOnly string
 }
 
