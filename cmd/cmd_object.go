@@ -9,10 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/google/uuid"
 	"github.com/urfave/cli/v2"
 
 	"github.com/bnb-chain/greenfield-go-sdk/client"
@@ -457,11 +459,42 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 		return errors.New("failed to parse folder path with recursive flag")
 	}
 
+	homeDir, err := getHomeDir(ctx)
+	if err != nil {
+		return toCmdErr(err)
+	}
+
+	taskID, err := createUploadTask(homeDir, folderName)
+	if err != nil {
+		return err
+	}
+	fmt.Println("================================================")
+	fmt.Println("Your batch upload is submitted as a task, task ID is " + taskID)
+	fmt.Println("You can check your task status and progress by using cmd as below:\n\n- List all your tasks: ./gnfd-cmd task ls\n- Check status: ./gnfd-cmd task status --task.id taskID\n- Retry (in case this process is killed accidentally): ./gnfd-cmd task retry --task.id taskID\n- Delete task: ...\n\n>>================================================")
+	fmt.Println("Upload Task building")
+
+	taskState := &TaskState{
+		Lock:        new(sync.Mutex),
+		ObjectState: make(map[int]*UploadTaskObject),
+		TaskID:      taskID,
+		FolderName:  folderName,
+		BucketName:  bucketName,
+		Status:      TaskStatusCreate,
+	}
+	return uploadFolderByTask(ctx, homeDir, gnfdClient, taskState)
+}
+
+func uploadFolderByTask(ctx *cli.Context, homeDir string, gnfdClient client.IClient, taskState *TaskState) error {
+	folderName := taskState.FolderName
+	bucketName := taskState.BucketName
+	taskID := taskState.TaskID
 	baseDir := filepath.Base(folderName)
 
 	fileInfos := make([]os.FileInfo, 0)
 	filePaths := make([]string, 0)
 	objectNames := make([]string, 0)
+	objectIndex := 0
+
 	listFolderErr := filepath.Walk(folderName, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			fileInfos = append(fileInfos, info)
@@ -479,11 +512,16 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 				return nil
 			}
 			subFolderName := path[index:] + "/"
-			fmt.Println("creating folder:", subFolderName)
-			if createFolderErr := uploadFile(bucketName, subFolderName, path, urlInfo, ctx, gnfdClient, true, false, 0); createFolderErr != nil {
-				return toCmdErr(createFolderErr)
+			utj := &UploadTaskObject{
+				BucketName:         bucketName,
+				ObjectName:         subFolderName,
+				FilePath:           path,
+				UploadSingleFolder: true,
+				ObjectSize:         0,
+				Status:             TaskObjectStatusWaitForUpload,
 			}
-
+			taskState.ObjectState[objectIndex] = utj
+			objectIndex++
 		}
 		return nil
 	})
@@ -493,16 +531,105 @@ func uploadFolder(urlInfo string, ctx *cli.Context,
 	}
 	// upload folder
 	for id, info := range fileInfos {
-		if uploadErr := uploadFile(bucketName, objectNames[id], filePaths[id], urlInfo, ctx, gnfdClient, false, false, info.Size()); uploadErr != nil {
-			fmt.Printf("failed to upload object: %s, error:%v \n", filePaths[id], uploadErr)
+		utj := &UploadTaskObject{
+			BucketName:         bucketName,
+			ObjectName:         objectNames[id],
+			FilePath:           filePaths[id],
+			UploadSingleFolder: false,
+			ObjectSize:         info.Size(),
+			Status:             TaskObjectStatusWaitForUpload,
+		}
+		taskState.ObjectState[objectIndex] = utj
+		objectIndex++
+	}
+	signalCtx, cancel := context.WithCancel(ctx.Context)
+	go stateSync(signalCtx, homeDir, taskID, taskState)
+	sealSignal := make(chan int)
+	go sealChecker(ctx, taskState, gnfdClient, sealSignal)
+
+	for index, object := range taskState.ObjectState {
+		// check object status
+		if object.Status != TaskObjectStatusWaitForUpload {
+			continue
+		}
+
+		err := uploadFileByTask(object.BucketName, object.ObjectName, object.FilePath, ctx, gnfdClient, object.UploadSingleFolder, object.ObjectSize)
+		if err != nil {
+			taskState.UpdateObjectState(index, TaskObjectStatusFailed, err.Error())
+			fmt.Printf("\r%s", fmt.Sprintf("%s %s %s", TaskObjectStatusFailed, object.ObjectName, err.Error()))
+		} else {
+			taskState.UpdateObjectState(index, TaskObjectStatusCreated, "")
+			fmt.Printf("\r%s", fmt.Sprintf("%s %s %s", TaskObjectStatusCreated, object.ObjectName, ""))
 		}
 	}
 
+	// waiting for seal
+	<-sealSignal
+	cancel()
+	// waiting sync status
+	time.Sleep(5 * time.Second)
+	fmt.Println()
+	if taskState.Status != TaskStatusSuccess {
+		taskState.Status = TaskStatusFail
+	}
+	content, err := json.Marshal(taskState)
+	if err != nil {
+		return toCmdErr(err)
+	}
+	taskFileName := fmt.Sprintf("/.%s/state", taskID)
+	taskFilePath := filepath.Join(homeDir, taskFileName)
+	if err = createAndWriteFile(taskFilePath, content); err != nil {
+		return toCmdErr(err)
+	}
 	return nil
 }
 
+func sealChecker(ctx *cli.Context, taskState *TaskState, gnfdClient client.IClient, signal chan int) {
+	tick := time.NewTicker(3 * time.Second)
+	defer tick.Stop()
+	objectOffset := 0
+	for range tick.C {
+		if objectOffset >= len(taskState.ObjectState) {
+			break
+		}
+		utj := taskState.ObjectState[objectOffset]
+		headObjOutput, queryErr := gnfdClient.HeadObject(ctx.Context, utj.BucketName, utj.ObjectName)
+		if queryErr != nil {
+			continue
+		}
+
+		if headObjOutput.ObjectInfo.GetObjectStatus().String() == "OBJECT_STATUS_SEALED" {
+			taskState.UpdateObjectState(objectOffset, TaskObjectStatusSeal, "")
+			fmt.Printf("\r%s", fmt.Sprintf("%s %s %s", TaskObjectStatusSeal, utj.ObjectName, ""))
+			objectOffset++
+		}
+	}
+
+	taskState.Status = TaskStatusSuccess
+	signal <- 1
+}
+
+func stateSync(ctx context.Context, homeDir, taskID string, state *TaskState) {
+	taskFileName := fmt.Sprintf("/.%s/state", taskID)
+	taskFilePath := filepath.Join(homeDir, taskFileName)
+	tick := time.NewTicker(500 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case <-tick.C:
+			content, err := json.Marshal(state)
+			if err != nil {
+				continue
+			}
+			_ = createAndWriteFile(taskFilePath, content)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Context,
-	gnfdClient client.IClient, uploadSigleFolder, printTxnHash bool, objectSize int64) error {
+	gnfdClient client.IClient, uploadSingleFolder, printTxnHash bool, objectSize int64) error {
 	var file *os.File
 	contentType := ctx.String(contentTypeFlag)
 	secondarySPAccs := ctx.String(secondarySPFlag)
@@ -557,7 +684,7 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 	var txnHash string
 	// if err==nil, object exist on chain, no need to createObject
 	if err != nil {
-		if uploadSigleFolder {
+		if uploadSingleFolder {
 			txnHash, err = gnfdClient.CreateFolder(c, bucketName, objectName, opts)
 			if err != nil {
 				return toCmdErr(err)
@@ -662,6 +789,121 @@ func uploadFile(bucketName, objectName, filePath, urlInfo string, ctx *cli.Conte
 			}
 		}
 	}
+}
+
+func uploadFileByTask(bucketName, objectName, filePath string, ctx *cli.Context,
+	gnfdClient client.IClient, uploadSingleFolder bool, objectSize int64) error {
+	var file *os.File
+	contentType := ctx.String(contentTypeFlag)
+	secondarySPAccs := ctx.String(secondarySPFlag)
+	partSize := ctx.Uint64(partSizeFlag)
+
+	opts := sdktypes.CreateObjectOptions{}
+
+	tags := ctx.String(tagFlag)
+	if tags != "" {
+		opts.Tags = &storageTypes.ResourceTags{}
+		err := json.Unmarshal([]byte(tags), &opts.Tags.Tags)
+		if err != nil {
+			return toCmdErr(err)
+		}
+	}
+
+	if contentType != "" {
+		opts.ContentType = contentType
+	} else {
+		// parse the mimeType as content type
+		mimeType, err := getContentTypeOfFile(filePath)
+		if err == nil {
+			opts.ContentType = mimeType
+		}
+	}
+
+	visibity := ctx.Generic(visibilityFlag)
+	if visibity != "" {
+		visibityTypeVal, typeErr := getVisibilityType(fmt.Sprintf("%s", visibity))
+		if typeErr != nil {
+			return typeErr
+		}
+		opts.Visibility = visibityTypeVal
+	}
+
+	// set second sp address if provided by user
+	if secondarySPAccs != "" {
+		secondarySplist := strings.Split(secondarySPAccs, ",")
+		addrList := make([]sdk.AccAddress, len(secondarySplist))
+		for idx, addr := range secondarySplist {
+			addrList[idx] = sdk.MustAccAddressFromHex(addr)
+		}
+		opts.SecondarySPAccs = addrList
+	}
+
+	c, cancelPutObject := context.WithCancel(globalContext)
+	defer cancelPutObject()
+
+	_, err := gnfdClient.HeadObject(c, bucketName, objectName)
+
+	// if err==nil, object exist on chain, no need to createObject
+	if err != nil {
+		if uploadSingleFolder {
+			_, err = gnfdClient.CreateFolder(c, bucketName, objectName, opts)
+			if err != nil {
+				return toCmdErr(err)
+			}
+		} else {
+			// Open the referenced file.
+			file, err = os.Open(filePath)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			_, err = gnfdClient.CreateObject(c, bucketName, objectName, file, opts)
+			if err != nil {
+				return toCmdErr(err)
+			}
+		}
+	}
+
+	if objectSize == 0 {
+		return nil
+	}
+
+	opt := sdktypes.PutObjectOptions{}
+	if contentType != "" {
+		opt.ContentType = contentType
+	}
+
+	opt.PartSize = partSize
+
+	// Open the referenced file.
+	reader, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	// if the file is more than 2G , it needs to force use resume uploading
+	if objectSize > maxPutWithoutResumeSize {
+		opt.DisableResumable = false
+	}
+
+	progressReader := &ProgressReader{
+		Reader:      reader,
+		Total:       objectSize,
+		StartTime:   time.Now(),
+		LastPrinted: time.Now(),
+	}
+
+	// if print big file progress, the printing progress should be delayed to obtain a more accurate display.
+	if objectSize > progressDelayPrintSize {
+		progressReader.LastPrinted = time.Now().Add(3 * time.Second)
+	}
+	if err = gnfdClient.PutObject(c, bucketName, objectName,
+		objectSize, progressReader, opt); err != nil {
+		return toCmdErr(err)
+	}
+
+	return nil
 }
 
 // getObject download the object payload from sp
@@ -1013,4 +1255,28 @@ func mirrorObject(ctx *cli.Context) error {
 	}
 	fmt.Printf("mirror object succ, txHash: %s\n", txResp.TxHash)
 	return nil
+}
+
+func createUploadTask(homeDir, folderName string) (string, error) {
+	taskID := uuid.New()
+	taskFileName := fmt.Sprintf("/.%s/state", taskID)
+	taskFilePath := filepath.Join(homeDir, taskFileName)
+
+	task := &TaskState{
+		TaskID:     taskID.String(),
+		Status:     TaskStatusCreate,
+		FolderName: folderName,
+	}
+
+	content, err := json.Marshal(task)
+	if err != nil {
+		return "", toCmdErr(err)
+	}
+
+	err = createAndWriteFile(taskFilePath, content)
+	if err != nil {
+		return "", err
+	}
+
+	return taskID.String(), nil
 }
