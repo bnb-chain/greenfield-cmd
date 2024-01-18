@@ -252,7 +252,7 @@ $ gnfd-cmd group setTag --tags='[{"key":"key1","value":"value1"},{"key":"key2","
 
 // setTag Set tag for a given existing group
 func setTagForGroup(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -305,7 +305,7 @@ func createGroup(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -355,7 +355,7 @@ func updateGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -434,7 +434,7 @@ func renewGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -501,7 +501,7 @@ func listGroupMember(ctx *cli.Context) error {
 		return toCmdErr(err)
 	}
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -541,7 +541,7 @@ func listGroupMember(ctx *cli.Context) error {
 
 // listGroup returns a list of groups owned by the specified user
 func listGroup(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -578,7 +578,7 @@ func listGroup(ctx *cli.Context) error {
 
 // listBelongGroup returns a list of all groups that the user has joined
 func listBelongGroup(ctx *cli.Context) error {
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}
@@ -678,7 +678,7 @@ func mirrorGroup(ctx *cli.Context) error {
 	c, cancelContext := context.WithCancel(globalContext)
 	defer cancelContext()
 
-	client, err := NewClient(ctx, false)
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return toCmdErr(err)
 	}

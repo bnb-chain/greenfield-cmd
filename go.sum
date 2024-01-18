@@ -154,8 +154,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 h1:41iFGWnSlI2gVpmOtVTJZNodLdLQLn/KsJqFvXwnd/s=
 github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
-github.com/bnb-chain/greenfield v1.1.2-0.20231206061231-2c244cebf664 h1:CIj9s2kfDz23WEqLrKHvHJohP8k7jWwXoj2cCy4+6yQ=
-github.com/bnb-chain/greenfield v1.1.2-0.20231206061231-2c244cebf664/go.mod h1:uIyouzA9GY2RaJDkW6jzyUsvwzlDsXB1PiulNcZM4a8=
+github.com/bnb-chain/greenfield v1.2.1-0.20231221015040-11071a6ee95b h1:UBgGcMo5Sf+sCMqkB2zu0sfuuMGBQ+5Ib1QIJ0sLXes=
+github.com/bnb-chain/greenfield v1.2.1-0.20231221015040-11071a6ee95b/go.mod h1:p8M80v/a6mRm+ZPbW8Hfjc1npWktO6BDtebr9/8ETRs=
 github.com/bnb-chain/greenfield-cometbft v1.1.0 h1:jqnkDWIZW6f/rUn5/pE26YZMT9xzpp0qTswNy7FPRBk=
 github.com/bnb-chain/greenfield-cometbft v1.1.0/go.mod h1:NZ2/ZJK2HYe3++0CsPiw4LTG6UrC6pH7fQ3VOz6pqJw=
 github.com/bnb-chain/greenfield-cometbft-db v0.8.1-alpha.1 h1:XcWulGacHVRiSCx90Q8Y//ajOrLNBQWR/KDB89dy3cU=
@@ -168,8 +168,8 @@ github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20231206043955-0855e0965bc
 github.com/bnb-chain/greenfield-cosmos-sdk/api v0.0.0-20231206043955-0855e0965bc8/go.mod h1:vhsZxXE9tYJeYB5JR4hPhd6Pc/uPf7j1T8IJ7p9FdeM=
 github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20231206043955-0855e0965bc8 h1:1Ud7itq03c4Q9h0kBpw1FYlWKN3kco8cgj59vdd50UQ=
 github.com/bnb-chain/greenfield-cosmos-sdk/math v0.0.0-20231206043955-0855e0965bc8/go.mod h1:An0MllWJY6PxibUpnwGk8jOm+a/qIxlKmL5Zyp9NnaM=
-github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231211085729-31f6ba42ee34 h1:ldvVq5O767BLRC2/LQ/MCJBGYuuySqo3PoQayiYz+K8=
-github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231211085729-31f6ba42ee34/go.mod h1:Wtg4gK6GbcskJ6qNGI9MvsJm43pHEYuKXBpmyRrIphg=
+github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240118034134-fcbe7c46d22b h1:1W0W5YPyGAFPCeJBVbi9fvLN+yYQhu4SYAo9RBTRFa0=
+github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240118034134-fcbe7c46d22b/go.mod h1:LROoeU9nirW2Z5Wh7Oo3mww2vC3D0Zz9rMHOobf8LuE=
 github.com/bnb-chain/greenfield-iavl v0.20.1 h1:y3L64GU99otNp27/xLVBTDbv4eroR6CzoYz0rbaVotM=
 github.com/bnb-chain/greenfield-iavl v0.20.1/go.mod h1:oLksTs8dfh7DYIKBro7hbRQ+ewls7ghJ27pIXlbEXyI=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
@@ -1295,8 +1295,8 @@ github.com/tinylib/msgp v1.0.2/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDW
 github.com/tjfoc/gmsm v1.3.0/go.mod h1:HaUcFuY0auTiaHB9MHFGCPx5IaLhTUd2atbCFBQXn9w=
 github.com/tklauser/go-sysconf v0.3.5/go.mod h1:MkWzOF4RMCshBAMXuhXJs64Rte09mITnppBXY/rYEFI=
 github.com/tklauser/go-sysconf v0.3.10 h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=
+github.com/tklauser/numcpus v0.2.2 h1:oyhllyrScuYI6g+h/zUvNXNp1wy7x8qQy3t/piefldA=
 github.com/tklauser/numcpus v0.2.2/go.mod h1:x3qojaO3uyYt0i56EW/VUYs7uBvdl2fkfZFu0T9wgjM=
-github.com/tklauser/numcpus v0.4.0 h1:E53Dm1HjH1/R2/aoCtXtPgzmElmn51aOkhCFSuZq//o=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/trailofbits/go-mutexasserts v0.0.0-20200708152505-19999e7d3cef/go.mod h1:+SV/613m53DNAmlXPTWGZhIyt4E/qDvn9g/lOPRiy0A=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=

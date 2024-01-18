@@ -5,11 +5,12 @@ go 1.20
 require (
 	cosmossdk.io/math v1.0.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/bnb-chain/greenfield v1.1.2-0.20231206061231-2c244cebf664
-	github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20231211085729-31f6ba42ee34
+	github.com/bnb-chain/greenfield v1.2.1-0.20231221015040-11071a6ee95b
+	github.com/bnb-chain/greenfield-go-sdk v1.1.2-0.20240118034134-fcbe7c46d22b
 	github.com/cosmos/cosmos-sdk v0.47.3
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/ethereum/go-ethereum v1.10.26
+	github.com/google/uuid v1.3.0
 	github.com/rs/zerolog v1.29.1
 	github.com/urfave/cli/v2 v2.10.2
 	golang.org/x/term v0.13.0
@@ -67,7 +68,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
