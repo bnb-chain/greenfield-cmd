@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -64,6 +65,7 @@ const (
 	expireTimeFlag          = "expire"
 	IdFlag                  = "id"
 	DestChainIdFlag         = "destChainId"
+	taskIDFlag              = "taskId"
 
 	ownerAddressFlag = "owner"
 	addressFlag      = "address"
@@ -125,6 +127,15 @@ const (
 	printRateInterval  = time.Second / 2
 	bytesToReadForMIME = 512
 	notFound           = -1
+
+	TaskStatusCreate  = "created"
+	TaskStatusFail    = "failed"
+	TaskStatusSuccess = "successful"
+
+	TaskObjectStatusWaitForUpload = "wait_for_upload"
+	TaskObjectStatusCreated       = "created"
+	TaskObjectStatusSeal          = "sealed"
+	TaskObjectStatusFailed        = "failed"
 )
 
 var (
@@ -782,4 +793,62 @@ func getContentTypeOfFile(filePath string) (string, error) {
 
 	contentType := http.DetectContentType(buffer)
 	return contentType, nil
+}
+
+func createAndWriteFile(fileName string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(fileName), 0700); err != nil {
+		return toCmdErr(errors.New("failed to create directory %s" + filepath.Dir(fileName)))
+	}
+
+	if err := os.WriteFile(fileName, content, 0600); err != nil {
+		return toCmdErr(fmt.Errorf("failed to write keyfile to the path%s: %v", fileName, err))
+	}
+	return nil
+}
+
+func readFile(fileName string) ([]byte, error) {
+	content, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the keyfile at '%s': %v \n", fileName, err)
+	}
+
+	return content, nil
+}
+
+type UploadFlag struct {
+	ContentType string                      `json:"content_type"`
+	SecondarySP string                      `json:"secondary_sp"`
+	PartSize    uint64                      `json:"part_size"`
+	Tags        string                      `json:"tags"`
+	Visibility  storageTypes.VisibilityType `json:"visibility"`
+}
+
+type TaskState struct {
+	Lock        *sync.Mutex
+	ObjectState map[int]*UploadTaskObject `json:"object_state"`
+	TaskID      string                    `json:"task_id"`
+	Status      string                    `json:"status"`
+	BucketName  string                    `json:"bucket_name"`
+	FolderName  string                    `json:"folder_name"`
+	Flag        UploadFlag                `json:"flag"`
+}
+
+type UploadTaskObject struct {
+	BucketName         string `json:"bucket_name"`
+	ObjectName         string `json:"object_name"`
+	FilePath           string `json:"file_path"`
+	UploadSingleFolder bool   `json:"upload_single_folder"`
+	ObjectSize         int64  `json:"object_size"`
+	Status             string `json:"status"`
+	Comment            string `json:"comment"`
+}
+
+func (t *TaskState) UpdateObjectState(index int, status, comment string) {
+	_, ok := t.ObjectState[index]
+	if ok {
+		t.Lock.Lock()
+		t.ObjectState[index].Status = status
+		t.ObjectState[index].Comment = comment
+		t.Lock.Unlock()
+	}
 }

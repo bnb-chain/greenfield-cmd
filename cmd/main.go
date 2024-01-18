@@ -162,7 +162,6 @@ func main() {
 					cmdGetQuotaPrice(),
 				},
 			},
-
 			{
 				Name:  "account",
 				Usage: "support the keystore operation functions",
@@ -172,6 +171,15 @@ func main() {
 					cmdCreateAccount(),
 					cmdExportAccount(),
 					cmdSetDefaultAccount(),
+				},
+			},
+			{
+				Name:  "task",
+				Usage: "support the batch upload file",
+				Subcommands: []*cli.Command{
+					cmdTaskStatus(),
+					cmdTaskDelete(),
+					cmdTaskRetry(),
 				},
 			},
 			cmdShowVersion(),
