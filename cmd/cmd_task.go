@@ -110,7 +110,7 @@ func retryTask(ctx *cli.Context) error {
 	if err != nil {
 		return toCmdErr(err)
 	}
-	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: true})
+	gnfdClient, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
 	if err != nil {
 		return err
 	}
