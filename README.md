@@ -97,7 +97,7 @@ Users can use "account import [keyfile]" to generate the keystore.  Before impor
 gnfd-cmd account import key.txt
 ```
 
-The keystore will be generated in the path "keystore/keyfile" under the home directory of the system or the directory set by "-home"
+The keystore will be generated in the path "keystore/keyfile" under the home directory of the system or the directory set by "--home"
 and it is also the default path to load keystore when running other commands.
 Password info is also needed to run the command. The terminal will prompt user to enter the password information.
 Users can also specify the password file path by using the "--passwordfile".
@@ -107,7 +107,7 @@ Users are responsible for keeping their password information. If the password is
 The "account new" command can be used to create a new account for executing commands. However, please note that after creating the account, you need to transfer token to the address of this account before you can send transactions or use storage-related functions.
 ```
 // new account and generate keystore key.json
-gnfd-cmd account account new
+gnfd-cmd account new
 ```
 
 Users can use "account export" or "account ls" to display the keystore information of account.
@@ -246,19 +246,19 @@ The policy effect can set to be "allow" or "deny" by --effect
 Put policy examples:
 ```
 // grant object operation permissions to a group
-gnfd-cmd policy put  --groupId 128  --actions get,delete  grn:o::gnfd-bucket/gnfd-object
+gnfd-cmd policy put  --groupId 128  --actions getObj,delete  grn:o::gnfd-bucket/gnfd-object
 
 // grant object operation permissions to an account
-gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions get,delete grn:o::gnfd-bucket/gnfd-object
+gnfd-cmd policy put --grantee 0x169321fC04A12c16... --actions getObj,delete grn:o::gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
 gnfd-cmd policy put --groupId 130 --actions delete,update,createObj  grn:b::gnfd-bucket
 
 // grant bucket operation permissions to an account
-gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions delete,update  grn:b::gnfd-bucket
+gnfd-cmd policy put --grantee 0x169321fC04A12c16... --actions delete,update  grn:b::gnfd-bucket
 
 // grant group operation permissions to an account 
-gnfd-cmd policy put --grantee 0x169321fC04A12c16...  --actions update  grn:g:owneraddress:gnfd-group
+gnfd-cmd policy put --grantee 0x169321fC04A12c16... --actions update  grn:g:owneraddress:gnfd-group
 ```
 Delete policy examples:
 ```
