@@ -246,10 +246,10 @@ The policy effect can set to be "allow" or "deny" by --effect
 Put policy examples:
 ```
 // grant object operation permissions to a group
-gnfd-cmd policy put  --groupId 128  --actions getObj,delete  grn:o::gnfd-bucket/gnfd-object
+gnfd-cmd policy put  --groupId 128  --actions get,delete  grn:o::gnfd-bucket/gnfd-object
 
 // grant object operation permissions to an account
-gnfd-cmd policy put --grantee 0x169321fC04A12c16... --actions getObj,delete grn:o::gnfd-bucket/gnfd-object
+gnfd-cmd policy put --grantee 0x169321fC04A12c16... --actions get,delete grn:o::gnfd-bucket/gnfd-object
 
 // grant bucket operation permissions to a group
 gnfd-cmd policy put --groupId 130 --actions delete,update,createObj  grn:b::gnfd-bucket
