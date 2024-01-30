@@ -25,7 +25,7 @@ $ gnfd-cmd payment buy-quota  --chargedQuota 1000000  gnfd://bucket-name`,
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:     chargeQuotaFlag,
-				Usage:    "indicate the target quota to be set for the bucket",
+				Usage:    "indicate the target quota to be set for the bucket. charged quota defines the read data that users are charged for, measured in bytes.",
 				Required: true,
 			},
 		},

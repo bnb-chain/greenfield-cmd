@@ -42,7 +42,7 @@ $ gnfd-cmd bucket create --visibility=public-read  gnfd://gnfd-bucket`,
 			&cli.Uint64Flag{
 				Name:  chargeQuotaFlag,
 				Value: 0,
-				Usage: "indicate the read quota info of the bucket",
+				Usage: "indicate the read quota info of the bucket. charged quota defines the read data that users are charged for, measured in bytes.",
 			},
 			&cli.GenericFlag{
 				Name: visibilityFlag,
@@ -79,7 +79,7 @@ $ gnfd-cmd bucket update --visibility=public-read --paymentAddress xx  gnfd://gn
 			},
 			&cli.Uint64Flag{
 				Name:  chargeQuotaFlag,
-				Usage: "indicate the read quota info of the bucket",
+				Usage: "indicate the read quota info of the bucket. charged quota defines the read data that users are charged for, measured in bytes.",
 			},
 			&cli.GenericFlag{
 				Name: visibilityFlag,
