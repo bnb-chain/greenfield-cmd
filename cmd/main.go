@@ -174,6 +174,13 @@ func main() {
 				},
 			},
 			{
+				Name:  "fee",
+				Usage: "support fee grant operation functions",
+				Subcommands: []*cli.Command{
+					cmdGrantAllowance(),
+				},
+			},
+			{
 				Name:  "task",
 				Usage: "support the batch upload file",
 				Subcommands: []*cli.Command{

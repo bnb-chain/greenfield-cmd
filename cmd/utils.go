@@ -60,6 +60,7 @@ const (
 	groupMemberExpireFlag   = "expireTime"
 	groupIDFlag             = "groupId"
 	granteeFlag             = "grantee"
+	allowanceFlag           = "allowance"
 	actionsFlag             = "actions"
 	effectFlag              = "effect"
 	expireTimeFlag          = "expire"
