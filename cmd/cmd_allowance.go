@@ -23,6 +23,21 @@ func cmdGrantAllowance() *cli.Command {
 		Description: `
 The command is used to grant allowance to the grantee. --grantee defines the grantee address, --expire defines the expiration time in second
 
+Flags:
+The command includes three flags that users can set when using the command to specify relevant values:
+--grantee (granteeFlag)
+	Type: String (cli.StringFlag)
+	Default Value: Empty string
+	Usage: Specifies the address of the grantee (in hexadecimal string format).
+--allowance (allowanceFlag)
+	Type: String
+	Default Value: Empty string
+	Usage: Specifies the amount of allowance in wei.
+--expire (expireTimeFlag)
+	Type: Unsigned 64-bit integer (cli.Uint64Flag)
+	Default Value: 0
+	Usage: Sets the expiration time of the allowance in UNIX timestamp (seconds).
+
 Examples:
 $ gnfd-cmd fee grant --grantee 0x... --allowance 10000000000000000 --expire 3600`,
 		Flags: []cli.Flag{
