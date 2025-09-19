@@ -178,6 +178,7 @@ func main() {
 				Usage: "support fee grant operation functions",
 				Subcommands: []*cli.Command{
 					cmdGrantAllowance(),
+					cmdRevokeAllowance(),
 				},
 			},
 			{

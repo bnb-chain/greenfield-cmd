@@ -96,3 +96,59 @@ func grantAllowance(ctx *cli.Context) error {
 
 	return nil
 }
+
+// cmdRevokeAllowance revoke allowance from a account
+func cmdRevokeAllowance() *cli.Command {
+	return &cli.Command{
+		Name:      "revoke",
+		Action:    revokeAllowance,
+		Usage:     "revoke allowance",
+		ArgsUsage: "",
+		Description: `
+The command is used to revoke allowance from the grantee. --grantee defines the grantee address
+
+Flags:
+The command includes one flag that users can set when using the command to specify relevant values:
+--grantee (granteeFlag)
+	Type: String (cli.StringFlag)
+	Default Value: Empty string
+	Usage: Specifies the address of the grantee (in hexadecimal string format).
+
+Examples:
+$ gnfd-cmd fee revoke --grantee 0x...`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  granteeFlag,
+				Value: "",
+				Usage: "the address hex string of the grantee",
+			},
+		},
+	}
+}
+
+func revokeAllowance(ctx *cli.Context) error {
+	grantee := ctx.String(granteeFlag)
+	granteeAddr, err := sdk.AccAddressFromHexUnsafe(grantee)
+	if err != nil {
+		return err
+	}
+
+	client, err := NewClient(ctx, ClientOptions{IsQueryCmd: false})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	c, cancelSetTag := context.WithCancel(globalContext)
+	defer cancelSetTag()
+
+	txHash, err := client.RevokeAllowance(c, granteeAddr.String(), types.TxOption{})
+	if err != nil {
+		return toCmdErr(err)
+	}
+	err = waitTxnStatus(client, c, txHash, "RevokeAllowance")
+	if err != nil {
+		return toCmdErr(err)
+	}
+	fmt.Printf("Revoke allowance from %s succ, txHash=%s\n", grantee, txHash)
+
+	return nil
+}
